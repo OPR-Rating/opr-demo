@@ -32,7 +32,7 @@
   .home-hero h2 { font-size: 26px; font-weight: 800; margin: 12px 0 4px; color: #fff; text-shadow: 0 0 18px rgba(255,255,255,0.5), 0 0 30px rgba(233,30,140,0.4); position: relative; z-index: 2; }
   .home-hero p { font-size: 12px; opacity: 0.9; color: #fff; position: relative; z-index: 2; }
   .opr-logo { font-size: 44px; margin-bottom: 10px; }
-  .btn-enter { width: 100%; padding: 18px; background: linear-gradient(90deg, #E91E8C, #7B1FA2, #1565C0); color: #fff; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; margin: 14px 0 12px; letter-spacing: 0.3px; box-shadow: 0 0 24px rgba(233,30,140,0.6), 0 0 40px rgba(123,31,162,0.35); transition: transform 0.1s; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .btn-enter { width: 100%; padding: 18px; background: linear-gradient(90deg, #E91E8C, #7B1FA2, #1565C0); color: #fff; border: 2.5px solid #C6FF3A; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; margin: 14px 0 12px; letter-spacing: 0.3px; box-shadow: 0 0 18px rgba(198,255,58,0.6), 0 0 34px rgba(233,30,140,0.4); transition: transform 0.1s; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
   .btn-enter:active { transform: scale(0.98); }
   .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
   .menu-btn { padding: 14px 8px; background: #12121c; border: 1.5px solid #E91E8C; border-radius: 12px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; align-items: center; justify-content: center; min-height: 52px; box-shadow: 0 0 12px rgba(233,30,140,0.4); }
@@ -73,7 +73,7 @@
   .player-item:active { background: #1f1730; }
   .player-avatar { width: 34px; height: 34px; border-radius: 50%; background: #6C3483; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
   .player-name { font-size: 14px; font-weight: 500; }
-  .player-gender { font-size: 11px; color: #888; }
+  .player-gender { font-size: 11px; color: #a8a8c0; }
 
   /* Profile Card */
   .profile-card { background: linear-gradient(135deg, #6A2C91, #2C1A47); color: white; border-radius: 16px; padding: 20px; margin-bottom: 12px; text-align: center; box-shadow: 0 4px 18px rgba(108,52,131,0.4); }
@@ -84,7 +84,7 @@
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
   .stat-card { background: #1a1a24; border-radius: 10px; padding: 10px 6px; text-align: center; }
   .stat-value { font-size: 20px; font-weight: 700; color: #B98AD9; }
-  .stat-label { font-size: 10px; color: #888; margin-top: 2px; }
+  .stat-label { font-size: 10px; color: #a8a8c0; margin-top: 2px; }
 
   /* Match History */
   .section-header { font-size: 12px; font-weight: 600; color: #B98AD9; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px; }
@@ -93,11 +93,11 @@
   .win-badge { background: #1e8449; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
   .loss-badge { background: #c0392b; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
   .match-info { flex: 1; min-width: 0; }
-  .match-info .partners { font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .match-info .opponents { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .match-info .partners { font-weight: 600; color: #f0f0f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .match-info .opponents { color: #b8b8c8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .match-meta { text-align: right; flex-shrink: 0; }
   .match-meta .score { font-weight: 700; color: #6C3483; }
-  .match-meta .date { font-size: 10px; color: #aaa; }
+  .match-meta .date { font-size: 10px; color: #9a9ab0; }
 
   /* Score Entry */
   .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
@@ -107,7 +107,7 @@
   .team-label { font-size: 12px; font-weight: 700; color: #6C3483; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
   .team-label span { background: #6C3483; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
   .set-table { width: 100%; border-collapse: collapse; }
-  .set-table th { font-size: 11px; color: #888; padding: 5px 4px; text-align: center; }
+  .set-table th { font-size: 11px; color: #a8a8c0; padding: 5px 4px; text-align: center; }
   .set-table td { padding: 5px 4px; text-align: center; }
   .set-table td:first-child { font-size: 11px; color: #555; text-align: left; }
   .set-input { width: 50px; padding: 7px 4px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 16px; font-weight: 600; text-align: center; }
@@ -123,7 +123,7 @@
   .result-card.loser { background: #f8f9fb; border: 1px solid #e0e0e0; }
   .result-names { font-size: 13px; font-weight: 600; }
   .result-sets { font-size: 24px; font-weight: 800; color: #6C3483; }
-  .result-games { font-size: 11px; color: #888; }
+  .result-games { font-size: 11px; color: #a8a8c0; }
   .winner-label { font-size: 10px; font-weight: 700; color: #6C3483; text-transform: uppercase; margin-bottom: 2px; }
   .nav-row { display: flex; gap: 8px; margin-top: 8px; }
   .nav-row .btn { flex: 1; margin-top: 0; }
@@ -156,14 +156,14 @@
   .tournament-item { background: #16161f; border: 1.5px solid #2e2440; border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: pointer; color: #e8e8f0; }
   .tournament-item:active { background: #1f1730; }
   .tournament-name { font-size: 15px; font-weight: 700; color: #6C3483; margin-bottom: 4px; }
-  .tournament-date { font-size: 12px; color: #888; }
+  .tournament-date { font-size: 12px; color: #a8a8c0; }
   .tournament-type { font-size: 11px; font-weight: 600; color: white; background: #6C3483; border-radius: 4px; padding: 2px 8px; display: inline-block; margin-top: 4px; }
 
   /* Loading */
-  .loading { text-align: center; padding: 40px 20px; color: #888; font-size: 13px; }
+  .loading { text-align: center; padding: 40px 20px; color: #a8a8c0; font-size: 13px; }
   .loading-spinner { font-size: 28px; animation: spin 1s linear infinite; display: block; margin-bottom: 10px; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .empty-state { text-align: center; padding: 40px 20px; color: #888; }
+  .empty-state { text-align: center; padding: 40px 20px; color: #a8a8c0; }
   .empty-state .icon { font-size: 44px; margin-bottom: 10px; }
   .player-modal { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #14141c; border-radius: 0 0 20px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 1000; max-height: 75vh; display: flex; flex-direction: column; }
   .player-modal-header { padding: 16px 16px 8px; border-bottom: 1px solid #2a2a3a; }
@@ -177,7 +177,7 @@
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 999; }
   .player-display { width: 100%; padding: 10px 12px; border: 1.5px solid #3a2a52; border-radius: 10px; font-size: 14px; background: #16161f; cursor: pointer; text-align: left; color: #f0f0f5; display: flex; justify-content: space-between; align-items: center; }
   .player-display.selected { border-color: #B98AD9; background: #2a1f3d; color: #C9A9E6; font-weight: 600; }
-  .player-display .arrow { color: #888; font-size: 12px; }
+  .player-display .arrow { color: #a8a8c0; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -204,7 +204,7 @@
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
       </div>
       <div style="background:linear-gradient(90deg,#E91E8C,#7B1FA2);color:#fff;border:none;border-radius:10px;padding:9px 12px;margin:22px 0 10px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-align:center;box-shadow:0 0 18px rgba(233,30,140,0.5);">Recent Matches</div>
-      <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
+      <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#a8a8c0;font-size:12px;">Loading...</div></div>
     </div>
   </div>
 
@@ -218,19 +218,19 @@
       <div style="background:#6C3483;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:15px;font-weight:700;text-align:center;letter-spacing:0.3px;">Overall Ladder Standings</div>
       <div class="ladders-group-title">Singles Ladders</div>
       <div class="ladders-grid">
-        <button class="menu-btn" onclick="loadLadder('mens','Mens Ladder')">Men's Ladder</button>
-        <button class="menu-btn" onclick="loadLadder('ladies','Ladies Ladder')">Ladies Ladder</button>
+        <button class="menu-btn" style="border-color:#29B6F6;box-shadow:0 0 12px rgba(41,182,246,0.4);" onclick="loadLadder('mens','Mens Ladder')">Men's Ladder</button>
+        <button class="menu-btn" style="border-color:#E91E8C;box-shadow:0 0 12px rgba(233,30,140,0.4);" onclick="loadLadder('ladies','Ladies Ladder')">Ladies Ladder</button>
       </div>
       <div class="ladders-group-title">Doubles Ladders</div>
       <div class="ladders-grid">
-        <button class="menu-btn" onclick="loadLadder('mensdoubles','Mens Doubles Rating')">Men's Doubles</button>
-        <button class="menu-btn" onclick="loadLadder('ladiesdoubles','Ladies Doubles Rating')">Ladies Doubles</button>
-        <button class="menu-btn" onclick="loadLadder('mixed','Mixed Doubles Rating')">Mixed Doubles</button>
-        <button class="menu-btn" onclick="loadLadder('allsorts','All Sorts Rating')">All Sorts</button>
+        <button class="menu-btn" style="border-color:#29B6F6;box-shadow:0 0 12px rgba(41,182,246,0.4);" onclick="loadLadder('mensdoubles','Mens Doubles Rating')">Men's Doubles</button>
+        <button class="menu-btn" style="border-color:#E91E8C;box-shadow:0 0 12px rgba(233,30,140,0.4);" onclick="loadLadder('ladiesdoubles','Ladies Doubles Rating')">Ladies Doubles</button>
+        <button class="menu-btn" style="border-color:#C6FF3A;box-shadow:0 0 12px rgba(198,255,58,0.4);" onclick="loadLadder('mixed','Mixed Doubles Rating')">Mixed Doubles</button>
+        <button class="menu-btn" style="border-color:#C6FF3A;box-shadow:0 0 12px rgba(198,255,58,0.4);" onclick="loadLadder('allsorts','All Sorts Rating')">All Sorts</button>
       </div>
       <div class="ladders-group-title">Universal</div>
       <div class="ladders-grid one-col">
-        <button class="menu-btn" onclick="loadLadder('universal','Universal Rating')">Universal Ladder</button>
+        <button class="menu-btn" style="border-color:#F1C40F;box-shadow:0 0 12px rgba(241,196,15,0.45);" onclick="loadLadder('universal','Universal Rating')">Universal Ladder</button>
       </div>
       <div class="ladders-group-title soon">Coming soon</div>
       <div class="ladders-grid">
@@ -747,9 +747,9 @@ async function loadRecent(){
     });
     const last12=rows.slice(-15).reverse();
     recentMatchesData=last12;
-    if(last12.length===0){document.getElementById('homeRecentList').innerHTML='<div style="color:#888;font-size:12px;">No matches yet</div>';return;}
+    if(last12.length===0){document.getElementById('homeRecentList').innerHTML='<div style="color:#a8a8c0;font-size:12px;">No matches yet</div>';return;}
     renderRecentList();
-  }catch(e){document.getElementById('homeRecentList').innerHTML='<div style="color:#888;font-size:12px;">Could not load</div>';}
+  }catch(e){document.getElementById('homeRecentList').innerHTML='<div style="color:#a8a8c0;font-size:12px;">Could not load</div>';}
 }
 
 function renderRecentList(){
@@ -780,7 +780,7 @@ async function toggleRecent(idx){
     const t2p1=row[7]||'',t2p2=row[8]||'';
     const t1sets=row[5]||0,t2sets=row[9]||0;
     const t1games=row[6]||0,t2games=row[10]||0;
-    detail.innerHTML='<div style="color:#888;font-size:11px;">Loading scores...</div>';
+    detail.innerHTML='<div style="color:#a8a8c0;font-size:11px;">Loading scores...</div>';
     detail.style.display='block';
     arrow.textContent='▲';
     // Look up set scores from Submissions tab by matching date and players
@@ -809,9 +809,9 @@ async function toggleRecent(idx){
     }catch(e){}
     detail.innerHTML=`
       <div style="margin-bottom:6px;text-align:center;">
-        ${setScoresHTML||'<span style="color:#888;font-size:11px;">Set scores not in audit trail</span>'}
+        ${setScoresHTML||'<span style="color:#a8a8c0;font-size:11px;">Set scores not in audit trail</span>'}
       </div>
-      <div style="font-size:11px;color:#888;text-align:center;">Sets: ${t1sets}-${t2sets}  ·  Games: ${t1games}-${t2games}</div>`;
+      <div style="font-size:11px;color:#a8a8c0;text-align:center;">Sets: ${t1sets}-${t2sets}  ·  Games: ${t1games}-${t2games}</div>`;
   } else {
     detail.style.display='none';
     arrow.textContent='▼';
@@ -960,7 +960,7 @@ function renderStep4(){
       <div>${t1w?'<div class="winner-label">Winner</div>':''}<div class="result-names">${entryData.t1p1}<br>${entryData.t1p2}</div></div>
       <div style="text-align:right;"><div class="result-sets">${entryData.t1sets}</div><div class="result-games">${entryData.t1games} games</div></div>
     </div>
-    <div style="text-align:center;font-size:12px;color:#888;padding:5px 0;">${scoreStr}</div>
+    <div style="text-align:center;font-size:12px;color:#c8c8d4;padding:5px 0;">${scoreStr}</div>
     <div class="result-card ${!t1w?'winner':'loser'}">
       <div>${!t1w?'<div class="winner-label">Winner</div>':''}<div class="result-names">${entryData.t2p1}<br>${entryData.t2p2}</div></div>
       <div style="text-align:right;"><div class="result-sets">${entryData.t2sets}</div><div class="result-games">${entryData.t2games} games</div></div>
@@ -1035,9 +1035,9 @@ async function doSubmit(btn){
       <div class="success-icon">✅</div>
       <div style="text-align:center;">
         <div style="font-size:18px;font-weight:700;color:#1e8449;margin-bottom:8px;">Match Submitted!</div>
-        <div style="font-size:13px;color:#666;">${entryData.t1p1} & ${entryData.t1p2}<br>vs<br>${entryData.t2p1} & ${entryData.t2p2}</div>
-        <div style="font-size:12px;color:#888;margin-top:6px;">${entryData.t1sets}-${entryData.t2sets} sets</div>
-        <div style="font-size:11px;color:#aaa;margin-top:4px;">Submitted by ${entryData.submittedBy}</div>
+        <div style="font-size:13px;color:#d0d0dc;">${entryData.t1p1} & ${entryData.t1p2}<br>vs<br>${entryData.t2p1} & ${entryData.t2p2}</div>
+        <div style="font-size:12px;color:#a8a8c0;margin-top:6px;">${entryData.t1sets}-${entryData.t2sets} sets</div>
+        <div style="font-size:11px;color:#9a9ab0;margin-top:4px;">Submitted by ${entryData.submittedBy}</div>
       </div>
       <button class="btn btn-primary" style="margin-top:20px;" onclick="renderStep1()">Enter Another Match</button>
       <button class="btn btn-secondary" style="margin-top:8px;" onclick="goHome()">Back to Home</button>`;
@@ -1058,7 +1058,7 @@ async function toggleProfileMatch(idx){
     const t2p1=row[7]||'',t2p2=row[8]||'';
     const t1s=row[5]||0,t2s=row[9]||0;
     const date=row[1]||'',type=row[2]||'';
-    detail.innerHTML='<span style="color:#888;font-size:11px;">Loading scores...</span>';
+    detail.innerHTML='<span style="color:#a8a8c0;font-size:11px;">Loading scores...</span>';
     detail.style.display='block';
     // Look up set scores from Submissions tab
     let scoresHTML='';
@@ -1089,7 +1089,7 @@ async function toggleProfileMatch(idx){
         }
       }
     }catch(e){}
-    detail.innerHTML='<div style="text-align:center;padding:4px 0;">'+(scoresHTML||'<span style="color:#888;font-size:11px;">'+t1s+'-'+t2s+' sets</span>')+'</div><div style="font-size:11px;color:#888;text-align:center;">'+date+' · '+type+'</div>';
+    detail.innerHTML='<div style="text-align:center;padding:4px 0;">'+(scoresHTML||'<span style="color:#a8a8c0;font-size:11px;">'+t1s+'-'+t2s+' sets</span>')+'</div><div style="font-size:11px;color:#a8a8c0;text-align:center;">'+date+' · '+type+'</div>';
   } else {
     detail.style.display='none';
   }
