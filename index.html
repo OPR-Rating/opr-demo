@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>OPR Demo</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#6C3483">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPR Demo">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; min-height: 100vh; }
@@ -374,6 +380,7 @@
       <button class="back-btn" onclick="goHome()">&#8592;</button>
       <h1>Enter Score</h1>
     </div>
+    <div id="offlineBanner" style="display:none;background:#c0392b;color:#fff;text-align:center;padding:8px 12px;font-size:12px;font-weight:600;">⚠️ You are offline — scores cannot be submitted until you reconnect.</div>
     <div class="step-indicator">
       <div class="step-dot active" id="dot1"></div>
       <div class="step-dot" id="dot2"></div>
@@ -1067,6 +1074,11 @@ async function submitMatch(){
 }
 
 async function doSubmit(btn){
+  if(!navigator.onLine){
+    document.getElementById('err4').innerHTML='<strong>You are offline.</strong> Your score was <strong>NOT</strong> sent. Please reconnect to the internet and submit again — nothing has been saved yet.';
+    document.getElementById('err4').style.display='block';
+    return;
+  }
   btn.textContent='Submitting...';
   try{
     await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(entryData)});
@@ -1189,6 +1201,23 @@ function closePlayerModal() {
 }
 
 window.onload=function(){ loadRecent(); loadPlayers(); };
+</script>
+<script>
+function updateOfflineBanner(){
+  var b=document.getElementById('offlineBanner');
+  if(b) b.style.display = navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', updateOfflineBanner);
+window.addEventListener('offline', updateOfflineBanner);
+document.addEventListener('DOMContentLoaded', updateOfflineBanner);
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(function(err) { console.log('SW registration skipped:', err); });
+  });
+}
 </script>
 </body>
 </html>
