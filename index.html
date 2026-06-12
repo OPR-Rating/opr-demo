@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OPR-Rating Master</title>
+<title>OPR Demo</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; min-height: 100vh; }
@@ -403,24 +403,29 @@ const GIDS = {
   mixed:'2006988657', allsorts:'863533181', universal:'669456070'
 };
 
-let MEN = ["Alex Thomson","Andre Farrell","Andrew van Rensburg","Anthony Geldard","Arlin","Baron Wang","Bartjan Hooft","Benji","Billy Howes","Bonke","Brian Scott","Bruce Simelane","Carlos Rego","Charles Bethal","Chas Prettejohn","Chris Jackson","Cj Mentz","Colin Lovely","Conrad Chester","Coolant","Daniel Toro","Daryl McKenzie","Dean Wolverson","Derick Chester","Didi Hou","Eerfaan Dada","Graeme Guthrie","Grant Goldstone","Henry Jian","Ian Boyd","Ian McLoed","James Howes","Jeff Tseng","Jeremy Boyd","Jody Foss","Joe Roques","Khaya","Kim Roques","King Liu","Leo Chen","Luciano Ferreira","Mark Hunter","Matt Sprague","Mike Cutting","Mike Irwin","Mike Roach","Neil von Wissell","Phil Mayhew","Pierre Crous","Richard Cunningham","Richard Ferenczy","Richard Jarvis","Rob Jupp","Rob Reilly","Robbie James","Robert Chester","Roberto Russo","Ruan Beylefeld","Sandeep","Tarun","Sholto","Siya","Sizwe","Steve Packard","Stuart Hulley","Thulani","Tim Bertrand","Ward Young","William Lorentz","Wyn Evans"];
-let LADIES = ["Ally James","Angel","Angie lee","Anna Boyd","Ariel Liu","Bridget Farrell","Bron Evans","Carmen Guthrie","Charlene","Chereen Thomson","Chloe Thorne","Daniella Brink","Debbie Cutting","Debbie Hulley","Elmi Chester","Estelle Hamer","Hedy Hsu","Inge janse van Vuuren","Jeanine Van Wyk","Jen Boyd","Jen Sprague","Jess Hooft","Judy Curry","Judy Palmer","Julia Hulley","June McKenzie","Kate Reilly","Kerry Howes","Kim Nisbit","Kirsten Chester","Kirstie van Rensburg","Lucy McKenzie","Marisa Edwards","Mieka","Mishkah","Nadia Dada","Paloma Jupp","Philly","Rachel Bertrand","Robs Roques","Robyn","Robyn Jarvis","Sally James","Sam Farrell","Sarah Johnson","Seugnet","Shanni Chang","SJ Thomson","Stephanie Lin","Tina Lovely","Tracy McKenzie","Vanessa Jackson","Verne Von Wissell","Wendy Reed"];
+let MEN = [];
+let LADIES = [];
 
 async function loadPlayers() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GIDS.players}`;
-    const r = await fetch(url);
-    const text = await r.text();
-    const rows = text.trim().split('\n').slice(1);
-    const m=[], l=[];
-    rows.forEach(row => {
-      const cols = parseCSV(row);
-      const name = cols[0]?cols[0].replace(/^"|"$/g,'').trim():'';
-      const gender = cols[1]?cols[1].replace(/^"|"$/g,'').trim():'';
-      if(name && name!=='Name'){ if(gender==='M') m.push(name); else if(gender==='F') l.push(name); }
-    });
-    if(m.length>0) MEN=m.sort((a,b)=>a.localeCompare(b));
-    if(l.length>0) LADIES=l.sort((a,b)=>a.localeCompare(b));
+    const menUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${PIN_GIDS.mens}`;
+    const ladiesUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${PIN_GIDS.ladies}`;
+    const [mr, lr] = await Promise.all([fetch(menUrl), fetch(ladiesUrl)]);
+    const [mt, lt] = await Promise.all([mr.text(), lr.text()]);
+    const parseNames = (text) => {
+      const rows = text.trim().split('\n').slice(1);
+      const out = [];
+      rows.forEach(row => {
+        const cols = parseCSV(row);
+        const name = cols[0] ? cols[0].replace(/^"|"$/g,'').trim() : '';
+        if (name && name !== 'Name') out.push(name);
+      });
+      return out;
+    };
+    const m = parseNames(mt);
+    const l = parseNames(lt);
+    if (m.length > 0) MEN = m.sort((a,b)=>a.localeCompare(b));
+    if (l.length > 0) LADIES = l.sort((a,b)=>a.localeCompare(b));
   } catch(e){}
 }
 
@@ -674,7 +679,6 @@ async function renderStep1(){
     <div class="field"><label>Event</label>
       <select id="matchEvent">
         <option value="">Select event...</option>
-        <option value="Social">Social</option>
       </select>
     </div>
     <div class="field"><label>Date</label><input type="date" id="matchDate" value="${today}"></div>
@@ -701,15 +705,15 @@ async function renderStep1(){
 }
 
 async function loadActiveTournaments(){
+  const sel=document.getElementById('matchEvent');
+  if(!sel) return;
+  let activeCount=0;
   try{
     const url=`https://docs.google.com/spreadsheets/d/${CONTROL_PANEL_ID}/export?format=csv&gid=0`;
     const r=await fetch(url);
     const text=await r.text();
     const rows=text.trim().split('\n').map(r=>parseCSV(r));
-    const sel=document.getElementById('matchEvent');
-    if(!sel) return;
     // Control Panel: names in col A (index 0), Active checkbox in col B (index 1), data from row 3 (index 2)
-    let activeCount=0;
     rows.slice(2).forEach(row=>{
       const name=(row[0]||'').trim();
       const active=(row[1]||'').trim().toUpperCase();
@@ -720,13 +724,14 @@ async function loadActiveTournaments(){
         activeCount++;
       }
     });
-    // Smart default: if no tournaments active, pre-select Social (frictionless).
-    // If tournaments are active, leave on "Select event..." to force a conscious choice.
-    if(activeCount===0){ sel.value='Social'; }
-  }catch(e){ /* if it fails, dropdown still has Select event / Social; default to Social for safety */
-    const sel=document.getElementById('matchEvent');
-    if(sel) sel.value='Social';
-  }
+  }catch(e){ /* if the fetch fails, we still add Social below */ }
+  // Always add Social at the BOTTOM, after any tournaments
+  const s=document.createElement('option');
+  s.value='Social'; s.textContent='Social';
+  sel.appendChild(s);
+  // Smart default: no active tournaments -> pre-select Social (frictionless).
+  // Tournaments active -> leave on "Select event..." to force a conscious choice.
+  if(activeCount===0){ sel.value='Social'; }
 }
 
 // Store recent matches globally for tap-to-expand
@@ -1039,7 +1044,7 @@ async function doSubmit(btn){
       <button class="btn btn-secondary" style="margin-top:8px;" onclick="goHome()">Back to Home</button>`;
     setStep(0);
   }catch(e){
-    document.getElementById('err4').textContent='Submission failed. Please try again.';
+    document.getElementById('err4').textContent='Network hiccup — your match may still have gone through. Check Recent Matches before submitting again to avoid a duplicate.';
     document.getElementById('err4').style.display='block';
     btn.textContent='\u2713 Submit Match';btn.disabled=false;
   }
