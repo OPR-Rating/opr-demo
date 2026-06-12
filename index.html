@@ -586,7 +586,7 @@ async function loadTournamentSheet(sheetId, gid, title) {
       html+='</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('tournamentSheetContent').innerHTML=html;
+    document.getElementById('tournamentSheetContent').className='';document.getElementById('tournamentSheetContent').innerHTML=html;
   } catch(e){
     document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load. Check connection.</p></div>';
   }
