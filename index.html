@@ -48,12 +48,12 @@
   .menu-btn.soon:active { transform: none; background: #fafafa; }
 
   /* Ladder */
-  .ladder-table { width: auto; min-width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; }
+  .ladder-table { width: auto; min-width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; margin: 0; }
   .ladder-table th { background: #6C3483; color: white; padding: 8px 10px; text-align: center; font-size: 11px; font-weight: 600; position: sticky; top: 0; white-space: nowrap; }
-  .ladder-table th:first-child { text-align: left !important; padding-left: 8px; }
+  .ladder-table th:first-child { text-align: left !important; padding-left: 4px; padding-right: 4px; }
   .ladder-table th:nth-child(2) { text-align: left !important; }
   .ladder-table td { padding: 7px 12px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; text-align: center; }
-  .ladder-table td:first-child { text-align: left !important; padding-left: 8px; }
+  .ladder-table td:first-child { text-align: left !important; padding-left: 4px; padding-right: 4px; }
   .ladder-table td:nth-child(2) { text-align: left !important; }
   .ladder-table tr:nth-child(even) td { background: #F5EEF8; }
   .ladder-table tr.division-row td { background: #6C3483; color: #fff; font-weight: 700; font-size: 12px; text-align: left; padding: 9px 10px; }
@@ -494,7 +494,7 @@ async function loadFormWall(gid, title) {
       html+='</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('ladderContent').innerHTML=html;
+    document.getElementById('ladderContent').className='';document.getElementById('ladderContent').innerHTML=html;
   } catch(e){
     document.getElementById('ladderContent').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load. Check connection.</p></div>';
   }
@@ -530,7 +530,7 @@ async function loadLadder(type, title) {
       html+='</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('ladderContent').innerHTML=html;
+    document.getElementById('ladderContent').className='';document.getElementById('ladderContent').innerHTML=html;
   } catch(e){
     document.getElementById('ladderContent').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load. Check connection.</p></div>';
   }
