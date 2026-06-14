@@ -503,13 +503,15 @@ async function loadFormWall(type, title) {
       });
       html += '</tbody></table>';
     } else {
-      // Doubles TEAM form from doubles_results, by category, only pairs with team_form, ranked by team_form desc
+      // Doubles TEAM form — full columns matching Individual Form
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
-      const data = await sbGet(`doubles_results?select=p1,p2,sets,wins,losses,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc`);
-      html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Rec</th><th>Team Form</th></tr></thead><tbody>';
+      const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc`);
+      html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
-        html += `<tr><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.wins}-${p.losses}</td><td>${Number(p.team_form).toFixed(3)}</td></tr>`;
+        const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
+        const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
+        html += `<tr><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${Number(p.team_form).toFixed(3)}</strong></td></tr>`;
       });
       html += '</tbody></table>';
       if(data.length===0){
@@ -618,10 +620,12 @@ async function loadTournamentForm(category, title) {
   showScreen('tournamentSheetScreen');
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
-    const data = await sbGet(`tournament_results?select=p1,p2,sets,wins,losses,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc`);
-    let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Rec</th><th>Form</th></tr></thead><tbody>';
+    const data = await sbGet(`tournament_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc`);
+    let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
     data.forEach(p=>{
-      html += `<tr><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.wins}-${p.losses}</td><td><strong>${Number(p.team_form).toFixed(3)}</strong></td></tr>`;
+      const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
+      const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
+      html += `<tr><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${Number(p.team_form).toFixed(3)}</strong></td></tr>`;
     });
     html+='</tbody></table>';
     if(data.length===0){ html='<div class="empty-state" style="padding:16px 0;"><p>No pairs have reached 12 tournament sets in this category yet.</p></div>'; }
