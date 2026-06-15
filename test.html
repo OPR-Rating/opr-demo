@@ -62,6 +62,8 @@
   .ladder-table td:first-child { text-align: left !important; padding-left: 4px; padding-right: 4px; }
   .ladder-table td:nth-child(2) { text-align: left !important; }
   .ladder-table tr:nth-child(even) td { background: #F5EEF8; }
+.ladder-table tr.pair-row td { background: #fff; }
+.ladder-table tr.pair-row:hover td { background: #f3eef8; }
   .ladder-table tr.division-row td { background: #6C3483; color: #fff; font-weight: 700; font-size: 12px; text-align: left; padding: 9px 10px; }
   .ladder-table tr.heading-row td { background: #EBD9F2; color: #4A235A; font-weight: 700; text-align: left; }
   .rank-badge { background: #6C3483; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
@@ -242,8 +244,31 @@
         <button class="menu-btn form-toggle" id="formToggleBtn" style="border-color:#7D3C98;box-shadow:0 0 12px rgba(125,60,152,0.4);font-weight:700;" onclick="toggleFormMenu()">⭐ Form &nbsp;<span id="formChevron" style="font-size:12px;">▼</span></button>
       </div>
       <div id="formMenu" style="display:none;margin-top:8px;">
-        <div style="padding:12px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 0 12px;font-size:12px;color:#5b3a6e;line-height:1.55;">
-          <strong>What is Form?</strong> Form is OPR's headline performance measure — it rewards not just <em>how often</em> you win, but <em>who</em> you played, <em>how convincingly</em>, and <em>by how much</em>. It runs 0.0–1.0 (read as 0–100%). Because OPR is built around pairs, <strong>Doubles Form shows how a partnership performs as a team</strong> — who plays best with whom. Minimum 12 sets to appear.
+        <div style="padding:12px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 0 10px;font-size:12px;color:#5b3a6e;line-height:1.5;">
+          <strong>What is Form?</strong> Your overall performance — not just how often you win, but who you played, how convincingly, and how by much. Requires a minimum of 12 sets to appear.
+        </div>
+        <button class="menu-btn" id="formGuideBtn" style="border-color:#7D3C98;font-size:13px;margin-bottom:10px;" onclick="toggleFormGuide()">📖 Understanding the Form Wall &nbsp;<span id="formGuideChevron" style="font-size:12px;">▼</span></button>
+        <div id="formGuideBox" style="display:none;padding:14px;background:#fff;border:1px solid #d7bde2;border-radius:10px;margin:0 0 12px;font-size:12px;color:#3a2348;line-height:1.6;">
+          <p style="margin:0 0 8px;"><em>A quick guide to what each column means.</em></p>
+          <p style="margin:0 0 6px;"><strong>The columns explained</strong></p>
+          <ul style="margin:0 0 10px;padding-left:18px;">
+            <li><strong>Player / Pair</strong> — the player's name, or the pairing.</li>
+            <li><strong>Sets</strong> — total sets played (must reach 12 to appear).</li>
+            <li><strong>Sets Won</strong> — how many of those sets were won.</li>
+            <li><strong>Win %</strong> — share of sets won.</li>
+            <li><strong>Game Diff / Set</strong> — average game margin per set. 3.57 means winning sets by about 3–4 games on average. Positive = usually wins convincingly; negative = usually loses.</li>
+            <li><strong>Form</strong> — the overall performance score, 0.0–1.0 (read as 0–100%). The headline number the wall is sorted by.</li>
+          </ul>
+          <p style="margin:0 0 4px;"><strong>Reading Form (0.0 – 1.0)</strong></p>
+          <p style="margin:0 0 8px;">It blends how often you win sets, your game margin per set, and your games won per set — then adjusts for how many sets you've played (more = more reliable). Rough guide:</p>
+          <ul style="margin:0 0 10px;padding-left:18px;">
+            <li><strong>0.70+</strong> — Strong, performing very well.</li>
+            <li><strong>0.55–0.70</strong> — Good, winning more than losing.</li>
+            <li><strong>0.40–0.55</strong> — Middling, competitive but mixed.</li>
+            <li><strong>Below 0.40</strong> — Struggling.</li>
+          </ul>
+          <p style="margin:0 0 4px;"><strong>Why Form, not just Win %?</strong></p>
+          <p style="margin:0;">Win % treats a narrow 7–6 win the same as a crushing 6–0, and ignores who you played. Form rewards convincing performances and accounts for opponent strength — a fairer picture of how someone is actually playing. For doubles, Form shows how a <strong>partnership performs as a team</strong>.</p>
         </div>
         <div class="ladders-grid one-col">
           <button class="menu-btn" onclick="loadFormWall('individual','Individual Form')">Individual Form</button>
@@ -485,10 +510,10 @@ async function loadFormWall(type, title) {
   showScreen('ladderScreen');
   document.getElementById('ladderTitle').textContent = title;
   try {
-    const note = '<div style="padding:12px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 12px 12px;font-size:12px;color:#5b3a6e;line-height:1.5;"><strong>What is Form?</strong> '
+    const note = '<div style="padding:10px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 12px 12px;font-size:12px;color:#5b3a6e;line-height:1.5;">'
       + (type==='individual'
-          ? 'Your overall performance as a player — not just how often you win, but who you played, how convincingly, and by how much. Minimum 12 sets to appear.'
-          : 'How this pairing performs as a team — the partnership effectiveness, not the players individual form. Minimum 12 team sets to appear.')
+          ? 'Individual Form — overall player performance. Minimum 12 sets.'
+          : 'Doubles Form — how this pairing performs <em>as a team</em>. Minimum 12 team sets.')
       + '</div>';
     let html = note;
 
@@ -585,6 +610,13 @@ function toggleFormMenu(){
   else { menu.style.display='none'; chev.textContent='▼'; }
 }
 
+function toggleFormGuide(){
+  const box=document.getElementById('formGuideBox');
+  const chev=document.getElementById('formGuideChevron');
+  if(box.style.display==='none'){ box.style.display='block'; chev.textContent='▲'; }
+  else { box.style.display='none'; chev.textContent='▼'; }
+}
+
 async function loadLadder(type, title) {
   document.getElementById('ladderTitle').textContent = title;
   document.getElementById('ladderContent').innerHTML = '<div class="loading"><span class="loading-spinner">⏳</span>Loading...</div>';
@@ -593,27 +625,30 @@ async function loadLadder(type, title) {
   try {
     let html = '';
     if(type==='mens' || type==='ladies'){
-      // SINGLES ladder from player_results, filtered by gender
+      // SINGLES ladder — unified headings: Rank, Name, Rating, Level, Sets Played, Sets Won, % Won
       const g = (type==='mens') ? 'M' : 'F';
-      const data = await sbGet(`player_results?select=name,current_rating,form_npi,form_sets&gender=eq.${g}&order=current_rating.desc`);
-      html = '<table class="ladder-table"><thead><tr><th>#</th><th>Name</th><th>Rating</th><th>Form</th><th>Sets</th></tr></thead><tbody>';
+      const data = await sbGet(`player_results?select=name,current_rating,sets_played,sets_won,set_win_pct&gender=eq.${g}&order=current_rating.desc`);
+      html = '<table class="ladder-table"><thead><tr><th>Rank</th><th>Name</th><th>Rating</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>';
       data.forEach((p,i)=>{
-        const form = (p.form_npi==null) ? '—' : Number(p.form_npi).toFixed(3);
-        html += `<tr><td>${rankBadge(i+1)}</td><td>${p.name}</td><td>${Math.round(p.current_rating)}</td><td>${form}</td><td>${p.form_sets==null?'—':Math.round(p.form_sets)}</td></tr>`;
+        const lvl = (p.current_rating/200).toFixed(1);
+        const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
+        html += `<tr><td>${rankBadge(i+1)}</td><td>${p.name}</td><td>${Math.round(p.current_rating)}</td><td>${lvl}</td><td>${p.sets_played==null?'—':Math.round(p.sets_played)}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
       });
       html += '</tbody></table>';
     } else {
-      // DOUBLES from doubles_results, by category — rows expand to show the pair's match history
+      // DOUBLES — unified headings: Rank, Pair, Rating, Level, Sets, Won, % Won (+ expandable match history)
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
-      const data = await sbGet(`doubles_results?select=rank,p1,p2,combined,weighted,level,matches,wins,losses,win_pct,team_form&category=eq.${encodeURIComponent(cat)}&order=rank.asc`);
+      const usesCombined = (cat==="Men's" || cat==='Ladies');
+      const data = await sbGet(`doubles_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&category=eq.${encodeURIComponent(cat)}&order=rank.asc`);
       window._doublesRows = data;
       window._doublesCat = cat;
-      html = '<table class="ladder-table"><thead><tr><th>#</th><th>Pair</th><th>Comb</th><th>Wtd</th><th>Lvl</th><th>Rec</th><th>Form</th></tr></thead><tbody>';
+      const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
+      html = `<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
       data.forEach((p,i)=>{
-        const form = (p.team_form==null) ? '—' : Number(p.team_form).toFixed(3);
-        const rec = `${p.wins}-${p.losses}`;
-        html += `<tr class="pair-row" style="cursor:pointer;" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${Math.round(p.combined)}</td><td>${Math.round(p.weighted)}</td><td>${Number(p.level).toFixed(1)}</td><td>${rec}</td><td>${form}</td></tr>`;
+        const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
+        const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
+        html += `<tr class="pair-row" style="cursor:pointer;" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
         html += `<tr id="pairdetail_${i}" style="display:none;"><td colspan="7" style="background:#F5EEF8;padding:0;"><div id="pairdetailinner_${i}" style="padding:10px 14px;font-size:12px;"></div></td></tr>`;
       });
       html += '</tbody></table>';
@@ -646,11 +681,15 @@ async function loadTournament(category, title) {
   showScreen('tournamentSheetScreen');
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
-    const data = await sbGet(`tournament_results?select=rank,p1,p2,combined,weighted,level,matches,wins,losses,win_pct,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=rank.asc`);
+    const usesCombined = (category==="Men's" || category==='Ladies');
+    const data = await sbGet(`tournament_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=rank.asc`);
     if(data.length===0){document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">🎾</div><p>No tournament matches in this category yet.</p></div>';return;}
-    let html='<table class="ladder-table"><thead><tr><th>#</th><th>Pair</th><th>Comb</th><th>Wtd</th><th>Lvl</th><th>P</th><th>W</th><th>L</th><th>Win%</th></tr></thead><tbody>';
+    const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
+    let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
     data.forEach(p=>{
-      html += `<tr><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2}</td><td>${Math.round(p.combined)}</td><td>${Math.round(p.weighted)}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.matches}</td><td>${p.wins}</td><td>${p.losses}</td><td>${Number(p.win_pct).toFixed(0)}%</td></tr>`;
+      const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
+      const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
+      html += `<tr><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
     });
     html+='</tbody></table>';
     document.getElementById('tournamentSheetContent').className='';
