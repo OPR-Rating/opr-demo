@@ -535,6 +535,49 @@ async function sbGet(pathq){
 }
 function rankBadge(n){ const cls=n===1?'rank-1':n===2?'rank-2':n===3?'rank-3':''; return `<span class="rank-badge ${cls}">${n}</span>`; }
 
+async function togglePairMatches(i){
+  const detail=document.getElementById('pairdetail_'+i);
+  const inner=document.getElementById('pairdetailinner_'+i);
+  if(detail.style.display!=='none'){ detail.style.display='none'; return; }
+  detail.style.display='';
+  inner.innerHTML='<span style="color:#888;">Loading matches…</span>';
+  const p=window._doublesRows[i];
+  const cat=window._doublesCat;
+  const a=p.p1, b=p.p2;
+  try{
+    // Matches where this pair played together (same side, either order, either team)
+    const ea=encodeURIComponent(a), eb=encodeURIComponent(b);
+    // fetch matches involving player a, then filter client-side for the pair (simpler + reliable)
+    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&or=(and(t1p1.eq.${ea},t1p2.eq.${eb}),and(t1p1.eq.${eb},t1p2.eq.${ea}),and(t2p1.eq.${ea},t2p2.eq.${eb}),and(t2p1.eq.${eb},t2p2.eq.${ea}))&order=match_date.desc,id.desc`);
+    // For category sheets (not Universal), show only that match type
+    const rows = (cat==='Universal') ? data : data.filter(m=>m.match_type===cat);
+    if(rows.length===0){ inner.innerHTML='<span style="color:#888;">No matches found for this pair'+(cat==='Universal'?'':' in '+cat)+'.</span>'; return; }
+    let h='<div style="font-weight:700;color:#5b3a6e;margin-bottom:6px;">'+a+' & '+b+' — match history</div>';
+    rows.forEach(m=>{
+      const pairOnT1=( (m.t1p1===a&&m.t1p2===b)||(m.t1p1===b&&m.t1p2===a) );
+      const opp1 = pairOnT1 ? m.t2p1 : m.t1p1;
+      const opp2 = pairOnT1 ? m.t2p2 : m.t1p2;
+      const mysets = pairOnT1 ? (m.t1_sets||0) : (m.t2_sets||0);
+      const oppsets = pairOnT1 ? (m.t2_sets||0) : (m.t1_sets||0);
+      const won = mysets>oppsets;
+      // per-set chips from set_scores (T1-T2 perspective -> flip if pair was T2)
+      let chips='';
+      const ss=(m.set_scores||'').trim();
+      if(ss){ chips = ss.split(',').map(x=>x.trim()).filter(x=>x).map(sc=>{
+        const [x,y]=sc.split('-').map(n=>parseInt(n)||0);
+        const mine=pairOnT1?x:y, theirs=pairOnT1?y:x;
+        return '<span style="background:'+(mine>theirs?'#1e8449':'#c0392b')+';color:#fff;border-radius:3px;padding:1px 6px;margin:0 2px;font-size:11px;font-weight:700;">'+mine+'/'+theirs+'</span>';
+      }).join(''); }
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #e5d9ef;">'
+        +'<span style="font-weight:700;color:'+(won?'#1e8449':'#c0392b')+';">'+(won?'W':'L')+'</span>'
+        +'<div style="flex:1;"><div>vs '+opp1+' & '+opp2+'</div><div style="color:#888;font-size:11px;">'+(m.match_date||'')+' · '+(m.match_type||'')+(m.event&&m.event.toLowerCase()!=='social'?' · '+m.event:'')+'</div></div>'
+        +'<div style="text-align:right;"><div style="font-weight:700;">'+mysets+'-'+oppsets+'</div><div>'+chips+'</div></div>'
+        +'</div>';
+    });
+    inner.innerHTML=h;
+  }catch(e){ inner.innerHTML='<span style="color:#c0392b;">Could not load matches: '+(e.message||e)+'</span>'; }
+}
+
 function toggleFormMenu(){
   const menu=document.getElementById('formMenu');
   const chev=document.getElementById('formChevron');
@@ -560,15 +603,18 @@ async function loadLadder(type, title) {
       });
       html += '</tbody></table>';
     } else {
-      // DOUBLES from doubles_results, by category
+      // DOUBLES from doubles_results, by category — rows expand to show the pair's match history
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
       const data = await sbGet(`doubles_results?select=rank,p1,p2,combined,weighted,level,matches,wins,losses,win_pct,team_form&category=eq.${encodeURIComponent(cat)}&order=rank.asc`);
+      window._doublesRows = data;
+      window._doublesCat = cat;
       html = '<table class="ladder-table"><thead><tr><th>#</th><th>Pair</th><th>Comb</th><th>Wtd</th><th>Lvl</th><th>Rec</th><th>Form</th></tr></thead><tbody>';
-      data.forEach(p=>{
+      data.forEach((p,i)=>{
         const form = (p.team_form==null) ? '—' : Number(p.team_form).toFixed(3);
         const rec = `${p.wins}-${p.losses}`;
-        html += `<tr><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2}</td><td>${Math.round(p.combined)}</td><td>${Math.round(p.weighted)}</td><td>${Number(p.level).toFixed(1)}</td><td>${rec}</td><td>${form}</td></tr>`;
+        html += `<tr class="pair-row" style="cursor:pointer;" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${Math.round(p.combined)}</td><td>${Math.round(p.weighted)}</td><td>${Number(p.level).toFixed(1)}</td><td>${rec}</td><td>${form}</td></tr>`;
+        html += `<tr id="pairdetail_${i}" style="display:none;"><td colspan="7" style="background:#F5EEF8;padding:0;"><div id="pairdetailinner_${i}" style="padding:10px 14px;font-size:12px;"></div></td></tr>`;
       });
       html += '</tbody></table>';
     }
