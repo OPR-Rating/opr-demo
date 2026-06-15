@@ -241,7 +241,7 @@
       </div>
       <div class="ladders-group-title">Form</div>
       <div class="ladders-grid one-col">
-        <button class="menu-btn form-toggle" id="formToggleBtn" style="border-color:#7D3C98;box-shadow:0 0 12px rgba(125,60,152,0.4);font-weight:700;" onclick="toggleFormMenu()">⭐ Form &nbsp;<span id="formChevron" style="font-size:12px;">▼</span></button>
+        <button class="menu-btn form-toggle" id="formToggleBtn" style="border-color:#7D3C98;box-shadow:0 0 12px rgba(125,60,152,0.4);font-weight:700;" onclick="toggleFormMenu()">Form &nbsp;<span id="formChevron" style="font-size:12px;">▼</span></button>
       </div>
       <div id="formMenu" style="display:none;margin-top:8px;">
         <div style="padding:12px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 0 10px;font-size:12px;color:#5b3a6e;line-height:1.5;">
@@ -332,7 +332,7 @@
       </div>
       <div class="ladders-group-title">Tournament Form</div>
       <div class="ladders-grid one-col">
-        <button class="menu-btn form-toggle" id="tFormToggleBtn" style="border-color:#7D3C98;box-shadow:0 0 12px rgba(125,60,152,0.4);font-weight:700;" onclick="toggleTFormMenu()">⭐ Tournament Form &nbsp;<span id="tFormChevron" style="font-size:12px;">▼</span></button>
+        <button class="menu-btn form-toggle" id="tFormToggleBtn" style="border-color:#7D3C98;box-shadow:0 0 12px rgba(125,60,152,0.4);font-weight:700;" onclick="toggleTFormMenu()">Tournament Form &nbsp;<span id="tFormChevron" style="font-size:12px;">▼</span></button>
       </div>
       <div id="tFormMenu" style="display:none;margin-top:8px;">
         <div style="padding:12px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 0 12px;font-size:12px;color:#5b3a6e;line-height:1.55;"><strong>Tournament Form</strong> shows how each pairing is performing <em>within this tournament</em> — team form computed from tournament matches only.</div>
@@ -365,7 +365,6 @@
     </div>
     <div class="screen-content">
       <div class="about-hero">
-        <div style="font-size:30px;margin-bottom:8px;letter-spacing:4px;">🎾 🎾 🎾 🎾</div>
         <h2>Open Padel Rating</h2>
         <p>Designed for All Sorts of Combined pairings</p>
       </div>
@@ -510,7 +509,7 @@ async function loadFormWall(type, title) {
   showScreen('ladderScreen');
   document.getElementById('ladderTitle').textContent = title;
   try {
-    const note = '<div style="padding:10px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 12px 12px;font-size:12px;color:#5b3a6e;line-height:1.5;">'
+    const note = '<div style="padding:10px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:14px 12px 12px;font-size:12px;color:#5b3a6e;line-height:1.5;">'
       + (type==='individual'
           ? 'Individual Form — overall player performance. Minimum 12 sets.'
           : 'Doubles Form — how this pairing performs <em>as a team</em>. Minimum 12 team sets.')
@@ -593,10 +592,10 @@ async function togglePairMatches(i){
         const mine=pairOnT1?x:y, theirs=pairOnT1?y:x;
         return '<span style="background:'+(mine>theirs?'#1e8449':'#c0392b')+';color:#fff;border-radius:3px;padding:1px 6px;margin:0 2px;font-size:11px;font-weight:700;">'+mine+'/'+theirs+'</span>';
       }).join(''); }
-      h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #e5d9ef;">'
-        +'<span style="font-weight:700;color:'+(won?'#1e8449':'#c0392b')+';">'+(won?'W':'L')+'</span>'
-        +'<div style="flex:1;"><div>vs '+opp1+' & '+opp2+'</div><div style="color:#888;font-size:11px;">'+(m.match_date||'')+' · '+(m.match_type||'')+(m.event&&m.event.toLowerCase()!=='social'?' · '+m.event:'')+'</div></div>'
-        +'<div style="text-align:right;"><div style="font-weight:700;">'+mysets+'-'+oppsets+'</div><div>'+chips+'</div></div>'
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid #e5d9ef;">'
+        +'<span style="font-weight:700;min-width:14px;color:'+(won?'#1e8449':'#c0392b')+';">'+(won?'W':'L')+'</span>'
+        +'<div><div>vs '+opp1+' & '+opp2+' &nbsp;<strong>'+mysets+'-'+oppsets+'</strong> &nbsp;'+chips+'</div>'
+        +'<div style="color:#888;font-size:11px;">'+(m.match_date||'')+' · '+(m.match_type||'')+(m.event&&m.event.toLowerCase()!=='social'?' · '+m.event:'')+'</div></div>'
         +'</div>';
     });
     inner.innerHTML=h;
