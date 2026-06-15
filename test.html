@@ -1110,29 +1110,22 @@ async function submitMatch(){
   if(!submitter){err.textContent='Please select your name.';err.style.display='block';return;}
   if(!pin||pin.length<4){err.textContent='Please enter your 4-digit PIN.';err.style.display='block';return;}
 
-  // Check PIN
   err.style.display='none';
   const btn=document.getElementById('submitBtn');
   btn.textContent='Verifying...';btn.disabled=true;
 
-  // Master PIN check
+  // Master PIN check (admin override)
   if(pin===MASTER_PIN){
     entryData.submittedBy='Admin';
     doSubmit(btn);
     return;
   }
 
-  // Look up player PIN from Men/Ladies DATA sheet (not wall sheet)
+  // The "usher": does the entered PIN match this player's stored PIN in Supabase?
   try{
-    const isMen=MEN.includes(submitter);
-    const dataGid=isMen?PIN_GIDS.mens:PIN_GIDS.ladies;
-    const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${dataGid}&t=${Date.now()}`;
-    const r=await fetch(url);
-    const text=await r.text();
-    const rows=text.trim().split('\n').slice(1).map(row=>parseCSV(row));
-    const playerRow=rows.find(row=>row[0]&&row[0].trim().toLowerCase()===submitter.toLowerCase());
-    if(!playerRow){err.textContent='Player not found. Contact administrator.';err.style.display='block';btn.textContent='\u2713 Submit Match';btn.disabled=false;return;}
-    const storedPin=playerRow[6]?playerRow[6].trim():'';
+    const data=await sbGet(`players?select=name,pin&name=eq.${encodeURIComponent(submitter)}`);
+    if(!data || data.length===0){err.textContent='Player not found. Contact administrator.';err.style.display='block';btn.textContent='\u2713 Submit Match';btn.disabled=false;return;}
+    const storedPin=(data[0].pin||'').trim();
     if(storedPin!==pin){err.textContent='Incorrect PIN. Please try again.';err.style.display='block';btn.textContent='\u2713 Submit Match';btn.disabled=false;return;}
     entryData.submittedBy=submitter;
     doSubmit(btn);
@@ -1150,7 +1143,44 @@ async function doSubmit(btn){
   }
   btn.textContent='Submitting...';
   try{
-    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(entryData)});
+    // Build set_scores string e.g. "6-3,6-4" from entryData
+    const setParts=[];
+    for(let i=1;i<=entryData.sets;i++){
+      const a=entryData['set'+i+'t1'], b=entryData['set'+i+'t2'];
+      if(a!==undefined && a!=='' && b!==undefined && b!=='') setParts.push(a+'-'+b);
+    }
+    const setScores=setParts.join(',');
+    // Build the match row for Supabase
+    const row={
+      club_id:1,
+      match_date:entryData.date,
+      match_type:entryData.type,
+      event:entryData.event||'Social',
+      t1p1:entryData.t1p1, t1p2:entryData.t1p2,
+      t2p1:entryData.t2p1, t2p2:entryData.t2p2,
+      t1_sets:entryData.t1sets, t2_sets:entryData.t2sets,
+      t1_games:entryData.t1games, t2_games:entryData.t2games,
+      set_scores:setScores,
+      submitted_by:entryData.submittedBy
+    };
+    // 1. Insert the match into Supabase
+    const ins=await fetch(SB_URL+"/rest/v1/matches",{
+      method:"POST",
+      headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json", Prefer:"return=minimal" },
+      body:JSON.stringify(row)
+    });
+    if(!ins.ok){ throw new Error("save failed ("+ins.status+")"); }
+
+    // 2. Trigger recompute (cloud-side Model B). Non-blocking if it lags.
+    btn.textContent='Updating ratings...';
+    try{
+      await fetch(SB_URL+"/rest/v1/rpc/recompute_ratings",{
+        method:"POST",
+        headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json" },
+        body:JSON.stringify({ p_club_id:1 })
+      });
+    }catch(e){ /* recompute will also run on schedule; don't block the user */ }
+
     document.getElementById('entryContent').innerHTML=`
       <div class="success-icon">✅</div>
       <div style="text-align:center;">
@@ -1163,7 +1193,7 @@ async function doSubmit(btn){
       <button class="btn btn-secondary" style="margin-top:8px;" onclick="goHome()">Back to Home</button>`;
     setStep(0);
   }catch(e){
-    document.getElementById('err4').textContent='Network hiccup — your match may still have gone through. Check Recent Matches before submitting again to avoid a duplicate.';
+    document.getElementById('err4').textContent='Could not save: '+(e.message||e)+'. Please check Recent Matches before resubmitting to avoid a duplicate.';
     document.getElementById('err4').style.display='block';
     btn.textContent='\u2713 Submit Match';btn.disabled=false;
   }
