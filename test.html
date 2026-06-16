@@ -462,7 +462,7 @@ let LADIES = [];
 
 async function loadPlayers() {
   try {
-    const data = await sbGet(`players?select=name,gender&order=name.asc`);
+    const data = await sbGet(`players_public?select=name,gender&order=name.asc`);
     const m = data.filter(p=>p.gender==='M').map(p=>p.name);
     const l = data.filter(p=>p.gender==='F').map(p=>p.name);
     if (m.length > 0) MEN = m.sort((a,b)=>a.localeCompare(b));
@@ -1112,82 +1112,66 @@ async function submitMatch(){
 
   err.style.display='none';
   const btn=document.getElementById('submitBtn');
-  btn.textContent='Verifying...';btn.disabled=true;
-
-  // Master PIN check (admin override)
-  if(pin===MASTER_PIN){
-    entryData.submittedBy='Admin';
-    doSubmit(btn);
-    return;
-  }
-
-  // The "usher": does the entered PIN match this player's stored PIN in Supabase?
-  try{
-    const data=await sbGet(`players?select=name,pin&name=eq.${encodeURIComponent(submitter)}`);
-    if(!data || data.length===0){err.textContent='Player not found. Contact administrator.';err.style.display='block';btn.textContent='\u2713 Submit Match';btn.disabled=false;return;}
-    const storedPin=(data[0].pin||'').trim();
-    if(storedPin!==pin){err.textContent='Incorrect PIN. Please try again.';err.style.display='block';btn.textContent='\u2713 Submit Match';btn.disabled=false;return;}
-    entryData.submittedBy=submitter;
-    doSubmit(btn);
-  }catch(e){
-    err.textContent='Could not verify PIN. Check your connection.';err.style.display='block';
-    btn.textContent='\u2713 Submit Match';btn.disabled=false;
-  }
+  btn.disabled=true;
+  // PIN is verified SERVER-SIDE by the secure function (never read by the app).
+  entryData._submitter=submitter;
+  entryData._pin=pin;
+  doSubmit(btn);
 }
 
 async function doSubmit(btn){
+  const err=document.getElementById('err4');
   if(!navigator.onLine){
-    document.getElementById('err4').innerHTML='<strong>You are offline.</strong> Your score was <strong>NOT</strong> sent. Please reconnect to the internet and submit again — nothing has been saved yet.';
-    document.getElementById('err4').style.display='block';
+    err.innerHTML='<strong>You are offline.</strong> Your score was <strong>NOT</strong> sent. Please reconnect and submit again — nothing has been saved yet.';
+    err.style.display='block'; btn.disabled=false; btn.textContent='\u2713 Submit Match';
     return;
   }
-  btn.textContent='Submitting...';
+  btn.textContent='Verifying & submitting...';
   try{
-    // Build set_scores string e.g. "6-3,6-4" from entryData
+    // Build set_scores string e.g. "6-3,6-4"
     const setParts=[];
     for(let i=1;i<=entryData.sets;i++){
       const a=entryData['set'+i+'t1'], b=entryData['set'+i+'t2'];
       if(a!==undefined && a!=='' && b!==undefined && b!=='') setParts.push(a+'-'+b);
     }
-    const setScores=setParts.join(',');
-    // Build the match row for Supabase
-    const row={
-      club_id:1,
-      match_date:entryData.date,
-      match_type:entryData.type,
-      event:entryData.event||'Social',
-      t1p1:entryData.t1p1, t1p2:entryData.t1p2,
-      t2p1:entryData.t2p1, t2p2:entryData.t2p2,
+    const match={
+      match_date:entryData.date, match_type:entryData.type, event:entryData.event||'Social',
+      t1p1:entryData.t1p1, t1p2:entryData.t1p2, t2p1:entryData.t2p1, t2p2:entryData.t2p2,
       t1_sets:entryData.t1sets, t2_sets:entryData.t2sets,
       t1_games:entryData.t1games, t2_games:entryData.t2games,
-      set_scores:setScores,
-      submitted_by:entryData.submittedBy
+      set_scores:setParts.join(',')
     };
-    // 1. Insert the match into Supabase
-    const ins=await fetch(SB_URL+"/rest/v1/matches",{
-      method:"POST",
-      headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json", Prefer:"return=minimal" },
-      body:JSON.stringify(row)
-    });
-    if(!ins.ok){ throw new Error("save failed ("+ins.status+")"); }
-
-    // 2. Trigger recompute (cloud-side Model B). Non-blocking if it lags.
-    btn.textContent='Updating ratings...';
+    // Call the SECURE submit-match function: it verifies the PIN server-side,
+    // inserts the match, and triggers the full recompute. PIN never stored in the app.
+    let result=null;
     try{
-      await fetch(SB_URL+"/rest/v1/rpc/recompute_ratings",{
+      const resp=await fetch(SB_URL+"/functions/v1/submit-match",{
         method:"POST",
         headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json" },
-        body:JSON.stringify({ p_club_id:1 })
+        body:JSON.stringify({ club_id:1, submitter:entryData._submitter, pin:entryData._pin, match })
       });
-    }catch(e){ /* recompute will also run on schedule; don't block the user */ }
+      result=await resp.json();
+      if(!resp.ok || !result || !result.ok){
+        const msg=(result && result.error) ? result.error : ('save failed (status '+resp.status+')');
+        // PIN errors are user-fixable; show them plainly
+        err.innerHTML='<strong>⚠️ Not submitted.</strong><br>'+msg;
+        err.style.display='block'; btn.disabled=false; btn.textContent='\u2713 Submit Match';
+        return;
+      }
+    }catch(netErr){
+      err.innerHTML='<strong>⚠️ Your score was NOT saved.</strong><br>Connection problem. Please try again. Nothing has been recorded yet.';
+      err.style.display='block'; btn.disabled=false; btn.textContent='\u2713 Submit Match';
+      return;
+    }
 
+    const who=result.submitted_by||entryData._submitter;
     document.getElementById('entryContent').innerHTML=`
       <div class="success-icon">✅</div>
       <div style="text-align:center;">
         <div style="font-size:18px;font-weight:700;color:#1e8449;margin-bottom:8px;">Match Submitted!</div>
         <div style="font-size:13px;color:#666;">${entryData.t1p1} & ${entryData.t1p2}<br>vs<br>${entryData.t2p1} & ${entryData.t2p2}</div>
         <div style="font-size:12px;color:#888;margin-top:6px;">${entryData.t1sets}-${entryData.t2sets} sets</div>
-        <div style="font-size:11px;color:#aaa;margin-top:4px;">Submitted by ${entryData.submittedBy}</div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px;">Submitted by ${who}</div>
       </div>
       <button class="btn btn-primary" style="margin-top:20px;" onclick="renderStep1()">Enter Another Match</button>
       <button class="btn btn-secondary" style="margin-top:8px;" onclick="goHome()">Back to Home</button>`;
