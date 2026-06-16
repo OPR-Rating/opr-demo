@@ -209,6 +209,7 @@
         <button class="menu-btn" onclick="showScreen('tournamentScreen')">Tournaments</button>
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
       </div>
+      <div style="text-align:center;margin-top:14px;"><button onclick="openAdmin()" style="background:none;border:none;color:#9b80b3;font-size:12px;text-decoration:underline;cursor:pointer;">⚙ Admin</button></div>
       <div style="background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:700;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
       <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
     </div>
@@ -414,6 +415,41 @@
     </div>
   </div>
 
+  <!-- ADMIN -->
+  <div class="screen hidden" id="adminScreen">
+    <div class="header"><button class="back-btn" onclick="goHome()">&larr;</button><h1>Admin</h1></div>
+    <div class="screen-content">
+      <div id="adminGate">
+        <div style="padding:14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin-bottom:14px;font-size:13px;color:#5b3a6e;">Enter the Master PIN to manage clubs and members.</div>
+        <input type="password" id="adminPin" inputmode="numeric" placeholder="Master PIN" style="width:100%;padding:12px;border:1.5px solid #ccc;border-radius:8px;font-size:16px;box-sizing:border-box;">
+        <div id="adminGateErr" style="color:#c0392b;font-size:13px;margin-top:8px;display:none;"></div>
+        <button class="btn btn-primary" style="margin-top:12px;" onclick="adminUnlock()">Unlock</button>
+      </div>
+      <div id="adminPanel" style="display:none;">
+        <div class="ladders-group-title">Club</div>
+        <select id="adminClubSelect" onchange="adminLoadMembers()" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;"></select>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="menu-btn" style="flex:1;" onclick="adminAddClub()">+ Add Club</button>
+          <button class="menu-btn" style="flex:1;" onclick="adminRenameClub()">Rename</button>
+          <button class="menu-btn" style="flex:1;color:#c0392b;" onclick="adminDeleteClub()">Delete</button>
+        </div>
+
+        <div class="ladders-group-title" style="margin-top:18px;">Members</div>
+        <div id="adminMembers" style="font-size:13px;"></div>
+
+        <div class="ladders-group-title" style="margin-top:18px;">Add Member</div>
+        <input id="amName" placeholder="Full name" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:8px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <select id="amGender" style="flex:1;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;"><option value="M">Male</option><option value="F">Female</option></select>
+          <input id="amRating" type="number" placeholder="Rating (e.g. 1200)" style="flex:1;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;">
+        </div>
+        <input id="amPin" inputmode="numeric" placeholder="4-digit PIN" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:8px;">
+        <button class="btn btn-primary" onclick="adminAddMember()">Add Member</button>
+        <div id="adminMsg" style="font-size:13px;margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- SCORE ENTRY -->
   <div class="screen hidden" id="entryScreen">
     <div class="header">
@@ -462,7 +498,7 @@ let LADIES = [];
 
 async function loadPlayers() {
   try {
-    const data = await sbGet(`players_public?select=name,gender&order=name.asc`);
+    const data = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`);
     const m = data.filter(p=>p.gender==='M').map(p=>p.name);
     const l = data.filter(p=>p.gender==='F').map(p=>p.name);
     if (m.length > 0) MEN = m.sort((a,b)=>a.localeCompare(b));
@@ -496,6 +532,89 @@ function showScreen(id) {
   if(id==='entryScreen') renderStep1();
 }
 
+
+// ---------------- ADMIN PANEL ----------------
+let ADMIN_PIN = "";
+function openAdmin(){ document.getElementById('adminGate').style.display='block'; document.getElementById('adminPanel').style.display='none'; document.getElementById('adminPin').value=''; document.getElementById('adminGateErr').style.display='none'; showScreen('adminScreen'); }
+async function adminCall(action, args){
+  const body=Object.assign({ master_pin:ADMIN_PIN, action }, args||{});
+  const resp=await fetch(SB_URL+"/functions/v1/admin",{ method:"POST", headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json" }, body:JSON.stringify(body) });
+  return await resp.json();
+}
+async function adminUnlock(){
+  ADMIN_PIN=document.getElementById('adminPin').value.trim();
+  const r=await adminCall('list_clubs');
+  if(!r.ok){ document.getElementById('adminGateErr').textContent=r.error||'Access denied.'; document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return; }
+  document.getElementById('adminGate').style.display='none';
+  document.getElementById('adminPanel').style.display='block';
+  fillClubs(r.clubs);
+}
+function fillClubs(clubs){
+  const sel=document.getElementById('adminClubSelect'); sel.innerHTML='';
+  clubs.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.id+' — '+c.name; sel.appendChild(o); });
+  adminLoadMembers();
+}
+async function refreshClubs(){ const r=await adminCall('list_clubs'); if(r.ok) fillClubs(r.clubs); }
+async function adminAddClub(){
+  const name=prompt('New club name:'); if(!name) return;
+  const r=await adminCall('add_club',{ name }); if(!r.ok){ alert(r.error); return; }
+  await refreshClubs(); document.getElementById('adminClubSelect').value=r.club.id; adminLoadMembers();
+}
+async function adminRenameClub(){
+  const cid=document.getElementById('adminClubSelect').value;
+  const name=prompt('New name for this club:'); if(!name) return;
+  const r=await adminCall('rename_club',{ club_id:Number(cid), name }); if(!r.ok){ alert(r.error); return; }
+  await refreshClubs();
+}
+async function adminDeleteClub(){
+  const sel=document.getElementById('adminClubSelect');
+  const cid=sel.value; const label=sel.options[sel.selectedIndex].text;
+  if(!confirm('DELETE club "'+label+'" and ALL its members, matches and results? This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? Type-check: this permanently removes everything for '+label+'.')) return;
+  const r=await adminCall('delete_club',{ club_id:Number(cid) }); if(!r.ok){ alert(r.error); return; }
+  await refreshClubs();
+}
+async function adminLoadMembers(){
+  const cid=document.getElementById('adminClubSelect').value; if(!cid) return;
+  const box=document.getElementById('adminMembers'); box.innerHTML='Loading...';
+  const r=await adminCall('list_members',{ club_id:Number(cid) });
+  if(!r.ok){ box.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
+  if(r.members.length===0){ box.innerHTML='<div style="color:#888;padding:6px 0;">No members yet.</div>'; return; }
+  let html='<table class="ladder-table"><thead><tr><th>Name</th><th>G</th><th>Rating</th><th>PIN</th><th></th></tr></thead><tbody>';
+  r.members.forEach(m=>{
+    html+='<tr><td>'+m.name+'</td><td>'+m.gender+'</td><td>'+Math.round(m.initial_rating)+'</td><td>'+(m.pin||'—')+'</td>'
+      +'<td style="white-space:nowrap;"><button onclick="adminEditMember('+m.id+',\''+m.name.replace(/'/g,"\\'")+'\','+m.initial_rating+',\''+(m.pin||'')+'\')" style="background:none;border:none;color:#6C3483;cursor:pointer;">edit</button> '
+      +'<button onclick="adminDeleteMember('+m.id+',\''+m.name.replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;">del</button></td></tr>';
+  });
+  html+='</tbody></table>';
+  box.innerHTML=html;
+}
+async function adminAddMember(){
+  const cid=document.getElementById('adminClubSelect').value;
+  const name=document.getElementById('amName').value.trim();
+  const gender=document.getElementById('amGender').value;
+  const rating=document.getElementById('amRating').value||1200;
+  const pin=document.getElementById('amPin').value.trim();
+  const msg=document.getElementById('adminMsg');
+  if(!name){ msg.innerHTML='<span style="color:#c0392b;">Name required.</span>'; return; }
+  const r=await adminCall('add_member',{ club_id:Number(cid), name, gender, initial_rating:Number(rating), pin });
+  if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
+  msg.innerHTML='<span style="color:#1e8449;">Added '+name+'.</span>';
+  document.getElementById('amName').value=''; document.getElementById('amRating').value=''; document.getElementById('amPin').value='';
+  adminLoadMembers();
+}
+async function adminEditMember(id,name,rating,pin){
+  const newName=prompt('Name:',name); if(newName===null) return;
+  const newRating=prompt('Initial rating:',Math.round(rating)); if(newRating===null) return;
+  const newPin=prompt('PIN (4 digits):',pin); if(newPin===null) return;
+  const r=await adminCall('edit_member',{ id, name:newName.trim(), initial_rating:Number(newRating), pin:newPin.trim() });
+  if(!r.ok){ alert(r.error); return; } adminLoadMembers();
+}
+async function adminDeleteMember(id,name){
+  if(!confirm('Delete member "'+name+'"?')) return;
+  const r=await adminCall('delete_member',{ id }); if(!r.ok){ alert(r.error); return; } adminLoadMembers();
+}
+
 function goHome() {
   document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.classList.add('hidden');});
   document.getElementById('homeScreen').classList.remove('hidden');
@@ -518,7 +637,7 @@ async function loadFormWall(type, title) {
 
     if(type==='individual'){
       // Individual Form — full Form Guide columns
-      const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&form_npi=not.is.null&order=form_npi.desc`);
+      const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&form_npi=not.is.null&order=form_npi.desc&club_id=eq.${CLUB_ID}`);
       html += '<table class="ladder-table"><thead><tr><th>Player</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -530,7 +649,7 @@ async function loadFormWall(type, title) {
       // Doubles TEAM form — full columns matching Individual Form
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
-      const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc`);
+      const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
       html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -552,6 +671,9 @@ async function loadFormWall(type, title) {
 // === SUPABASE config (test build) ===
 const SB_URL = "https://farlrjnaeojmypzbplmz.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmxyam5hZW9qbXlwemJwbG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDkyNjYsImV4cCI6MjA5NjkyNTI2Nn0.SL18KYq6F97vsmcazWMsLcwTJm82nttrvXLpJSKiOsA";
+// CLUB IDENTITY — each club's copy of the app sets its own. Demo = 1, Eswatini = 2, etc.
+// This is the ONE value that makes this app belong to a specific club.
+const CLUB_ID = 1;
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -572,7 +694,7 @@ async function togglePairMatches(i){
     // Matches where this pair played together (same side, either order, either team)
     const ea=encodeURIComponent(a), eb=encodeURIComponent(b);
     // fetch matches involving player a, then filter client-side for the pair (simpler + reliable)
-    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&or=(and(t1p1.eq.${ea},t1p2.eq.${eb}),and(t1p1.eq.${eb},t1p2.eq.${ea}),and(t2p1.eq.${ea},t2p2.eq.${eb}),and(t2p1.eq.${eb},t2p2.eq.${ea}))&order=match_date.desc,id.desc`);
+    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&or=(and(t1p1.eq.${ea},t1p2.eq.${eb}),and(t1p1.eq.${eb},t1p2.eq.${ea}),and(t2p1.eq.${ea},t2p2.eq.${eb}),and(t2p1.eq.${eb},t2p2.eq.${ea}))&order=match_date.desc,id.desc&club_id=eq.${CLUB_ID}`);
     // For category sheets (not Universal), show only that match type
     const rows = (cat==='Universal') ? data : data.filter(m=>m.match_type===cat);
     if(rows.length===0){ inner.innerHTML='<span style="color:#888;">No matches found for this pair'+(cat==='Universal'?'':' in '+cat)+'.</span>'; return; }
@@ -626,7 +748,7 @@ async function loadLadder(type, title) {
     if(type==='mens' || type==='ladies'){
       // SINGLES ladder — unified headings: Rank, Name, Rating, Level, Sets Played, Sets Won, % Won
       const g = (type==='mens') ? 'M' : 'F';
-      const data = await sbGet(`player_results?select=name,current_rating,sets_played,sets_won,set_win_pct&gender=eq.${g}&order=current_rating.desc`);
+      const data = await sbGet(`player_results?select=name,current_rating,sets_played,sets_won,set_win_pct&gender=eq.${g}&order=current_rating.desc&club_id=eq.${CLUB_ID}`);
       html = '<table class="ladder-table"><thead><tr><th>Rank</th><th>Name</th><th>Rating</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>';
       data.forEach((p,i)=>{
         const lvl = (p.current_rating/200).toFixed(1);
@@ -639,7 +761,7 @@ async function loadLadder(type, title) {
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
       const usesCombined = (cat==="Men's" || cat==='Ladies');
-      const data = await sbGet(`doubles_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&category=eq.${encodeURIComponent(cat)}&order=rank.asc`);
+      const data = await sbGet(`doubles_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&category=eq.${encodeURIComponent(cat)}&order=rank.asc&club_id=eq.${CLUB_ID}`);
       window._doublesRows = data;
       window._doublesCat = cat;
       const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
@@ -681,7 +803,7 @@ async function loadTournament(category, title) {
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
     const usesCombined = (category==="Men's" || category==='Ladies');
-    const data = await sbGet(`tournament_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=rank.asc`);
+    const data = await sbGet(`tournament_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=rank.asc&club_id=eq.${CLUB_ID}`);
     if(data.length===0){document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">🎾</div><p>No tournament matches in this category yet.</p></div>';return;}
     const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
     let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
@@ -704,7 +826,7 @@ async function loadTournamentForm(category, title) {
   showScreen('tournamentSheetScreen');
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
-    const data = await sbGet(`tournament_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc`);
+    const data = await sbGet(`tournament_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
     let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
     data.forEach(p=>{
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -742,7 +864,7 @@ async function loadProfile(name, gender) {
   try {
     const isMen = gender==='M';
     // Player rating/form from player_results
-    const prArr = await sbGet(`player_results?select=current_rating,form_npi,form_sets&name=eq.${encodeURIComponent(name)}`);
+    const prArr = await sbGet(`player_results?select=current_rating,form_npi,form_sets&name=eq.${encodeURIComponent(name)}&club_id=eq.${CLUB_ID}`);
     const pr = prArr[0]||{};
     const rating = pr.current_rating!=null ? Math.round(pr.current_rating) : '-';
     const level = pr.current_rating!=null ? (pr.current_rating/200).toFixed(1) : '-';
@@ -859,7 +981,7 @@ async function loadActiveTournaments(){
   let activeCount=0;
   try{
     // Active tournaments from Supabase tournaments table (status='active')
-    const data = await sbGet(`tournaments?select=name,status&status=eq.active&order=start_date.desc`);
+    const data = await sbGet(`tournaments?select=name,status&status=eq.active&order=start_date.desc&club_id=eq.${CLUB_ID}`);
     data.forEach(t=>{
       const o=document.createElement('option');
       o.value=t.name; o.textContent=t.name;
@@ -880,7 +1002,7 @@ let recentMatchesData = [];
 async function loadRecent(){
   try{
     // Read the latest 15 matches from Supabase, newest first
-    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&order=match_date.desc,id.desc&limit=15`);
+    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&order=match_date.desc,id.desc&limit=15&club_id=eq.${CLUB_ID}`);
     recentMatchesData = data;
     if(data.length===0){document.getElementById('homeRecentList').innerHTML='<div style="color:#888;font-size:12px;">No matches yet</div>';return;}
     renderRecentList();
@@ -1148,7 +1270,7 @@ async function doSubmit(btn){
       const resp=await fetch(SB_URL+"/functions/v1/submit-match",{
         method:"POST",
         headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json" },
-        body:JSON.stringify({ club_id:1, submitter:entryData._submitter, pin:entryData._pin, match })
+        body:JSON.stringify({ club_id:CLUB_ID, submitter:entryData._submitter, pin:entryData._pin, match })
       });
       result=await resp.json();
       if(!resp.ok || !result || !result.ok){
