@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>OPR Demo</title>
-<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href='data:application/manifest+json,{"name":"OPR · Demo","short_name":"OPR Demo","start_url":"./test.html","scope":"./","display":"standalone","background_color":"%236C3483","theme_color":"%236C3483","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
 <meta name="theme-color" content="#6C3483">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -209,7 +209,6 @@
         <button class="menu-btn" onclick="showScreen('tournamentScreen')">Tournaments</button>
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
       </div>
-      <div style="text-align:center;margin-top:14px;"><button onclick="openAdmin()" style="background:none;border:none;color:#9b80b3;font-size:12px;text-decoration:underline;cursor:pointer;">⚙ Admin</button></div>
       <div style="background:#c4e000;color:#2a3000;border:1.5px solid #a9c400;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
       <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
     </div>
@@ -412,6 +411,7 @@
       </div>
 
       <div class="copyright">© 2026 Andre Farrell · Open Padel Rating · All Rights Reserved</div>
+      <div style="text-align:center;margin:18px 0 8px;"><button onclick="openAdmin()" style="background:none;border:none;color:#9b80b3;font-size:12px;text-decoration:underline;cursor:pointer;">⚙ Admin access</button></div>
     </div>
   </div>
 
@@ -1416,12 +1416,8 @@ window.addEventListener('offline', updateOfflineBanner);
 document.addEventListener('DOMContentLoaded', updateOfflineBanner);
 </script>
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./service-worker.js')
-      .catch(function(err) { console.log('SW registration skipped:', err); });
-  });
-}
+/* Service worker registration removed for the test build to prevent stale
+   caching from serving an older app version. */
 </script>
 </body>
 </html>
