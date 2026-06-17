@@ -38,7 +38,7 @@
   .home-hero h2 { font-size: 26px; font-weight: 800; margin: 12px 0 4px; color: #fff; position: relative; z-index: 2; text-shadow: 0 0 16px rgba(255,255,255,0.3); letter-spacing: 0.5px; }
   .home-hero p { font-size: 12px; opacity: 0.9; color: #fff; position: relative; z-index: 2; }
   .opr-logo { font-size: 44px; margin-bottom: 10px; }
-  .btn-enter { width: calc(100% - 0px); padding: 19px; background: linear-gradient(180deg, #F4C430, #E3AC00); color: #1a1300; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; margin: 0 0 16px; position: relative; z-index: 5; letter-spacing: 0.3px; box-shadow: 0 10px 26px rgba(150,100,0,0.45), inset 0 1px 0 rgba(255,255,255,0.55); transition: transform 0.1s; }
+  .btn-enter { width: calc(100% - 0px); padding: 19px; background: linear-gradient(180deg, #5DADE2, #3498DB); color: #ffffff; border: none; border-radius: 14px; font-size: 18px; font-weight: 800; cursor: pointer; margin: 0 0 16px; position: relative; z-index: 5; letter-spacing: 0.3px; box-shadow: 0 10px 26px rgba(150,100,0,0.45), inset 0 1px 0 rgba(255,255,255,0.55); transition: transform 0.1s; }
   .btn-enter:active { transform: scale(0.98); }
   .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
   .menu-btn { padding: 14px 8px; background: #fff; border: 1.5px solid #1a1a1a; border-radius: 12px; font-size: 13px; font-weight: 600; color: #1a1a1a; cursor: pointer; text-align: center; transition: all 0.15s; display: flex; align-items: center; justify-content: center; min-height: 52px; }
@@ -197,7 +197,7 @@
           <span class="ball-pair"><svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg1" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg1)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg><svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg2" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg2)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg></span>
           <span class="ball-pair"><svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg3" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg3)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg><svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg4" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg4)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg></span>
         </div>
-        <h2>OPR-Rating</h2>
+        <h2 id="heroTitle">OPR-Rating</h2>
         <p>Open Padel Rating System</p>
       </div>
     </div>
@@ -210,7 +210,7 @@
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
       </div>
       <div style="text-align:center;margin-top:14px;"><button onclick="openAdmin()" style="background:none;border:none;color:#9b80b3;font-size:12px;text-decoration:underline;cursor:pointer;">⚙ Admin</button></div>
-      <div style="background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:700;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
+      <div style="background:#c4e000;color:#2a3000;border:1.5px solid #a9c400;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
       <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
     </div>
   </div>
@@ -674,6 +674,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // CLUB IDENTITY — each club's copy of the app sets its own. Demo = 1, Eswatini = 2, etc.
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 1;
+const CLUB_NAME = "Demo";  // shown in the logo as "OPR · Demo"
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1342,7 +1343,7 @@ let _currentModalPlayers = [];
 
 function openPlayerModal(fieldId, label) {
   _currentModalTarget = fieldId;
-  const players = getPlayerList(entryData.type);
+  let players = getPlayerList(entryData.type);
   const ids = ['t1p1','t1p2','t2p1','t2p2'];
   const sel = ids.map(id => {
     const el = document.getElementById(id+'_val');
@@ -1350,6 +1351,18 @@ function openPlayerModal(fieldId, label) {
   });
   const idx = ids.indexOf(fieldId);
   const exclude = sel.filter((v,j) => j !== idx && v !== '');
+
+  // MIXED: a team must be one man + one lady. If this slot's PARTNER is already
+  // chosen, restrict this slot to the opposite gender.
+  if (entryData.type === 'Mixed') {
+    const partnerId = (fieldId==='t1p1')?'t1p2':(fieldId==='t1p2')?'t1p1':(fieldId==='t2p1')?'t2p2':'t2p1';
+    const partnerName = document.getElementById(partnerId+'_val')?.value || '';
+    if (partnerName) {
+      if (MEN.includes(partnerName)) players = LADIES;       // partner is a man -> this slot ladies only
+      else if (LADIES.includes(partnerName)) players = MEN;  // partner is a lady -> this slot men only
+    }
+  }
+
   _currentModalPlayers = players.filter(p => !exclude.includes(p));
   document.getElementById('playerModalTitle').textContent = label;
   document.getElementById('playerModalSearch').value = '';
@@ -1391,7 +1404,7 @@ function closePlayerModal() {
   _currentModalTarget = null;
 }
 
-window.onload=function(){ loadRecent(); loadPlayers(); };
+window.onload=function(){ var ht=document.getElementById('heroTitle'); if(ht) ht.textContent='OPR · '+CLUB_NAME; loadRecent(); loadPlayers(); };
 </script>
 <script>
 function updateOfflineBanner(){
