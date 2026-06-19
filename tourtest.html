@@ -302,6 +302,10 @@
       <div class="ladders-grid one-col">
         <button class="menu-btn" onclick="loadLadder('universal','Universal Rating')">Universal Ladder</button>
       </div>
+      <div class="ladders-group-title">Club Ladder</div>
+      <div class="ladders-grid one-col">
+        <button class="menu-btn" style="border-color:#c4e000;box-shadow:0 0 10px rgba(196,224,0,0.35);font-weight:700;" onclick="showScreen('clubLadderScreen')">🪜 Good ’ol Club Ladder</button>
+      </div>
       <div class="ladders-group-title">Form</div>
       <div class="ladders-grid one-col">
         <button class="menu-btn form-toggle" id="formToggleBtn" style="border-color:#7D3C98;box-shadow:0 0 12px rgba(125,60,152,0.4);font-weight:700;" onclick="toggleFormMenu()">Form &nbsp;<span id="formChevron" style="font-size:12px;">▼</span></button>
@@ -486,6 +490,12 @@
     <div class="screen-content"><div id="etBody"></div></div>
   </div>
 
+  <!-- GOOD OL' CLUB LADDER -->
+  <div class="screen hidden" id="clubLadderScreen">
+    <div class="header"><button class="back-btn" onclick="showScreen('laddersScreen')">&larr;</button><h1>Good ’ol Club Ladder</h1></div>
+    <div class="screen-content"><div id="clBody"></div></div>
+  </div>
+
   <!-- ADMIN -->
   <div class="screen hidden" id="adminScreen">
     <div class="header"><button class="back-btn" onclick="goHome()">&larr;</button><h1>Admin</h1></div>
@@ -667,6 +677,7 @@ function showScreen(id) {
   window.scrollTo(0,0);
   if(id==='entryScreen') renderStep1();
   if(id==='tournamentScreen') loadTournamentPicker();
+  if(id==='clubLadderScreen') loadClubLadder();
 }
 
 
@@ -1313,6 +1324,10 @@ async function loadActiveTournaments(){
   const s=document.createElement('option');
   s.value='Social'; s.textContent='Social';
   sel.appendChild(s);
+  // Ladder Match option (feeds the Good 'ol Club Ladder)
+  const lm=document.createElement('option');
+  lm.value='Ladder Match'; lm.textContent='Ladder Match';
+  sel.appendChild(lm);
   if(activeCount===0){ sel.value='Social'; }
 }
 
@@ -1332,8 +1347,11 @@ async function loadRecent(){
 function renderRecentList(){
   document.getElementById('homeRecentList').innerHTML=recentMatchesData.map((m,idx)=>{
     const ev=(m.event||'').trim();
-    const isTour = ev!=='' && ev.toLowerCase()!=='social';
-    const tag = isTour
+    const isLadder = ev.toLowerCase()==='ladder match';
+    const isTour = ev!=='' && ev.toLowerCase()!=='social' && !isLadder;
+    const tag = isLadder
+      ? '<span style="background:#c4e000;color:#2a3000;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">L</span>'
+      : isTour
       ? '<span style="background:#6C3483;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">T</span>'
       : '<span style="background:#ccc;color:#333;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">S</span>';
     return `
@@ -1607,6 +1625,19 @@ async function doSubmit(btn){
     }
 
     const who=result.submitted_by||entryData._submitter;
+
+    // If this was a Ladder Match, apply the position change (insert/shift).
+    if((entryData.event||'')==='Ladder Match'){
+      try{
+        const t1won = Number(entryData.t1sets) > Number(entryData.t2sets);
+        const winner = t1won ? {p1:entryData.t1p1,p2:entryData.t1p2} : {p1:entryData.t2p1,p2:entryData.t2p2};
+        const loser  = t1won ? {p1:entryData.t2p1,p2:entryData.t2p2} : {p1:entryData.t1p1,p2:entryData.t1p2};
+        await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
+          headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
+          body:JSON.stringify({action:'apply_ladder_result',club_id:CLUB_ID,category:entryData.type,winner,loser})});
+      }catch(e){ /* ladder update is best-effort; the match itself is saved */ }
+    }
+
     document.getElementById('entryContent').innerHTML=`
       <div class="success-icon">✅</div>
       <div style="text-align:center;">
@@ -2381,6 +2412,130 @@ async function tmGenerateFixedDraw(tournament, chosenTotal, division) {
   if(!fxResp.ok || !fxJson.ok){ alert('Could not write fixtures: ' + ((fxJson&&fxJson.error)||fxResp.status)); return; }
   alert(division + ' draw created: ' + fxJson.count + ' fixtures (' + nFixed + ' fixed rounds; up to ' + (total - nFixed) + ' Swiss to follow).');
   loadTournamentSheet(tournament, division);
+}
+
+/* ============================================================================
+   GOOD OL' CLUB LADDER  (master feature — perpetual position ladder)
+   ============================================================================ */
+let CL_CAT = "Men's";
+async function loadClubLadder(){
+  const body = document.getElementById('clBody');
+  if(!body) return;
+  body.innerHTML = '<div class="loading">Loading ladder…</div>';
+  // players for join pickers
+  if(!window._clPlayers){
+    window._clPlayers = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
+  }
+  renderClubLadder();
+}
+
+async function renderClubLadder(){
+  const body = document.getElementById('clBody');
+  const cat = CL_CAT;
+  const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}&order=position.asc`) || [];
+
+  // category tabs
+  let tabs = '<div class="tm-divbar" style="margin:0 0 12px;">';
+  ["Men's","Ladies","Mixed"].forEach(d=>{ tabs += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+d+'</button>'; });
+  tabs += '</div>';
+
+  // ladder table
+  let table = '<div class="card"><h2>'+cat+' Ladder</h2>';
+  if(!rows.length){
+    table += '<p class="sub">No teams on the '+cat+' ladder yet. Add a pair below — the first teams seed by rating, then it\'s all about results.</p>';
+  } else {
+    table += '<p class="sub">Position ladder — beat a team above you and you take their place. Ladder matches are entered like any score (event = “Ladder Match”).</p>';
+    table += '<table><thead><tr><th class="num">#</th><th>Team</th><th></th></tr></thead><tbody>';
+    rows.forEach(r=>{
+      table += '<tr><td class="num"><span class="rank'+(r.position===1?' top':'')+'">'+r.position+'</span></td>'
+        + '<td><b>'+r.p1+' / '+r.p2+'</b></td>'
+        + '<td class="num"><button onclick="clRemove('+r.id+',\''+(r.p1+' / '+r.p2).replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:15px;" title="Remove (admin)">×</button></td></tr>';
+    });
+    table += '</tbody></table>';
+  }
+  table += '</div>';
+
+  // join form (gender-filtered by category)
+  const sel='width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
+  let join = '<div class="card"><h2>Join the '+cat+' ladder</h2>'
+    + '<label style="font-size:12px;color:#6b6b76;">Player 1</label><select id="clP1" style="'+sel+'" onchange="clRefill()"></select>'
+    + '<label style="font-size:12px;color:#6b6b76;">Player 2</label><select id="clP2" style="'+sel+'" onchange="clRefill()"></select>'
+    + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="clJoin()">Add pair to ladder</button>'
+    + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
+
+  // admin: first-pass seed by rating (only useful before any matches)
+  let admin = '<div class="card"><h2>Admin</h2>'
+    + '<p class="sub">First-pass ordering sets the ladder by combined rating (strongest at the top). Use once when starting a ladder.</p>'
+    + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
+    + '<button class="ac-btn ac-btn-primary" onclick="clSeed()">Seed by rating</button></div>'
+    + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
+
+  body.innerHTML = tabs + table + join + admin;
+  clRefill();
+}
+
+function clPick(d){ CL_CAT = d; renderClubLadder(); }
+
+function clRefill(){
+  const players = window._clPlayers || [];
+  const men = players.filter(p=>p.gender==='M').map(p=>p.name);
+  const ladies = players.filter(p=>p.gender==='F').map(p=>p.name);
+  const p1=document.getElementById('clP1'), p2=document.getElementById('clP2');
+  if(!p1||!p2) return;
+  const c1=p1.value, c2=p2.value;
+  function opts(list,cur){ return '<option value="">— select —</option>'+list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join(''); }
+  if(CL_CAT==="Men's"){ p1.innerHTML=opts(men,c1); p2.innerHTML=opts(men,c2); }
+  else if(CL_CAT==='Ladies'){ p1.innerHTML=opts(ladies,c1); p2.innerHTML=opts(ladies,c2); }
+  else { // Mixed: one man + one lady
+    const c1m=men.includes(c1), c1l=ladies.includes(c1), c2m=men.includes(c2), c2l=ladies.includes(c2);
+    p1.innerHTML=opts(c2m?ladies:c2l?men:players.map(p=>p.name), c1);
+    p2.innerHTML=opts(c1m?ladies:c1l?men:players.map(p=>p.name), c2);
+  }
+}
+
+async function clJoin(){
+  const p1=document.getElementById('clP1').value, p2=document.getElementById('clP2').value;
+  const msg=document.getElementById('clMsg');
+  if(!p1||!p2||p1===p2){ msg.innerHTML='<span style="color:#c0392b;">Pick two different players.</span>'; return; }
+  const r=await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
+    headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'join_ladder',club_id:CLUB_ID,category:CL_CAT,p1,p2})});
+  const j=await r.json().catch(()=>({}));
+  if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not join.')+'</span>'; return; }
+  renderClubLadder();
+}
+
+async function clSeed(){
+  const pin=(document.getElementById('clPin').value||'').trim();
+  const msg=document.getElementById('clSeedMsg');
+  if(!pin){ msg.innerHTML='<span style="color:#c0392b;">Enter the admin PIN.</span>'; return; }
+  const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
+  if(!rows.length){ msg.innerHTML='<span style="color:#c0392b;">No teams to seed yet.</span>'; return; }
+  // compute combined rating for each pair from published ratings
+  msg.textContent='Reading ratings…';
+  const withR=[];
+  for(const r of rows){
+    const a=await TM.readCurrentRating(r.p1), b=await TM.readCurrentRating(r.p2);
+    withR.push({p1:r.p1,p2:r.p2, rating: TM.pairRating(a||0,b||0,CL_CAT)});
+  }
+  withR.sort((x,y)=>y.rating-x.rating);
+  const resp=await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
+    headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'seed_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin,order:withR.map(t=>({p1:t.p1,p2:t.p2}))})});
+  const j=await resp.json().catch(()=>({}));
+  if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not seed.')+'</span>'; return; }
+  renderClubLadder();
+}
+
+async function clRemove(id, label){
+  const pin=(prompt('Admin PIN to remove '+label+' from the ladder:')||'').trim();
+  if(!pin) return;
+  const r=await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
+    headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'remove_ladder_entry',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin,entry_id:id})});
+  const j=await r.json().catch(()=>({}));
+  if(!j.ok){ alert(j.error||'Could not remove.'); return; }
+  renderClubLadder();
 }
 
 </script>
