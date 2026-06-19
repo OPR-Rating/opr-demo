@@ -223,8 +223,9 @@
   .tm-nav button.active { background:#fff; color:#6C3483; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
 
   .ac-btn-gold { background:linear-gradient(180deg,#F1C40F,#E3AC00); color:#4A235A; }
+  .ac-btn-green { background:#c4e000; color:#2a3000; font-weight:800; }
   #etBody .seed, #tournamentSheetContent .seed { display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;background:#6C3483;color:#fff;border-radius:8px;font-weight:700;font-size:12px;padding:0 5px; }
-  #etBody .seed.s1, #tournamentSheetContent .seed.s1 { background:#F1C40F;color:#4A235A; }
+  #etBody .seed.s1, #tournamentSheetContent .seed.s1 { background:#6C3483;color:#fff; }
   #etBody .card h2, #tournamentSheetContent .card h2 { font-size:16px;margin:0 0 3px; }
   #etBody table, #tournamentSheetContent table { width:100%;border-collapse:collapse;font-size:13px; }
   #etBody th, #etBody td { padding:8px 6px;text-align:left;border-bottom:1px solid #e6e3ec; }
@@ -617,7 +618,6 @@
 <script>
 const SHEET_ID = '1xfMQbn54iFItbPQ-78RBe76YDqg6MUxCKW_qYIAKCWs';
 const CONTROL_PANEL_ID = '1W_3zmcIc8unk7e5flO19dRrN1XndQPutruKyMrZpOjY';
-const MASTER_PIN = '1963';
 // PIN_GIDS: gids for Men and Ladies DATA sheets (not wall sheets)
 // Andre: replace MEN_GID and LADIES_GID with actual sheet tab gids
 const PIN_GIDS = {mens:'0', ladies:'951466450'};
@@ -2103,72 +2103,102 @@ async function showEnterTournament(preselect) {
 async function renderEnterScreen(){
   const tournament = window._etTournament;
   const body = document.getElementById('etBody');
-  const entries = TM.seedEntries(await tmLoadEntries(tournament));
-  const cap = window._etCap;
-  const n = entries.length;
-  const atCap = cap != null && n >= cap;
+
+  // tournament config: allowed divisions + cap + format
+  let allowedDivs = ["Men's","Ladies","Mixed"]; let cap = window._etCap; let format='divisional';
+  try{
+    const trow = await sbGet(`tournaments?select=divisions,format,max_teams&name=eq.${encodeURIComponent(tournament)}&club_id=eq.${CLUB_ID}&limit=1`);
+    if(trow && trow.length){
+      if(trow[0].divisions) allowedDivs = trow[0].divisions.split(',').map(s=>s.trim());
+      if(trow[0].format) format = trow[0].format;
+      if(trow[0].max_teams != null) cap = Number(trow[0].max_teams);
+    }
+  }catch(e){}
+  window._etCap = cap; window._etAllowed = allowedDivs; window._etFormat = format;
+
+  // load all entries + which divisions already have a draw (locked)
+  const allEntries = await tmLoadEntries(tournament);
+  const order = ["Men's","Ladies","Mixed","All Sorts"];
+  const byDiv = {}; allEntries.forEach(e=>{ (byDiv[e.category]=byDiv[e.category]||[]).push(e); });
+  // names already used per division (for dedupe in the picker)
+  window._etUsedInDiv = {};
+  allEntries.forEach(e=>{ (window._etUsedInDiv[e.category]=window._etUsedInDiv[e.category]||[]).push(e.p1, e.p2); });
+  const allFixtures = await tmLoadFixtures(tournament); // all divisions
+  const lockedDivs = new Set(allFixtures.map(f=>f.division));
+  window._etLocked = lockedDivs;
   const sel = 'width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  // counter card
-  let counter = '';
-  if (cap != null) {
-    const pct = Math.min(100, Math.round(n / cap * 100));
-    counter = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;">'
-      + '<h2 style="margin:0;">' + n + ' / ' + cap + ' entered</h2>'
-      + '<span style="font-size:12px;font-weight:700;color:' + (atCap?'#c0392b':'#1E8449') + ';">' + (atCap?'ENTRY CLOSED':'entry open') + '</span></div>'
-      + '<div style="height:8px;background:#eee;border-radius:5px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + (atCap?'#c0392b':'var(--purple,#6C3483)') + ';"></div></div></div>';
-  } else {
-    counter = '<div class="card"><h2 style="margin:0;">' + n + ' entered</h2></div>';
-  }
+  // current chosen category (default to first allowed not-locked, else first allowed)
+  if(!window._etCat || !allowedDivs.includes(window._etCat)) window._etCat = allowedDivs.find(d=>!lockedDivs.has(d)) || allowedDivs[0];
+  const cat = window._etCat;
+  const inCat = (byDiv[cat]||[]).length;
+  const catLocked = lockedDivs.has(cat);
+  const catAtCap = cap != null && inCat >= cap;
+  const entryClosed = catLocked || catAtCap;
+
+  // counter card (per current division)
+  let counter = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;">'
+    + '<h2 style="margin:0;">' + cat + ': ' + inCat + (cap!=null?(' / ' + cap):'') + ' entered</h2>'
+    + '<span style="font-size:12px;font-weight:700;color:' + (entryClosed?'#c0392b':'#1E8449') + ';">' + (catLocked?'DRAW DONE':(catAtCap?'CAP REACHED':'entry open')) + '</span></div>';
+  if(cap!=null){ const pct=Math.min(100,Math.round(inCat/cap*100));
+    counter += '<div style="height:8px;background:#eee;border-radius:5px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+(entryClosed?'#c0392b':'var(--purple,#6C3483)')+';"></div></div>'; }
+  counter += '</div>';
+
+  // category selector — only the tournament's allowed divisions
+  const catOpts = allowedDivs.map(d=>'<option value="'+d.replace(/"/g,'&quot;')+'"'+(d===cat?' selected':'')+'>'+d+(lockedDivs.has(d)?' (draw done)':'')+'</option>').join('');
 
   // entry card
-  let entryCard;
-  if (atCap) {
-    entryCard = '<div class="card"><h2>Enter a team</h2><p class="sub">The team cap has been reached — entry is closed. An admin can raise the cap if more teams should be allowed.</p></div>';
+  let entryCard = '<div class="card"><h2>Enter a team</h2>';
+  if(format==='allsorts'){
+    entryCard += '<p class="sub">All Sorts — any two players, one pool. The team is seeded by their weighted rating.</p>';
   } else {
-    entryCard = '<div class="card"><h2>Enter a team</h2>'
-      + '<p class="sub">Tournament: <strong>' + tournament + '</strong>. Pick the category, then two players. The team is seeded by their combined rating (Men\'s/Ladies = average; Mixed/All Sorts = weighted).</p>'
-      + '<input type="hidden" id="etTour" value="' + tournament.replace(/"/g,'&quot;') + '">'
-      + '<label style="font-size:12px;color:#6b6b76;">Category</label>'
-      + '<select id="etCat" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()">'
-      +   '<option value="Men\'s">Men\'s</option><option value="Ladies">Ladies</option>'
-      +   '<option value="Mixed">Mixed</option><option value="All Sorts">All Sorts</option></select>'
-      + '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
+    entryCard += '<p class="sub">Pick the division, then two players. Each division is its own competition, seeded separately.</p>';
+  }
+  entryCard += '<input type="hidden" id="etTour" value="' + tournament.replace(/"/g,'&quot;') + '">'
+    + '<label style="font-size:12px;color:#6b6b76;">Division</label>'
+    + '<select id="etCat" style="' + sel + '" onchange="etChangeCat()">' + catOpts + '</select>';
+  if(catLocked){
+    entryCard += '<p class="sub" style="color:#c0392b;">The ' + cat + ' draw has been generated — entry for this division is closed.</p>';
+  } else if(catAtCap){
+    entryCard += '<p class="sub" style="color:#c0392b;">' + cat + ' has reached its cap of ' + cap + ' teams — entry closed. An admin can raise the cap.</p>';
+  } else {
+    entryCard += '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
       + '<select id="etP1" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()"></select>'
       + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
       + '<select id="etP2" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()"></select>'
       + '<div id="etSeedPrev" class="sub" style="margin:0 0 8px;"></div>'
-      + '<button class="ac-btn ac-btn-gold" style="width:100%;" onclick="submitTournamentEntry()">Add team</button>'
-      + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div></div>';
+      + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="submitTournamentEntry()">Add team</button>'
+      + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div>';
   }
+  entryCard += '</div>';
 
-  // entered teams — GROUPED BY DIVISION, each seeded within its own division
-  const allEntries = await tmLoadEntries(tournament); // unfiltered
-  const order = ["Men's","Ladies","Mixed","All Sorts"];
-  const byDiv = {};
-  allEntries.forEach(e=>{ (byDiv[e.category]=byDiv[e.category]||[]).push(e); });
+  // entered teams — grouped by division, seeded within division, with remove buttons
   const divsPresent = order.filter(d=>byDiv[d] && byDiv[d].length);
-
-  let listCard = '<div class="card"><h2>Entered teams (' + n + ')</h2>';
-  if (!n) listCard += '<p class="sub">No teams entered yet. Pick a division above and add a few — each division seeds separately.</p>';
+  let listCard = '<div class="card"><h2>Entered teams</h2>';
+  if (!allEntries.length) listCard += '<p class="sub">No teams entered yet. Pick a division above and add a few — each division seeds separately.</p>';
   else {
     divsPresent.forEach(d=>{
       const seeded = [...byDiv[d]].sort((x,y)=>y.seed_rating-x.seed_rating);
-      listCard += '<div style="margin:6px 0 4px;"><span class="tm-divtag">' + d + '</span> <span style="font-size:11px;color:#888;">' + seeded.length + ' team' + (seeded.length!==1?'s':'') + '</span></div>';
-      listCard += '<table style="margin-bottom:12px;"><thead><tr><th class="num">Seed</th><th>Team</th><th class="num">Rating</th></tr></thead><tbody>';
-      seeded.forEach((e,i)=> listCard += '<tr><td class="num"><span class="seed' + (i===0?' s1':'') + '">' + (i+1) + '</span></td><td><b>' + e.p1 + ' / ' + e.p2 + '</b></td><td class="num">' + Math.round(e.seed_rating) + '</td></tr>');
+      const dl = lockedDivs.has(d);
+      listCard += '<div style="margin:6px 0 4px;"><span class="tm-divtag">' + d + '</span> <span style="font-size:11px;color:#888;">' + seeded.length + ' team' + (seeded.length!==1?'s':'') + (dl?' · draw done':'') + '</span></div>';
+      listCard += '<table style="margin-bottom:12px;"><thead><tr><th class="num">Seed</th><th>Team</th><th class="num">Rating</th><th></th></tr></thead><tbody>';
+      seeded.forEach((e,i)=> {
+        const rm = dl ? '' : '<button onclick="etRemoveTeam('+e.id+')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;" title="Remove">×</button>';
+        listCard += '<tr><td class="num"><span class="seed' + (i===0?' s1':'') + '">' + (i+1) + '</span></td><td><b>' + e.p1 + ' / ' + e.p2 + '</b></td><td class="num">' + Math.round(e.seed_rating) + '</td><td class="num">'+rm+'</td></tr>';
+      });
       listCard += '</tbody></table>';
     });
   }
   listCard += '</div>';
 
-  // generate — PER DIVISION. Each division with >=4 even teams gets its own draw.
+  // generate — per division, admin-gated, only for un-locked divisions with >=4 even teams
   let genCard = '';
-  if (divsPresent.length) {
+  const gennable = divsPresent.filter(d=>!lockedDivs.has(d));
+  if (gennable.length) {
     genCard = '<div class="card"><h2>Generate draws</h2>'
-      + '<p class="sub">Each division runs as a separate competition with its own seeding, bands and rounds. Generating is admin-only.</p>'
-      + '<div style="display:flex;gap:8px;margin-bottom:12px;"><input id="etPin" type="password" placeholder="Admin PIN (club code or 1963)" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;"></div>';
-    divsPresent.forEach(d=>{
+      + '<p class="sub">Each division runs separately. Generating is admin-only and closes that division\'s entry.</p>'
+      + '<div style="display:flex;gap:8px;margin-bottom:12px;"><input id="etPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;"></div>';
+    gennable.forEach(d=>{
       const cnt = byDiv[d].length;
       const plan = TM.suggestRounds(Math.max(4,cnt));
       const key = d.replace(/[^a-z]/gi,'');
@@ -2177,11 +2207,9 @@ async function renderEnterScreen(){
       window._etRounds[d]=Math.max(plan.minAllowed,Math.min(plan.maxAllowed,window._etRounds[d]));
       genCard += '<div style="padding:12px;background:#faf8fc;border:1px solid #e6e3ec;border-radius:10px;margin-bottom:10px;">'
         + '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><b>' + d + '</b> <span style="font-size:11px;color:#888;">' + cnt + ' teams</span></div>';
-      if(cnt < 4){
-        genCard += '<div class="sub" style="margin:0;">Needs at least 4 teams to draw.</div>';
-      } else if(cnt % 2 !== 0){
-        genCard += '<div class="sub" style="margin:0;color:#B9770E;">Odd number (' + cnt + ') — needs an even field. Add or remove one.</div>';
-      } else {
+      if(cnt < 4){ genCard += '<div class="sub" style="margin:0;">Needs at least 4 teams to draw.</div>'; }
+      else if(cnt % 2 !== 0){ genCard += '<div class="sub" style="margin:0;color:#B9770E;">Odd number (' + cnt + ') — needs an even field. Add or remove one.</div>'; }
+      else {
         genCard += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">'
           + '<input type="range" min="' + plan.minAllowed + '" max="' + plan.maxAllowed + '" value="' + window._etRounds[d] + '" ' + (plan.minAllowed===plan.maxAllowed?'disabled':'') + ' style="flex:1;" oninput="etSetDivRounds(\'' + d.replace(/'/g,"\\'") + '\',this.value,\'' + key + '\')">'
           + '<span id="etRL_' + key + '" style="font-weight:800;color:var(--purple,#6C3483);min-width:70px;text-align:right;font-size:12px;">' + window._etRounds[d] + ' rounds</span></div>'
@@ -2193,7 +2221,25 @@ async function renderEnterScreen(){
   }
 
   body.innerHTML = counter + entryCard + listCard + genCard;
-  if (!atCap) { etRefillPlayers(); etUpdateSeedPreview(); }
+  if(!entryClosed){ etRefillPlayers(); etUpdateSeedPreview(); }
+}
+
+function etChangeCat(){ window._etCat = document.getElementById('etCat').value; renderEnterScreen(); }
+
+// Remove an entered team (admin action). Asks for PIN, verified server-side.
+async function etRemoveTeam(entryId){
+  if(!confirm('Remove this team from the tournament?')) return;
+  let pin = (document.getElementById('etPin') && document.getElementById('etPin').value || '').trim();
+  if(!pin){ pin = (prompt('Enter admin PIN to remove a team:')||'').trim(); }
+  if(!pin) return;
+  const resp = await fetch(SB_URL + '/functions/v1/tournament', {
+    method:'POST',
+    headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+    body: JSON.stringify({ action:'remove_team', club_id:CLUB_ID, admin_pin:pin, entry_id:entryId })
+  });
+  const j = await resp.json().catch(()=>({}));
+  if(!resp.ok || !j.ok){ alert((j&&j.error)||'Could not remove team.'); return; }
+  renderEnterScreen();
 }
 
 function etSetDivRounds(d, v, key){
@@ -2216,16 +2262,20 @@ function etUpdateSeedPreview(){
 }
 
 // Fill the two player dropdowns based on category + gender rules (mirrors score entry).
+// Excludes players already entered in THIS division (no double-entry).
 function etRefillPlayers(){
-  const players = window._etPlayers || [];
+  let players = window._etPlayers || [];
   const cat = document.getElementById('etCat').value;
   const p1sel = document.getElementById('etP1');
   const p2sel = document.getElementById('etP2');
   if(!p1sel||!p2sel) return;
+  // names already used in this division
+  const used = new Set(window._etUsedInDiv && window._etUsedInDiv[cat] ? window._etUsedInDiv[cat] : []);
   const cur1 = p1sel.value, cur2 = p2sel.value;
-  const men = players.filter(p=>p.gender==='M').map(p=>p.name);
-  const ladies = players.filter(p=>p.gender==='F').map(p=>p.name);
-  const all = players.map(p=>p.name);
+  const avail = players.filter(p=>!used.has(p.name) || p.name===cur1 || p.name===cur2);
+  const men = avail.filter(p=>p.gender==='M').map(p=>p.name);
+  const ladies = avail.filter(p=>p.gender==='F').map(p=>p.name);
+  const all = avail.map(p=>p.name);
   function opts(list, current){
     return '<option value="">— select —</option>' + list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===current?' selected':'')+'>'+n+'</option>').join('');
   }
@@ -2305,26 +2355,31 @@ async function tmGenerateFixedDraw(tournament, chosenTotal, division) {
   if (!fx.ok) { alert('Could not build fixed rounds for ' + N + ' teams.'); return; }
 
   // persist seeds (admin-gated, division-scoped)
-  await fetch(SB_URL + '/functions/v1/tournament', {
+  const seedResp = await fetch(SB_URL + '/functions/v1/tournament', {
     method: 'POST',
     headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
     body: JSON.stringify({ action:'save_seeds', club_id: CLUB_ID, admin_pin: TM_ADMIN_PIN,
       seeds: entries.map(e=>({ id:e.id, seed:e.seed })) })
   });
+  const seedJson = await seedResp.json().catch(()=>({}));
+  if(!seedResp.ok || !seedJson.ok){ alert('Could not save seeds: ' + ((seedJson&&seedJson.error)||seedResp.status) + '\n\n(Check the admin PIN and that the tournament Edge Function is deployed.)'); return; }
+
   // replace any existing fixtures for this division, then write fresh
   const rows = [];
   fx.rounds.forEach((pairs, i) => pairs.forEach(([a, b]) => rows.push({
     tournament, division, round: i + 1, round_type: 'fixed',
     seed_a: a, seed_b: b, band: TM.bandClass(a, b, A_END)
   })));
-  await fetch(SB_URL + '/functions/v1/tournament', {
+  const fxResp = await fetch(SB_URL + '/functions/v1/tournament', {
     method: 'POST',
     headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
     body: JSON.stringify({ action:'write_fixtures', club_id: CLUB_ID, admin_pin: TM_ADMIN_PIN,
       tournament, division, replace:true,
       fixtures: rows })
   });
-  alert(division + ' draw created: ' + nFixed + ' fixed + up to ' + (total - nFixed) + ' Swiss rounds (' + total + ' total).');
+  const fxJson = await fxResp.json().catch(()=>({}));
+  if(!fxResp.ok || !fxJson.ok){ alert('Could not write fixtures: ' + ((fxJson&&fxJson.error)||fxResp.status)); return; }
+  alert(division + ' draw created: ' + fxJson.count + ' fixtures (' + nFixed + ' fixed rounds; up to ' + (total - nFixed) + ' Swiss to follow).');
   loadTournamentSheet(tournament, division);
 }
 
