@@ -184,6 +184,27 @@
   .player-display { width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 10px; font-size: 14px; background: white; cursor: pointer; text-align: left; color: #222; display: flex; justify-content: space-between; align-items: center; }
   .player-display.selected { border-color: #6C3483; background: #F5EEF8; color: #6C3483; font-weight: 600; }
   .player-display .arrow { color: #888; font-size: 12px; }
+
+  /* ===== Admin Control Room ===== */
+  .ac-context { background: linear-gradient(135deg,#512E5F,#6C3483); color:#fff; border-radius:12px; padding:14px 16px; margin-bottom:14px; box-shadow:0 2px 10px rgba(81,46,95,0.25); }
+  .ac-context .ac-club { font-size:18px; font-weight:800; letter-spacing:0.2px; display:flex; align-items:center; gap:8px; }
+  .ac-context .ac-meta { font-size:11px; opacity:0.85; margin-top:3px; text-transform:uppercase; letter-spacing:0.8px; }
+  .ac-tabs { display:flex; gap:6px; margin-bottom:16px; background:#efe9f3; border-radius:11px; padding:4px; }
+  .ac-tab { flex:1; text-align:center; padding:10px 6px; border:none; background:none; border-radius:8px; font-size:13px; font-weight:700; color:#7a6688; cursor:pointer; transition:all .15s; font-family:inherit; }
+  .ac-tab.active { background:#fff; color:#6C3483; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+  .ac-room { display:none; }
+  .ac-room.active { display:block; animation: acFade .2s ease; }
+  @keyframes acFade { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:none;} }
+  .ac-card { background:#fff; border:1px solid #e5dced; border-radius:12px; padding:16px; margin-bottom:14px; }
+  .ac-card h4 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:#9b80b3; margin-bottom:12px; font-weight:800; }
+  .ac-field { width:100%; padding:11px; border:1.5px solid #d9cfe3; border-radius:9px; font-size:15px; box-sizing:border-box; margin-bottom:9px; font-family:inherit; }
+  .ac-field:focus { outline:none; border-color:#6C3483; }
+  .ac-row { display:flex; gap:8px; }
+  .ac-btn { padding:11px 14px; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .ac-btn-primary { background:linear-gradient(180deg,#6C3483,#512E5F); color:#fff; }
+  .ac-btn-ghost { background:#f3eef8; color:#6C3483; border:1.5px solid #d9cfe3; }
+  .ac-btn-danger { background:none; color:#c0392b; border:1.5px solid #e6b0aa; }
+  .ac-msg { font-size:13px; margin-top:10px; min-height:18px; }
 </style>
 </head>
 <body>
@@ -428,36 +449,76 @@
         <button class="btn btn-primary" style="margin-top:12px;" onclick="adminUnlock()">Unlock</button>
       </div>
       <div id="adminPanel" style="display:none;">
-        <div class="ladders-group-title">Club</div>
-        <select id="adminClubSelect" onchange="adminLoadMembers()" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;"></select>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button class="menu-btn" style="flex:1;" onclick="adminAddClub()">+ Add Club</button>
-          <button class="menu-btn" style="flex:1;" onclick="adminRenameClub()">Rename</button>
-          <button class="menu-btn" style="flex:1;color:#c0392b;" onclick="adminDeleteClub()">Delete</button>
+        <!-- Club context: which club am I managing + access level -->
+        <div class="ac-context">
+          <div class="ac-club">🎾 <span id="acClubName">—</span></div>
+          <div class="ac-meta"><span id="acAccess">Admin</span> · Control Room</div>
+        </div>
+        <select id="adminClubSelect" onchange="adminLoadMembers();acUpdateContext();renderClubDetails()" class="ac-field" style="margin-bottom:14px;"></select>
+
+        <!-- Tabs -->
+        <div class="ac-tabs">
+          <button class="ac-tab active" id="acTabMembers" onclick="acRoom('members')">Members</button>
+          <button class="ac-tab" id="acTabTours" onclick="acRoom('tours')">Tournaments</button>
+          <button class="ac-tab" id="acTabClub" onclick="acRoom('club')">Club</button>
         </div>
 
-        <div class="ladders-group-title" style="margin-top:18px;">Members</div>
-        <div id="adminMembers" style="font-size:13px;"></div>
-
-        <div class="ladders-group-title" style="margin-top:18px;">Add Member</div>
-        <input id="amName" placeholder="Full name" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:8px;">
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <select id="amGender" style="flex:1;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;"><option value="M">Male</option><option value="F">Female</option></select>
-          <input id="amRating" type="number" placeholder="Rating (e.g. 1200)" style="flex:1;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;">
+        <!-- ROOM: MEMBERS -->
+        <div class="ac-room active" id="acRoomMembers">
+          <div class="ac-card">
+            <h4>Current members</h4>
+            <div id="adminMembers" style="font-size:13px;"></div>
+          </div>
+          <div class="ac-card">
+            <h4>Add a member</h4>
+            <input id="amName" placeholder="Full name" class="ac-field">
+            <div class="ac-row" style="margin-bottom:9px;">
+              <select id="amGender" class="ac-field" style="margin-bottom:0;"><option value="M">Male</option><option value="F">Female</option></select>
+              <input id="amRating" type="number" placeholder="Rating (e.g. 1200)" class="ac-field" style="margin-bottom:0;">
+            </div>
+            <input id="amPin" inputmode="numeric" placeholder="4-digit PIN" class="ac-field">
+            <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminAddMember()">Add member</button>
+            <div id="adminMsg" class="ac-msg"></div>
+          </div>
         </div>
-        <input id="amPin" inputmode="numeric" placeholder="4-digit PIN" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:8px;">
-        <button class="btn btn-primary" onclick="adminAddMember()">Add Member</button>
-        <div id="adminMsg" style="font-size:13px;margin-top:10px;"></div>
 
-        <div class="ladders-group-title" style="margin-top:22px;">Tournaments</div>
-        <div id="adminTournaments" style="font-size:13px;margin-bottom:10px;"></div>
-        <input id="atName" placeholder="New tournament name (e.g. Summer Swing)" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:8px;">
-        <select id="atType" style="width:100%;padding:10px;border:1.5px solid #ccc;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:8px;">
-          <option value="external">External (OPR tracks stats only)</option>
-          <option value="internal">Internal (OPR runs it — pairings/rounds)</option>
-        </select>
-        <button class="btn btn-primary" onclick="adminCreateTournament()">Create Tournament</button>
-        <div id="adminTourMsg" style="font-size:13px;margin-top:10px;"></div>
+        <!-- ROOM: TOURNAMENTS -->
+        <div class="ac-room" id="acRoomTours">
+          <div class="ac-card">
+            <h4>Tournaments</h4>
+            <div id="adminTournaments" style="font-size:13px;"></div>
+          </div>
+          <div class="ac-card">
+            <h4>Create a tournament</h4>
+            <input id="atName" placeholder="Tournament name (e.g. Summer Swing)" class="ac-field">
+            <select id="atType" class="ac-field">
+              <option value="external">External — OPR tracks stats only</option>
+              <option value="internal">Internal — OPR runs it (pairings &amp; rounds)</option>
+            </select>
+            <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminCreateTournament()">Create tournament</button>
+            <div id="adminTourMsg" class="ac-msg"></div>
+          </div>
+        </div>
+
+        <!-- ROOM: CLUB -->
+        <div class="ac-room" id="acRoomClub">
+          <div class="ac-card">
+            <h4>Club details</h4>
+            <div id="acClubDetails" style="font-size:13px;"></div>
+            <div class="ac-row" style="margin-top:10px;">
+              <button class="ac-btn ac-btn-ghost" style="flex:1;" onclick="adminRenameClub()">Rename club</button>
+              <button class="ac-btn ac-btn-ghost" style="flex:1;" onclick="adminChangeCode()">Change admin code</button>
+            </div>
+          </div>
+          <div class="ac-card">
+            <h4>Manage clubs</h4>
+            <div class="ac-row">
+              <button class="ac-btn ac-btn-ghost" style="flex:1;" onclick="adminAddClub()">+ Add club</button>
+              <button class="ac-btn ac-btn-danger" style="flex:1;" onclick="adminDeleteClub()">Delete this club</button>
+            </div>
+            <div style="font-size:11px;color:#9b80b3;margin-top:8px;">Adding and deleting clubs is master-admin only.</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -562,10 +623,48 @@ async function adminUnlock(){
   document.getElementById('adminPanel').style.display='block';
   fillClubs(r.clubs);
 }
+// ---- Admin Control Room: tabs + context ----
+function acRoom(which){
+  ['members','tours','club'].forEach(r=>{
+    document.getElementById('acRoom'+r.charAt(0).toUpperCase()+r.slice(1)).classList.toggle('active', r===which);
+  });
+  document.getElementById('acTabMembers').classList.toggle('active', which==='members');
+  document.getElementById('acTabTours').classList.toggle('active', which==='tours');
+  document.getElementById('acTabClub').classList.toggle('active', which==='club');
+  if(which==='club') renderClubDetails();
+}
+function acUpdateContext(){
+  const sel=document.getElementById('adminClubSelect');
+  const name = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '—';
+  const nm=document.getElementById('acClubName'); if(nm) nm.textContent=name.replace(/^[0-9]+\s*—\s*/,'');
+  const ac=document.getElementById('acAccess'); if(ac) ac.textContent = (ADMIN_PIN==='1963') ? 'Master admin' : 'Club admin';
+}
+let _adminClubs=[];
+function renderClubDetails(){
+  const box=document.getElementById('acClubDetails'); if(!box) return;
+  const cid=document.getElementById('adminClubSelect').value;
+  const c=_adminClubs.find(x=>String(x.id)===String(cid));
+  if(!c){ box.innerHTML='<span style="color:#888;">Select a club.</span>'; return; }
+  box.innerHTML =
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0eaf5;"><span style="color:#9b80b3;">Club name</span><strong>'+c.name+'</strong></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0eaf5;"><span style="color:#9b80b3;">Club ID</span><strong>'+c.id+'</strong></div>'+
+    '<div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="color:#9b80b3;">Admin code</span><strong>'+(c.admin_pin||'—')+'</strong></div>';
+}
+async function adminChangeCode(){
+  const cid=document.getElementById('adminClubSelect').value;
+  const code=prompt('New admin code for this club (digits):');
+  if(code===null) return;
+  const r=await adminCall('set_club_code',{ club_id:Number(cid), code:code.trim() });
+  if(!r.ok){ alert(r.error||'Could not change code.'); return; }
+  await refreshClubs(); acRoom('club');
+}
+
 function fillClubs(clubs){
+  _adminClubs=clubs;
   const sel=document.getElementById('adminClubSelect'); sel.innerHTML='';
   clubs.forEach(c=>{ const o=document.createElement('option'); o.value=c.id; o.textContent=c.id+' — '+c.name; sel.appendChild(o); });
   adminLoadMembers();
+  acUpdateContext();
 }
 async function refreshClubs(){ const r=await adminCall('list_clubs'); if(r.ok) fillClubs(r.clubs); }
 async function adminAddClub(){
