@@ -2433,47 +2433,54 @@ async function renderClubLadder(){
   const body = document.getElementById('clBody');
   const cat = CL_CAT;
   const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}&order=position.asc`) || [];
+  const sel = 'width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  // category tabs
-  let tabs = '<div class="tm-divbar" style="margin:0 0 12px;">';
-  ["Men's","Ladies","Mixed"].forEach(d=>{ tabs += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+d+'</button>'; });
-  tabs += '</div>';
+  // header card: count + entry status (mirrors tournament counter)
+  let counter = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;">'
+    + '<h2 style="margin:0;">' + cat + ': ' + rows.length + ' on ladder</h2>'
+    + '<span style="font-size:12px;font-weight:700;color:#1E8449;">open</span></div></div>';
 
-  // ladder table
-  let table = '<div class="card"><h2>'+cat+' Ladder</h2>';
-  if(!rows.length){
-    table += '<p class="sub">No teams on the '+cat+' ladder yet. Add a pair below — the first teams seed by rating, then it\'s all about results.</p>';
-  } else {
-    table += '<p class="sub">Position ladder — beat a team above you and you take their place. Ladder matches are entered like any score (event = “Ladder Match”).</p>';
-    table += '<table><thead><tr><th class="num">#</th><th>Team</th><th></th></tr></thead><tbody>';
-    rows.forEach(r=>{
-      table += '<tr><td class="num"><span class="rank'+(r.position===1?' top':'')+'">'+r.position+'</span></td>'
-        + '<td><b>'+r.p1+' / '+r.p2+'</b></td>'
-        + '<td class="num"><button onclick="clRemove('+r.id+',\''+(r.p1+' / '+r.p2).replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:15px;" title="Remove (admin)">×</button></td></tr>';
-    });
-    table += '</tbody></table>';
-  }
-  table += '</div>';
-
-  // join form (gender-filtered by category)
-  const sel='width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
-  let join = '<div class="card"><h2>Join the '+cat+' ladder</h2>'
-    + '<label style="font-size:12px;color:#6b6b76;">Player 1</label><select id="clP1" style="'+sel+'" onchange="clRefill()"></select>'
-    + '<label style="font-size:12px;color:#6b6b76;">Player 2</label><select id="clP2" style="'+sel+'" onchange="clRefill()"></select>'
+  // join card with Division dropdown (same styling as Enter a team)
+  const divOpts = ["Men's","Ladies","Mixed"].map(d=>'<option value="'+d.replace(/"/g,'&quot;')+'"'+(d===cat?' selected':'')+'>'+d+'</option>').join('');
+  let joinCard = '<div class="card"><h2>Join the ladder</h2>'
+    + '<p class="sub">Pick the division, then two players. New pairs join at the bottom; the ladder seeds by rating on first pass, then moves on results.</p>'
+    + '<label style="font-size:12px;color:#6b6b76;">Division</label>'
+    + '<select id="clCat" style="' + sel + '" onchange="clChangeCat()">' + divOpts + '</select>'
+    + '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
+    + '<select id="clP1" style="' + sel + '" onchange="clRefill()"></select>'
+    + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
+    + '<select id="clP2" style="' + sel + '" onchange="clRefill()"></select>'
     + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="clJoin()">Add pair to ladder</button>'
     + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
 
-  // admin: first-pass seed by rating (only useful before any matches)
-  let admin = '<div class="card"><h2>Admin</h2>'
-    + '<p class="sub">First-pass ordering sets the ladder by combined rating (strongest at the top). Use once when starting a ladder.</p>'
+  // ladder table card (seed badges, divtag, like entered-teams)
+  let listCard = '<div class="card"><h2>The ladder</h2>';
+  if(!rows.length){
+    listCard += '<p class="sub">No teams on the ' + cat + ' ladder yet. Add a pair above.</p>';
+  } else {
+    listCard += '<div style="margin:6px 0 4px;"><span class="tm-divtag">' + cat + '</span> <span style="font-size:11px;color:#888;">' + rows.length + ' team' + (rows.length!==1?'s':'') + '</span></div>';
+    listCard += '<table><thead><tr><th class="num">#</th><th>Team</th><th></th></tr></thead><tbody>';
+    rows.forEach(r=>{
+      listCard += '<tr><td class="num"><span class="seed' + (r.position===1?' s1':'') + '">' + r.position + '</span></td>'
+        + '<td><b>' + r.p1 + ' / ' + r.p2 + '</b></td>'
+        + '<td class="num"><button onclick="clRemove(' + r.id + ',\'' + (r.p1+' / '+r.p2).replace(/'/g,"\\'") + '\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;" title="Remove (admin)">×</button></td></tr>';
+    });
+    listCard += '</tbody></table>';
+  }
+  listCard += '</div>';
+
+  // admin seed card
+  let admin = '<div class="card"><h2>Admin · first-pass order</h2>'
+    + '<p class="sub">Sets the ' + cat + ' ladder by combined rating (strongest at the top). Use once when starting a ladder.</p>'
     + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
     + '<button class="ac-btn ac-btn-primary" onclick="clSeed()">Seed by rating</button></div>'
     + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
 
-  body.innerHTML = tabs + table + join + admin;
+  body.innerHTML = counter + joinCard + listCard + admin;
   clRefill();
 }
 
+function clChangeCat(){ CL_CAT = document.getElementById('clCat').value; renderClubLadder(); }
 function clPick(d){ CL_CAT = d; renderClubLadder(); }
 
 function clRefill(){
