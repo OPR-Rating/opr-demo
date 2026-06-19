@@ -221,6 +221,16 @@
   .tm-nav { display:flex; gap:6px; padding:12px; background:#efe9f3; margin:0 12px 12px; border-radius:11px; }
   .tm-nav button { flex:1; padding:9px 6px; border:none; background:none; border-radius:8px; font-size:12px; font-weight:700; color:#7a6688; cursor:pointer; font-family:inherit; }
   .tm-nav button.active { background:#fff; color:#6C3483; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+
+  .ac-btn-gold { background:linear-gradient(180deg,#F1C40F,#E3AC00); color:#4A235A; }
+  #etBody .seed, #tournamentSheetContent .seed { display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;background:#6C3483;color:#fff;border-radius:8px;font-weight:700;font-size:12px;padding:0 5px; }
+  #etBody .seed.s1, #tournamentSheetContent .seed.s1 { background:#F1C40F;color:#4A235A; }
+  #etBody .card h2, #tournamentSheetContent .card h2 { font-size:16px;margin:0 0 3px; }
+  #etBody table, #tournamentSheetContent table { width:100%;border-collapse:collapse;font-size:13px; }
+  #etBody th, #etBody td { padding:8px 6px;text-align:left;border-bottom:1px solid #e6e3ec; }
+  #etBody th { font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#6b6b76;font-weight:700; }
+  #etBody td.num, #etBody th.num { text-align:center; }
+  #etBody .card { --purple:#6C3483; }
 </style>
 </head>
 <body>
@@ -517,6 +527,7 @@
               <option value="external">External — OPR tracks stats only</option>
               <option value="internal">Internal — OPR runs it (pairings &amp; rounds)</option>
             </select>
+            <input id="atCap" type="number" min="4" step="2" placeholder="Team cap for internal (e.g. 16) — optional" class="ac-field">
             <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminCreateTournament()">Create tournament</button>
             <div id="adminTourMsg" class="ac-msg"></div>
           </div>
@@ -751,12 +762,14 @@ async function adminCreateTournament(){
   const cid=document.getElementById('adminClubSelect').value;
   const name=document.getElementById('atName').value.trim();
   const type=document.getElementById('atType').value;
+  const capRaw=document.getElementById('atCap').value;
+  const max_teams = capRaw ? Number(capRaw) : null;
   const msg=document.getElementById('adminTourMsg');
   if(!name){ msg.innerHTML='<span style="color:#c0392b;">Tournament name required.</span>'; return; }
-  const r=await adminCall('create_tournament',{ club_id:Number(cid), name, type });
+  const r=await adminCall('create_tournament',{ club_id:Number(cid), name, type, max_teams });
   if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
   msg.innerHTML='<span style="color:#1e8449;">Created "'+name+'" ('+type+').</span>';
-  document.getElementById('atName').value='';
+  document.getElementById('atName').value=''; document.getElementById('atCap').value='';
   adminLoadTournaments();
 }
 async function adminToggleTournament(id, active){
@@ -2003,34 +2016,122 @@ async function showEnterTournament(preselect) {
   showScreen('enterTournamentScreen');
   const body = document.getElementById('etBody');
   body.innerHTML = '<div class="loading">Loading…</div>';
-
-  // The tournament is fixed (we arrived from it). No dropdown needed.
   const tournament = preselect || TOURNAMENT_EVENT;
+  window._etTournament = tournament;
 
-  const players = await sbGet(
-    `players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`
-  ) || [];
-  // keep gender lists for category filtering
+  // players (for gender-filtered pickers)
+  const players = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
   window._etPlayers = players;
+  // tournament cap (max_teams) — read defensively in case the column isn't there yet
+  let cap = null;
+  try {
+    const trow = await sbGet(`tournaments?select=max_teams&name=eq.${encodeURIComponent(tournament)}&club_id=eq.${CLUB_ID}&limit=1`);
+    if (trow && trow.length && trow[0].max_teams != null) cap = Number(trow[0].max_teams);
+  } catch(e){}
+  window._etCap = cap;
 
-  const sel = 'style="width:100%;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:10px;"';
+  renderEnterScreen();
+}
 
-  body.innerHTML =
-      '<div class="card"><h2>Enter a team</h2>'
-    + '<p class="sub">Tournament: <strong>' + tournament + '</strong>. Pick the category, then the two players. The team is seeded by their combined rating at entry.</p>'
-    + '<input type="hidden" id="etTour" value="' + tournament.replace(/"/g,'&quot;') + '">'
-    + 'Category<br><select id="etCat" ' + sel + ' onchange="etRefillPlayers()">'
-    +   '<option value="Men\'s">Men\'s</option><option value="Ladies">Ladies</option>'
-    +   '<option value="Mixed">Mixed</option><option value="All Sorts">All Sorts</option></select>'
-    + 'Player 1<br><select id="etP1" ' + sel + ' onchange="etRefillPlayers()"></select>'
-    + 'Player 2<br><select id="etP2" ' + sel + ' onchange="etRefillPlayers()"></select>'
-    + '<button class="menu-btn" style="background:#F1C40F;color:#4A235A;font-weight:700;" onclick="submitTournamentEntry()">Add team</button>'
-    + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div>'
-    + '</div>'
-    + '<div class="card"><h2>Entered teams</h2><div id="etList">—</div></div>';
+// Full entry experience: counter, gender-filtered pickers, seed preview, entered list, rounds slider, admin-gated generate.
+async function renderEnterScreen(){
+  const tournament = window._etTournament;
+  const body = document.getElementById('etBody');
+  const entries = TM.seedEntries(await tmLoadEntries(tournament));
+  const cap = window._etCap;
+  const n = entries.length;
+  const atCap = cap != null && n >= cap;
+  const sel = 'width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  etRefillPlayers();
-  refreshEntryList(tournament);
+  // counter card
+  let counter = '';
+  if (cap != null) {
+    const pct = Math.min(100, Math.round(n / cap * 100));
+    counter = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;">'
+      + '<h2 style="margin:0;">' + n + ' / ' + cap + ' entered</h2>'
+      + '<span style="font-size:12px;font-weight:700;color:' + (atCap?'#c0392b':'#1E8449') + ';">' + (atCap?'ENTRY CLOSED':'entry open') + '</span></div>'
+      + '<div style="height:8px;background:#eee;border-radius:5px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + (atCap?'#c0392b':'var(--purple,#6C3483)') + ';"></div></div></div>';
+  } else {
+    counter = '<div class="card"><h2 style="margin:0;">' + n + ' entered</h2></div>';
+  }
+
+  // entry card
+  let entryCard;
+  if (atCap) {
+    entryCard = '<div class="card"><h2>Enter a team</h2><p class="sub">The team cap has been reached — entry is closed. An admin can raise the cap if more teams should be allowed.</p></div>';
+  } else {
+    entryCard = '<div class="card"><h2>Enter a team</h2>'
+      + '<p class="sub">Tournament: <strong>' + tournament + '</strong>. Pick the category, then two players. The team is seeded by their combined rating (Men\'s/Ladies = average; Mixed/All Sorts = weighted).</p>'
+      + '<input type="hidden" id="etTour" value="' + tournament.replace(/"/g,'&quot;') + '">'
+      + '<label style="font-size:12px;color:#6b6b76;">Category</label>'
+      + '<select id="etCat" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()">'
+      +   '<option value="Men\'s">Men\'s</option><option value="Ladies">Ladies</option>'
+      +   '<option value="Mixed">Mixed</option><option value="All Sorts">All Sorts</option></select>'
+      + '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
+      + '<select id="etP1" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()"></select>'
+      + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
+      + '<select id="etP2" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()"></select>'
+      + '<div id="etSeedPrev" class="sub" style="margin:0 0 8px;"></div>'
+      + '<button class="ac-btn ac-btn-gold" style="width:100%;" onclick="submitTournamentEntry()">Add team</button>'
+      + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div></div>';
+  }
+
+  // entered teams (seeded)
+  let listCard = '<div class="card"><h2>Entered teams (' + n + ')</h2>';
+  if (!n) listCard += '<p class="sub">No teams entered yet. Add a few — they\'ll seed automatically by rating.</p>';
+  else {
+    listCard += '<table><thead><tr><th class="num">Seed</th><th>Team</th><th class="num">Cat</th><th class="num">Rating</th></tr></thead><tbody>';
+    entries.forEach((e,i)=> listCard += '<tr><td class="num"><span class="seed' + (i===0?' s1':'') + '">' + (i+1) + '</span></td><td><b>' + e.p1 + ' / ' + e.p2 + '</b></td><td class="num" style="font-size:11px;">' + (e.category||'') + '</td><td class="num">' + Math.round(e.seed_rating) + '</td></tr>');
+    listCard += '</tbody></table>';
+  }
+
+  // rounds slider + admin-gated generate (only meaningful with >=4 teams)
+  let genCard = '';
+  if (n >= 4) {
+    const plan = TM.suggestRounds(n);
+    if (window._etChosenTotal == null) window._etChosenTotal = plan.recommended;
+    window._etChosenTotal = Math.max(plan.minAllowed, Math.min(plan.maxAllowed, window._etChosenTotal));
+    genCard = '<div class="card"><h2>Rounds &amp; draw</h2>'
+      + '<p class="sub">This field of <b>' + n + '</b> teams supports <b>' + plan.minAllowed + '–' + plan.maxAllowed + '</b> fair rounds. Recommended: <b>' + plan.recommended + '</b>.</p>'
+      + '<div style="display:flex;align-items:center;gap:12px;">'
+      + '<input id="etRounds" type="range" min="' + plan.minAllowed + '" max="' + plan.maxAllowed + '" value="' + window._etChosenTotal + '" ' + (plan.minAllowed===plan.maxAllowed?'disabled':'') + ' style="flex:1;" oninput="etSetRounds(this.value)">'
+      + '<div id="etRoundsLbl" style="font-weight:800;color:var(--purple,#6C3483);min-width:78px;text-align:right;"></div></div>'
+      + '<div style="margin-top:14px;padding:12px;background:#f3eef7;border:1px solid #ddd0ea;border-radius:10px;">'
+      + '<div style="font-size:12px;color:#6b6b76;margin-bottom:6px;">🔒 Generating the draw is admin-only. Enter the admin PIN (this club\'s code, or the universal 1963).</div>'
+      + '<div style="display:flex;gap:8px;"><input id="etPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
+      + '<button class="ac-btn ac-btn-primary" onclick="etGenerate()">Generate draw</button></div>'
+      + '<div id="etGenMsg" class="sub" style="margin:8px 0 0;"></div></div></div>';
+  } else if (n > 0) {
+    genCard = '<div class="card"><p class="sub">Add at least 4 teams (even number) to generate a draw.</p></div>';
+  }
+
+  body.innerHTML = counter + entryCard + listCard + genCard;
+  if (!atCap) { etRefillPlayers(); etUpdateSeedPreview(); }
+  if (n >= 4) etSetRounds(window._etChosenTotal);
+}
+
+function etSetRounds(v){
+  window._etChosenTotal = parseInt(v);
+  const n = (document.querySelectorAll('#etList tr').length); // not used; recompute via plan
+  const lbl = document.getElementById('etRoundsLbl');
+  if(!lbl) return;
+  // fixed count comes from the engine plan; show fixed + swiss split
+  const total = window._etChosenTotal;
+  // best-effort: 3 fixed (or fewer for tiny fields)
+  const fixed = Math.min(3, total);
+  lbl.innerHTML = total + ' rounds<br><span style="font-size:10px;color:#888;font-weight:600;">' + fixed + ' fixed + ' + (total-fixed) + ' swiss</span>';
+}
+
+function etUpdateSeedPreview(){
+  const prev = document.getElementById('etSeedPrev'); if(!prev) return;
+  const p1 = document.getElementById('etP1').value, p2 = document.getElementById('etP2').value;
+  const cat = document.getElementById('etCat').value;
+  if(!p1 || !p2 || p1===p2){ prev.innerHTML=''; return; }
+  prev.innerHTML = 'Reading ratings…';
+  Promise.all([TM.readCurrentRating(p1), TM.readCurrentRating(p2)]).then(([a,b])=>{
+    if(a==null||b==null){ prev.innerHTML='<span style="color:#B9770E;">One of these players has no published rating yet.</span>'; return; }
+    prev.innerHTML = 'Seed rating: <b>' + Math.round(TM.pairRating(a,b,cat)) + '</b> (' + (cat==="Men's"||cat==='Ladies'?'average':'weighted') + ' of ' + a + ' &amp; ' + b + ')';
+  });
 }
 
 // Fill the two player dropdowns based on category + gender rules (mirrors score entry).
@@ -2039,6 +2140,7 @@ function etRefillPlayers(){
   const cat = document.getElementById('etCat').value;
   const p1sel = document.getElementById('etP1');
   const p2sel = document.getElementById('etP2');
+  if(!p1sel||!p2sel) return;
   const cur1 = p1sel.value, cur2 = p2sel.value;
   const men = players.filter(p=>p.gender==='M').map(p=>p.name);
   const ladies = players.filter(p=>p.gender==='F').map(p=>p.name);
@@ -2049,26 +2151,16 @@ function etRefillPlayers(){
   if(cat==="Men's"){ p1sel.innerHTML=opts(men,cur1); p2sel.innerHTML=opts(men,cur2); }
   else if(cat==='Ladies'){ p1sel.innerHTML=opts(ladies,cur1); p2sel.innerHTML=opts(ladies,cur2); }
   else if(cat==='Mixed'){
-    // one man + one lady: filter partner by the other's gender
     const p1IsMan = men.includes(cur1), p1IsLady = ladies.includes(cur1);
     const p2IsMan = men.includes(cur2), p2IsLady = ladies.includes(cur2);
     p1sel.innerHTML = opts(p2IsMan? ladies : p2IsLady? men : all, cur1);
     p2sel.innerHTML = opts(p1IsMan? ladies : p1IsLady? men : all, cur2);
-  } else { // All Sorts — anyone
+  } else {
     p1sel.innerHTML=opts(all,cur1); p2sel.innerHTML=opts(all,cur2);
   }
 }
 
-async function refreshEntryList(tournament) {
-  const list = document.getElementById('etList');
-  const entries = await tmLoadEntries(tournament);
-  const seeded = TM.seedEntries(entries);
-  if (!seeded.length) { list.innerHTML = '<div style="color:#888;">No teams yet.</div>'; return; }
-  let h = '<table><thead><tr><th class="num">Seed</th><th>Team</th><th class="num">Rating</th></tr></thead><tbody>';
-  seeded.forEach(e => h += '<tr><td class="num">' + e.seed + '</td><td><b>' + e.p1 + ' / ' + e.p2 + '</b></td><td class="num">' + Math.round(e.seed_rating) + '</td></tr>');
-  h += '</tbody></table>';
-  list.innerHTML = h;
-}
+async function refreshEntryList(tournament) { renderEnterScreen(); }
 
 async function submitTournamentEntry() {
   const tournament = document.getElementById('etTour').value;
@@ -2076,7 +2168,7 @@ async function submitTournamentEntry() {
   const p1 = document.getElementById('etP1').value;
   const p2 = document.getElementById('etP2').value;
   const msg = document.getElementById('etMsg');
-  if (!tournament || !p1 || !p2 || p1 === p2) { msg.innerHTML = '<span style="color:#c0392b;">Pick a tournament and two different players.</span>'; return; }
+  if (!tournament || !p1 || !p2 || p1 === p2) { msg.innerHTML = '<span style="color:#c0392b;">Pick two different players.</span>'; return; }
 
   msg.textContent = 'Reading ratings…';
   const r1 = await TM.readCurrentRating(p1);
@@ -2084,9 +2176,6 @@ async function submitTournamentEntry() {
   if (r1 == null || r2 == null) { msg.innerHTML = '<span style="color:#c0392b;">One of these players has no published rating yet.</span>'; return; }
   const seed_rating = TM.pairRating(r1, r2, category);
 
-  // WRITE the entry. Use master's secure write path if it exposes one;
-  // during testing this can be a direct insert (add a temporary anon policy).
-  // // PASTE HERE: replace with master's preferred write (Edge Function) if available.
   const resp = await fetch(SB_URL + '/functions/v1/tournament', {
     method: 'POST',
     headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
@@ -2094,9 +2183,22 @@ async function submitTournamentEntry() {
       entry: { tournament, category, p1, p2, seed_rating } })
   });
   if (!resp.ok) { msg.innerHTML = '<span style="color:#c0392b;">Could not save entry (' + resp.status + ').</span>'; return; }
-  msg.innerHTML = '<span style="color:#1e8449;">Added ' + p1 + ' / ' + p2 + ' (rating ' + Math.round(seed_rating) + ').</span>';
-  document.getElementById('etP1').value = ''; document.getElementById('etP2').value = '';
-  refreshEntryList(tournament);
+  renderEnterScreen();
+}
+
+// Admin-gated generate using the PIN box (verified server-side) + chosen rounds.
+async function etGenerate(){
+  const tournament = window._etTournament;
+  const pin = (document.getElementById('etPin').value || '').trim();
+  const gmsg = document.getElementById('etGenMsg');
+  if(!pin){ gmsg.innerHTML='<span style="color:#c0392b;">Enter the admin PIN.</span>'; return; }
+  const entries = TM.seedEntries(await tmLoadEntries(tournament));
+  const N = entries.length;
+  if(N < 4){ gmsg.innerHTML='<span style="color:#c0392b;">Need at least 4 teams.</span>'; return; }
+  if(N % 2 !== 0){ gmsg.innerHTML='<span style="color:#B9770E;">Odd number of teams ('+N+'). This format needs an even field — add or remove a team.</span>'; return; }
+  TM_ADMIN_PIN = pin;
+  gmsg.textContent = 'Generating…';
+  await tmGenerateFixedDraw(tournament, window._etChosenTotal);
 }
 
 /* ============================================================================
@@ -2106,8 +2208,8 @@ async function submitTournamentEntry() {
    ============================================================================ */
 let TM_ADMIN_PIN = '';
 async function tmGenerateFixedDraw(tournament, chosenTotal) {
-  // admin gate: ask for PIN (1963 master or club code). Verified server-side.
-  TM_ADMIN_PIN = prompt('Enter admin PIN to generate the draw:') || '';
+  // PIN already captured by the entry screen's gate (etGenerate). Verified server-side.
+  if (!TM_ADMIN_PIN) { TM_ADMIN_PIN = prompt('Enter admin PIN to generate the draw:') || ''; }
   if (!TM_ADMIN_PIN) return;
   const entries = TM.seedEntries(await tmLoadEntries(tournament));
   const N = entries.length;
