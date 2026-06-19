@@ -205,6 +205,22 @@
   .ac-btn-ghost { background:#f3eef8; color:#6C3483; border:1.5px solid #d9cfe3; }
   .ac-btn-danger { background:none; color:#c0392b; border:1.5px solid #e6b0aa; }
   .ac-msg { font-size:13px; margin-top:10px; min-height:18px; }
+
+  /* ===== Tournament module view ===== */
+  #tournamentSheetContent { --da:#6C3483; --db:#2E86C1; --cross:#117A65; --warn:#B9770E; }
+  #tournamentSheetContent .card { background:#fff; border:1px solid #e6e3ec; border-radius:14px; padding:16px; margin:0 12px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  #tournamentSheetContent .sub { font-size:12px; color:#6b6b76; margin:0 0 14px; line-height:1.5; }
+  #tournamentSheetContent table { width:100%; border-collapse:collapse; font-size:13px; }
+  #tournamentSheetContent th, #tournamentSheetContent td { padding:7px 8px; border-bottom:1px solid #f0eef4; text-align:left; }
+  #tournamentSheetContent td.num, #tournamentSheetContent th.num { text-align:center; }
+  #tournamentSheetContent .pill { display:inline-block; padding:2px 9px; border-radius:11px; font-size:11px; font-weight:700; color:#fff; }
+  #tournamentSheetContent .pill.DA { background:var(--da); }
+  #tournamentSheetContent .pill.DB { background:var(--db); }
+  #tournamentSheetContent .pill.Cross { background:var(--cross); }
+  #tournamentSheetContent .sub-flag { font-size:10px; color:var(--warn); font-weight:700; display:block; }
+  .tm-nav { display:flex; gap:6px; padding:12px; background:#efe9f3; margin:0 12px 12px; border-radius:11px; }
+  .tm-nav button { flex:1; padding:9px 6px; border:none; background:none; border-radius:8px; font-size:12px; font-weight:700; color:#7a6688; cursor:pointer; font-family:inherit; }
+  .tm-nav button.active { background:#fff; color:#6C3483; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
 </style>
 </head>
 <body>
@@ -438,6 +454,12 @@
     </div>
   </div>
 
+  <!-- ENTER TOURNAMENT -->
+  <div class="screen hidden" id="enterTournamentScreen">
+    <div class="header"><button class="back-btn" onclick="goHome()">&larr;</button><h1>Enter Tournament</h1></div>
+    <div class="screen-content"><div id="etBody"></div></div>
+  </div>
+
   <!-- ADMIN -->
   <div class="screen hidden" id="adminScreen">
     <div class="header"><button class="back-btn" onclick="goHome()">&larr;</button><h1>Admin</h1></div>
@@ -451,7 +473,7 @@
       <div id="adminPanel" style="display:none;">
         <!-- Club context: which club am I managing + access level -->
         <div class="ac-context">
-          <div class="ac-club">🎾 <span id="acClubName">—</span></div>
+          <div class="ac-club"><span id="acClubName">—</span></div>
           <div class="ac-meta"><span id="acAccess">Admin</span> · Control Room</div>
         </div>
         <select id="adminClubSelect" onchange="adminLoadMembers();acUpdateContext();renderClubDetails()" class="ac-field" style="margin-bottom:14px;"></select>
@@ -975,6 +997,9 @@ async function loadTournamentPicker(){
   if(!list.find(t=>t.name===TOURNAMENT_EVENT)){ TOURNAMENT_EVENT = list[0].name; }
   // is the currently-viewed event an archived one?
   TOURNAMENT_ARCHIVED = !!archived.find(t=>t.name===TOURNAMENT_EVENT) && !active.find(t=>t.name===TOURNAMENT_EVENT);
+  // remember the type of the currently-viewed tournament (internal vs external)
+  const viewed = list.find(t=>t.name===TOURNAMENT_EVENT);
+  const isInternal = viewed && viewed.type==='internal';
   let html='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
     +'<span style="font-size:12px;color:#5b3a6e;">Viewing:</span>'
     +'<select id="tournamentSelect" onchange="onTournamentPick()" style="flex:1;min-width:160px;padding:8px;border:1.5px solid #7D3C98;border-radius:8px;font-size:14px;font-weight:700;color:#5b3a6e;">';
@@ -986,7 +1011,33 @@ async function loadTournamentPicker(){
   }
   html+='</select></div>';
   html+='<div style="text-align:center;font-size:18px;font-weight:800;color:#6C3483;margin:12px 0 4px;">'+TOURNAMENT_EVENT+'</div>';
+  if(isInternal){
+    // internal tournament → entry button + the module's Teams/Rounds/Standings view
+    html+='<div style="text-align:center;margin:8px 0;"><button class="menu-btn" style="display:inline-block;width:auto;padding:8px 16px;" onclick="showEnterTournament(TOURNAMENT_EVENT)">+ Enter a team</button></div>';
+  }
   picker.innerHTML=html;
+  // Toggle between the external standings buttons (tournamentBody) and an
+  // internal "view draw" entry point (tournamentInternal) based on type.
+  let internalDiv = document.getElementById('tournamentInternal');
+  if(!internalDiv){
+    internalDiv = document.createElement('div');
+    internalDiv.id = 'tournamentInternal';
+    body.parentNode.insertBefore(internalDiv, body.nextSibling);
+  }
+  if(isInternal){
+    body.style.display='none';
+    internalDiv.style.display='';
+    internalDiv.innerHTML = '<div style="text-align:center;margin-top:6px;">'
+      + '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">View tournament draw &amp; standings</button>'
+      + '</div>';
+  } else {
+    body.style.display='';
+    internalDiv.style.display='none';
+  }
+}
+// Open the internal tournament module view (it navigates to the sheet screen itself)
+function openInternalTournament(name){
+  if(typeof loadTournamentSheet==='function'){ loadTournamentSheet(name); }
 }
 function onTournamentPick(){
   const sel=document.getElementById('tournamentSelect');
@@ -1623,6 +1674,455 @@ document.addEventListener('DOMContentLoaded', updateOfflineBanner);
 <script>
 /* Service worker registration removed for the test build to prevent stale
    caching from serving an older app version. */
+</script>
+
+<script>
+/* ===== TOURNAMENT MODULE (secured writes) ===== */
+/* ============================================================================
+   OPR TOURNAMENT MODULE  —  drop-in for the Master app (tourtest.html)
+   ----------------------------------------------------------------------------
+   WHAT THIS IS
+     The Internal-tournament machinery: pairing engine (bands, fixed rounds,
+     Swiss, no-rematch backtracking), team entry + seeding (reads master's
+     published ratings), and the sheet renderer that fills the existing
+     `tournamentSheetContent` slot.
+
+   WHAT THIS IS NOT
+     - It does NOT calculate ratings. It READS player_results.current_rating.
+     - It does NOT recompute. Tournament matches flow through master's normal
+       score-entry -> matches -> recompute path (event = tournament name).
+     - It does NOT build the "Club Ladder" (that is a master feature).
+
+   HOW TO INSTALL  (master-app builder)
+     1. Paste this whole block inside the master app's <script>, near the other
+        load* functions. It reuses master's existing globals/helpers:
+          sbGet(pathq), showScreen(id), CLUB_ID,
+          and the combiner rule (Combined for Men's/Ladies, Weighted otherwise).
+     2. Wire the Enter-Tournament + Sheet screens to the existing nav (see the
+        two `// PASTE HERE` notes below).
+     3. Requires the two tables in 01_tournament_tables.sql.
+
+   OPEN ITEM (flagged, not built): substitutions. For now we assume the two
+   entered players are the two who play. `anchor` exists on the entry record so
+   a future version can identify a fixture's result even with a stand-in, and
+   admins will be able to edit a name in Teams & Bands. Do not rely on it yet.
+   ============================================================================ */
+
+const TM = (function () {
+
+  /* ---------- ENGINE (verified: 6/8 vs live VBA; matches worked R4 example) ---------- */
+  function makeBands(N) {
+    const h = Math.round(2 + N / 8);
+    const res = {};
+    for (let s = 1; s <= N; s++) {
+      let lo = s - h, hi = s + h;
+      if (lo < 1) { hi += (1 - lo); lo = 1; }
+      if (hi > N) { lo -= (hi - N); hi = N; }
+      res[s] = [Math.max(1, lo), Math.min(N, hi)];
+    }
+    return res;
+  }
+  function divSplit(N) { return Math.ceil(N / 2); }
+  function bandClass(a, b, aEnd) {
+    const da = a <= aEnd, db = b <= aEnd;
+    if (da && db) return 'DA';
+    if (!da && !db) return 'DB';
+    return 'Cross';
+  }
+  function backtrackPair(order, bands, history, score) {
+    const pos = {}; order.forEach((s, i) => pos[s] = i);
+    let budget = 200000; // effort guard: abandon pathological searches gracefully
+    const elig = (a, b) => {
+      const [lo, hi] = bands[a]; if (b < lo || b > hi) return false;
+      const [l2, h2] = bands[b]; if (a < l2 || a > h2) return false;
+      if (history.has([a, b].sort((x, y) => x - y).join('-'))) return false;
+      return true;
+    };
+    function solve(rem) {
+      if (rem.length === 0) return [];
+      if (--budget <= 0) return null; // ran out of effort — treat as no-solution
+      const a = rem[0], rest = rem.slice(1);
+      let c = rest.filter(b => elig(a, b));
+      c.sort((x, y) => score ? (score(a, x) - score(a, y)) || (pos[x] - pos[y]) : (pos[x] - pos[y]));
+      for (const b of c) {
+        const sub = solve(rest.filter(x => x !== b));
+        if (sub !== null) return [[a, b], ...sub];
+      }
+      return null;
+    }
+    return solve(order);
+  }
+  // Fixed rounds: wide -> narrow opponent-gap profile, no rematch, band-legal.
+  function fixedRounds(N, nFixed) {
+    const bands = makeBands(N), history = new Set(), rounds = [];
+    const h = Math.round(2 + N / 8), offs = [];
+    for (let k = 0; k < nFixed; k++) {
+      const f = nFixed > 1 ? k / (nFixed - 1) : 1;
+      offs.push(Math.max(1, Math.round(h - f * (h - 1))));
+    }
+    const so = [...Array(N)].map((_, i) => i + 1);
+    for (let k = 0; k < nFixed; k++) {
+      const t = offs[k];
+      const sc = (a, b) => Math.abs(Math.abs(a - b) - t) * 100 + Math.abs(a - b);
+      const p = backtrackPair(so, bands, history, sc);
+      if (p === null) return { rounds, history, ok: false, failedRound: k + 1 };
+      const sorted = p.map(x => x.sort((m, n) => m - n));
+      sorted.forEach(x => history.add(x.join('-')));
+      rounds.push(sorted);
+    }
+    return { rounds, history, ok: true };
+  }
+  // Swiss round from a ranked seed order. Widens bands a notch if (and only if)
+  // a strict no-rematch draw is impossible. Returns {pairs, widened} or null.
+  function swissRound(N, rankedOrder, history) {
+    const baseH = Math.round(2 + N / 8);
+    const pos = {}; rankedOrder.forEach((s, i) => pos[s] = i);
+    const sc = (a, b) => Math.abs(pos[a] - pos[b]);
+    for (let h = baseH; h <= N; h++) {
+      const bands = {};
+      for (let s = 1; s <= N; s++) {
+        let lo = s - h, hi = s + h;
+        if (lo < 1) { hi += (1 - lo); lo = 1; }
+        if (hi > N) { lo -= (hi - N); hi = N; }
+        bands[s] = [Math.max(1, lo), Math.min(N, hi)];
+      }
+      const p = backtrackPair(rankedOrder, bands, history, sc);
+      if (p !== null) return { pairs: p.map(x => x.sort((m, n) => m - n)), widened: h - baseH };
+    }
+    return null; // field exhausted — cannot avoid a rematch
+  }
+  // How many no-rematch band-legal rounds a field can safely sustain.
+  function maxSafeRounds(N) {
+    const bands = makeBands(N), history = new Set();
+    let n = 0;
+    for (let i = 0; i < N; i++) {
+      const p = backtrackPair([...Array(N)].map((_, j) => j + 1), bands, history);
+      if (p === null) break;
+      p.forEach(x => history.add(x.sort((a, b) => a - b).join('-')));
+      n++;
+    }
+    return n;
+  }
+  // Suggest a round plan for a field. Returns the safe ceiling, the fixed-round
+  // count, a RECOMMENDED total (enough to separate the field), and the admin's
+  // allowed range. Admin picks any total in [minAllowed, maxAllowed].
+  function suggestRounds(N) {
+    const safe = maxSafeRounds(N);
+    const fixed = Math.min(3, safe);
+    const sep = Math.ceil(Math.log2(Math.max(2, N))) + 1; // rounds to separate field
+    let recommended = Math.max(4, sep);
+    recommended = Math.min(recommended, safe);  // never exceed the fair ceiling
+    recommended = Math.max(recommended, fixed); // at least the fixed rounds
+    return {
+      safe, fixed,
+      recommended,
+      swiss: recommended - fixed,
+      minAllowed: fixed,
+      maxAllowed: safe
+    };
+  }
+
+  /* ---------- PAIR RATING (master's rule; READ-ONLY use of ratings) ---------- */
+  function usesCombined(category) {
+    return category === "Men's" || category === 'Ladies';
+  }
+  function pairRating(r1, r2, category) {
+    const a = Number(r1) || 0, b = Number(r2) || 0;
+    if (usesCombined(category)) return (a + b) / 2;                 // Combined
+    const hi = Math.max(a, b), lo = Math.min(a, b);
+    return hi * 0.6 + lo * 0.4;                                     // Weighted
+  }
+
+  /* ---------- ENTRY + SEEDING ----------
+     Reads master's published current ratings, computes pair rating, FREEZES it
+     on the entry. Sorting high->low later assigns seeds. No recompute, no calls. */
+  async function readCurrentRating(name) {
+    // master keeps player_results.current_rating up to date
+    const rows = await sbGet(
+      `player_results?select=current_rating&player=eq.${encodeURIComponent(name)}&club_id=eq.${CLUB_ID}`
+    );
+    if (rows && rows.length && rows[0].current_rating != null) return Number(rows[0].current_rating);
+    return null; // caller decides how to handle an unrated player
+  }
+  // Build a seeded Teams&Bands list from a set of entries (each {p1,p2,category,seed_rating}).
+  function seedEntries(entries) {
+    const sorted = [...entries].sort((x, y) => y.seed_rating - x.seed_rating);
+    return sorted.map((e, i) => Object.assign({}, e, { seed: i + 1 }));
+  }
+
+  return {
+    makeBands, divSplit, bandClass, fixedRounds, swissRound,
+    maxSafeRounds, suggestRounds, pairRating, usesCombined,
+    readCurrentRating, seedEntries
+  };
+})();
+
+
+/* ============================================================================
+   DATA LOADERS  (read entries + fixtures + results for a tournament)
+   ============================================================================ */
+async function tmLoadEntries(tournament) {
+  return await sbGet(
+    `tournament_entries?select=*&club_id=eq.${CLUB_ID}&tournament=eq.${encodeURIComponent(tournament)}&order=seed.asc`
+  ) || [];
+}
+async function tmLoadFixtures(tournament) {
+  return await sbGet(
+    `tournament_fixtures?select=*&club_id=eq.${CLUB_ID}&tournament=eq.${encodeURIComponent(tournament)}&order=round.asc`
+  ) || [];
+}
+
+/* ============================================================================
+   RENDERER  —  fills the EXISTING #tournamentSheetContent slot.
+   Master's real header (header_bg2.png) sits above this automatically.
+   Sets #tournamentSheetTitle to the tournament name.
+   ============================================================================ */
+async function loadTournamentSheet(tournament) {
+  showScreen('tournamentSheetScreen');
+  const titleEl = document.getElementById('tournamentSheetTitle');
+  if (titleEl) titleEl.textContent = tournament;
+  const box = document.getElementById('tournamentSheetContent');
+  box.innerHTML = '<div class="loading">Loading tournament…</div>';
+
+  const entries = await tmLoadEntries(tournament);
+  if (!entries.length) {
+    box.innerHTML = '<div class="empty-state" style="padding:20px;">'
+      + '<p>No teams entered yet.</p>'
+      + '<button class="menu-btn" onclick="showEnterTournament(\'' + tournament.replace(/'/g, "\\'") + '\')">Enter a team</button>'
+      + '</div>';
+    return;
+  }
+  const fixtures = await tmLoadFixtures(tournament);
+
+  const N = entries.length;
+  const A_END = TM.divSplit(N);
+  const BANDS = TM.makeBands(N);
+  const bySeed = {}; entries.forEach(e => bySeed[e.seed] = e);
+  const tName = s => bySeed[s] ? (bySeed[s].p1 + ' / ' + bySeed[s].p2) : ('Seed ' + s);
+
+  // group fixtures by round
+  const rounds = {};
+  fixtures.forEach(f => { (rounds[f.round] = rounds[f.round] || []).push(f); });
+  const roundNos = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+
+  // standings from played fixtures
+  function standings(maxRound, divFilter) {
+    const t = {};
+    entries.forEach(e => t[e.seed] = { seed: e.seed, p: 0, sets: 0, gw: 0, gd: 0 });
+    fixtures.filter(f => f.round <= maxRound && f.sets_a != null).forEach(f => {
+      t[f.seed_a].p++; t[f.seed_b].p++;
+      t[f.seed_a].sets += f.sets_a; t[f.seed_b].sets += f.sets_b;
+      t[f.seed_a].gw += f.games_a; t[f.seed_b].gw += f.games_b;
+      t[f.seed_a].gd += (f.games_a - f.games_b); t[f.seed_b].gd += (f.games_b - f.games_a);
+    });
+    let arr = Object.values(t);
+    if (divFilter === 'A') arr = arr.filter(x => x.seed <= A_END);
+    if (divFilter === 'B') arr = arr.filter(x => x.seed > A_END);
+    arr.sort((x, y) => y.sets - x.sets || y.gw - x.gw || y.gd - x.gd || x.seed - y.seed);
+    return arr;
+  }
+  const maxPlayed = Math.max(0, ...fixtures.filter(f => f.sets_a != null).map(f => f.round));
+
+  // ---- tab state lives on the element so re-render is cheap ----
+  let activeTab = box._tab || 'teams';
+  let curRound = box._round || (roundNos[0] || 1);
+
+  function teamsHTML() {
+    let h = '<div class="card"><h2>Teams &amp; Bands</h2>'
+      + '<p class="sub">Seeded by frozen entry rating (strongest = Seed 1).</p>'
+      + '<table><thead><tr><th class="num">Seed</th><th>Team</th><th class="num">Div</th><th class="num">Band</th></tr></thead><tbody>';
+    for (let s = 1; s <= N; s++) {
+      const [lo, hi] = BANDS[s], div = s <= A_END ? 'DA' : 'DB';
+      h += '<tr><td class="num"><span class="seed' + (s === 1 ? ' s1' : '') + '">' + s + '</span></td>'
+        + '<td><b>' + tName(s) + '</b></td>'
+        + '<td class="num"><span class="pill ' + div + '">' + div + '</span></td>'
+        + '<td class="num">' + lo + '–' + hi + '</td></tr>';
+    }
+    h += '</tbody></table></div>';
+    return h;
+  }
+  function roundsHTML() {
+    let h = '<div class="card"><h2>Round Fixtures &amp; Results</h2><div class="rsel">';
+    roundNos.forEach(r => {
+      const ft = rounds[r][0] ? rounds[r][0].round_type : '';
+      h += '<button class="' + (ft === 'fixed' ? 'fixed ' : '') + (r === curRound ? 'active' : '') + '" onclick="tmSetRound(' + r + ')">R' + r + '</button>';
+    });
+    h += '</div><table><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
+      + '<th class="tb">Team B</th><th class="num">Sd</th><th class="num">Score</th></tr></thead><tbody>';
+    (rounds[curRound] || []).forEach(f => {
+      const played = f.sets_a != null;
+      const aWin = played && f.sets_a > f.sets_b, bWin = played && f.sets_b > f.sets_a;
+      const score = played ? (f.sets_a + '–' + f.sets_b + ' (' + f.games_a + '–' + f.games_b + ')') : '—';
+      h += '<tr><td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
+        + '<td class="ta' + (aWin ? ' winr' : '') + '"><b>' + tName(f.seed_a) + '</b></td>'
+        + '<td class="num"><span class="pill ' + f.band + '">' + f.band + '</span></td>'
+        + '<td class="tb' + (bWin ? ' winr' : '') + '"><b>' + tName(f.seed_b) + '</b></td>'
+        + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
+        + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#bbb">—</span>') + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    return h;
+  }
+  function standingsHTML() {
+    let h = '';
+    ['A', 'B'].forEach(dv => {
+      h += '<div class="card"><h2>Division ' + dv + ' Standings</h2>'
+        + '<p class="sub">After Round ' + maxPlayed + ' · Sets → Games → Game diff · Top 4 → Semis</p>'
+        + '<table><thead><tr><th class="num">#</th><th>Team</th><th class="num">P</th><th class="num">Sets</th><th class="num">G.Won</th><th class="num">G.Diff</th></tr></thead><tbody>';
+      standings(maxPlayed, dv).forEach((r, i) => {
+        h += '<tr><td class="num"><span class="rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span></td>'
+          + '<td>' + (i < 4 ? '🎟️ ' : '') + '<b>' + tName(r.seed) + '</b></td>'
+          + '<td class="num">' + r.p + '</td><td class="num"><b>' + r.sets + '</b></td>'
+          + '<td class="num">' + r.gw + '</td><td class="num">' + (r.gd >= 0 ? '+' : '') + r.gd + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+    });
+    return h;
+  }
+
+  function render() {
+    const tabs = [['teams', '👥 Teams & Bands'], ['rounds', '🎾 Rounds'], ['standings', '📊 Standings']];
+    let nav = '<div class="tm-nav">';
+    tabs.forEach(([id, lbl]) => nav += '<button class="' + (id === activeTab ? 'active' : '') + '" onclick="tmSetTab(\'' + id + '\')">' + lbl + '</button>');
+    nav += '</div>';
+    let body = activeTab === 'teams' ? teamsHTML() : activeTab === 'rounds' ? roundsHTML() : standingsHTML();
+    box.innerHTML = nav + body;
+    box._tab = activeTab; box._round = curRound;
+  }
+  // expose tab/round handlers (simple globals so inline onclick works)
+  window.tmSetTab = function (id) { activeTab = id; render(); };
+  window.tmSetRound = function (r) { curRound = r; render(); };
+  render();
+}
+
+/* ============================================================================
+   ENTER TOURNAMENT screen — copies master's score-entry pickers.
+   // PASTE HERE: add a nav button somewhere appropriate, e.g.
+   //   <button class="menu-btn" onclick="showEnterTournament()">Enter Tournament</button>
+   // and an empty screen div:
+   //   <div id="enterTournamentScreen" class="screen">…header…<div id="etBody"></div></div>
+   ============================================================================ */
+async function showEnterTournament(preselect) {
+  showScreen('enterTournamentScreen');
+  const body = document.getElementById('etBody');
+  body.innerHTML = '<div class="loading">Loading…</div>';
+
+  // active, non-archived internal tournaments
+  const tours = await sbGet(
+    `tournaments?select=name,type,active,archived&club_id=eq.${CLUB_ID}&active=eq.true&archived=eq.false&order=name.asc`
+  ) || [];
+  const players = await sbGet(
+    `players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`
+  ) || [];
+
+  const tOpts = tours.map(t => '<option value="' + t.name.replace(/"/g, '&quot;') + '"' + (t.name === preselect ? ' selected' : '') + '>' + t.name + '</option>').join('');
+  const pOpts = '<option value="">— select —</option>' + players.map(p => '<option value="' + p.name.replace(/"/g, '&quot;') + '">' + p.name + '</option>').join('');
+  const sel = 'style="width:100%;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:10px;"';
+
+  body.innerHTML =
+      '<div class="card"><h2>Enter Tournament</h2>'
+    + '<p class="sub">Pick the tournament, the category, then the two players. The team is seeded by their combined rating at entry.</p>'
+    + 'Tournament<br><select id="etTour" ' + sel + '>' + tOpts + '</select>'
+    + 'Category<br><select id="etCat" ' + sel + '>'
+    +   '<option value="Men\'s">Men\'s</option><option value="Ladies">Ladies</option>'
+    +   '<option value="Mixed">Mixed</option><option value="All Sorts">All Sorts</option></select>'
+    + 'Player 1<br><select id="etP1" ' + sel + '>' + pOpts + '</select>'
+    + 'Player 2<br><select id="etP2" ' + sel + '>' + pOpts + '</select>'
+    + '<button class="menu-btn" style="background:#F1C40F;color:#4A235A;font-weight:700;" onclick="submitTournamentEntry()">Add team</button>'
+    + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div>'
+    + '</div>'
+    + '<div class="card"><h2>Entered teams</h2><div id="etList">—</div></div>';
+
+  if (preselect) refreshEntryList(preselect);
+  document.getElementById('etTour').onchange = e => refreshEntryList(e.target.value);
+}
+
+async function refreshEntryList(tournament) {
+  const list = document.getElementById('etList');
+  const entries = await tmLoadEntries(tournament);
+  const seeded = TM.seedEntries(entries);
+  if (!seeded.length) { list.innerHTML = '<div style="color:#888;">No teams yet.</div>'; return; }
+  let h = '<table><thead><tr><th class="num">Seed</th><th>Team</th><th class="num">Rating</th></tr></thead><tbody>';
+  seeded.forEach(e => h += '<tr><td class="num">' + e.seed + '</td><td><b>' + e.p1 + ' / ' + e.p2 + '</b></td><td class="num">' + Math.round(e.seed_rating) + '</td></tr>');
+  h += '</tbody></table>';
+  list.innerHTML = h;
+}
+
+async function submitTournamentEntry() {
+  const tournament = document.getElementById('etTour').value;
+  const category = document.getElementById('etCat').value;
+  const p1 = document.getElementById('etP1').value;
+  const p2 = document.getElementById('etP2').value;
+  const msg = document.getElementById('etMsg');
+  if (!tournament || !p1 || !p2 || p1 === p2) { msg.innerHTML = '<span style="color:#c0392b;">Pick a tournament and two different players.</span>'; return; }
+
+  msg.textContent = 'Reading ratings…';
+  const r1 = await TM.readCurrentRating(p1);
+  const r2 = await TM.readCurrentRating(p2);
+  if (r1 == null || r2 == null) { msg.innerHTML = '<span style="color:#c0392b;">One of these players has no published rating yet.</span>'; return; }
+  const seed_rating = TM.pairRating(r1, r2, category);
+
+  // WRITE the entry. Use master's secure write path if it exposes one;
+  // during testing this can be a direct insert (add a temporary anon policy).
+  // // PASTE HERE: replace with master's preferred write (Edge Function) if available.
+  const resp = await fetch(SB_URL + '/functions/v1/tournament', {
+    method: 'POST',
+    headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action:'enter_team', club_id: CLUB_ID,
+      entry: { tournament, category, p1, p2, seed_rating } })
+  });
+  if (!resp.ok) { msg.innerHTML = '<span style="color:#c0392b;">Could not save entry (' + resp.status + ').</span>'; return; }
+  msg.innerHTML = '<span style="color:#1e8449;">Added ' + p1 + ' / ' + p2 + ' (rating ' + Math.round(seed_rating) + ').</span>';
+  document.getElementById('etP1').value = ''; document.getElementById('etP2').value = '';
+  refreshEntryList(tournament);
+}
+
+/* ============================================================================
+   GENERATE THE DRAW  (admin action; run once entries are final)
+   Writes tournament_fixtures rows. Fixed rounds now; Swiss rounds generate
+   round-by-round as results come in (call tmGenerateSwissRound after each).
+   ============================================================================ */
+let TM_ADMIN_PIN = '';
+async function tmGenerateFixedDraw(tournament, chosenTotal) {
+  // admin gate: ask for PIN (1963 master or club code). Verified server-side.
+  TM_ADMIN_PIN = prompt('Enter admin PIN to generate the draw:') || '';
+  if (!TM_ADMIN_PIN) return;
+  const entries = TM.seedEntries(await tmLoadEntries(tournament));
+  const N = entries.length;
+  if (N < 4) { alert('Need at least 4 teams.'); return; }
+  const A_END = TM.divSplit(N);
+  const plan = TM.suggestRounds(N);
+  // admin may pass a chosen total; clamp to the fair range. Default = recommended.
+  let total = chosenTotal != null ? chosenTotal : plan.recommended;
+  total = Math.max(plan.minAllowed, Math.min(plan.maxAllowed, total));
+  const nFixed = plan.fixed;
+  const fx = TM.fixedRounds(N, nFixed);
+  if (!fx.ok) { alert('Could not build fixed rounds for ' + N + ' teams.'); return; }
+
+  // persist seeds onto entries via the secure tournament function (admin-gated)
+  await fetch(SB_URL + '/functions/v1/tournament', {
+    method: 'POST',
+    headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action:'save_seeds', club_id: CLUB_ID, admin_pin: TM_ADMIN_PIN,
+      seeds: entries.map(e=>({ id:e.id, seed:e.seed })) })
+  });
+  // write fixtures
+  const rows = [];
+  fx.rounds.forEach((pairs, i) => pairs.forEach(([a, b]) => rows.push({
+    club_id: CLUB_ID, tournament, round: i + 1, round_type: 'fixed',
+    seed_a: a, seed_b: b, band: TM.bandClass(a, b, A_END)
+  })));
+  await fetch(SB_URL + '/functions/v1/tournament', {
+    method: 'POST',
+    headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action:'write_fixtures', club_id: CLUB_ID, admin_pin: TM_ADMIN_PIN,
+      fixtures: rows.map(r=>({ tournament:r.tournament, round:r.round, round_type:r.round_type, seed_a:r.seed_a, seed_b:r.seed_b, band:r.band })) })
+  });
+  alert('Draw created: ' + nFixed + ' fixed + up to ' + (total - nFixed) + ' Swiss rounds (' + total + ' total). '
+    + 'Field of ' + N + ' supports up to ' + plan.maxAllowed + ' fair rounds; recommended ' + plan.recommended + '.');
+  loadTournamentSheet(tournament);
+}
+
 </script>
 </body>
 </html>
