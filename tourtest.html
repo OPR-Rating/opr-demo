@@ -1011,10 +1011,6 @@ async function loadTournamentPicker(){
   }
   html+='</select></div>';
   html+='<div style="text-align:center;font-size:18px;font-weight:800;color:#6C3483;margin:12px 0 4px;">'+TOURNAMENT_EVENT+'</div>';
-  if(isInternal){
-    // internal tournament → entry button + the module's Teams/Rounds/Standings view
-    html+='<div style="text-align:center;margin:8px 0;"><button class="menu-btn" style="display:inline-block;width:auto;padding:8px 16px;" onclick="showEnterTournament(TOURNAMENT_EVENT)">+ Enter a team</button></div>';
-  }
   picker.innerHTML=html;
   // Toggle between the external standings buttons (tournamentBody) and an
   // internal "view draw" entry point (tournamentInternal) based on type.
@@ -1027,8 +1023,9 @@ async function loadTournamentPicker(){
   if(isInternal){
     body.style.display='none';
     internalDiv.style.display='';
-    internalDiv.innerHTML = '<div style="text-align:center;margin-top:6px;">'
-      + '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">View tournament draw &amp; standings</button>'
+    internalDiv.innerHTML = '<div class="ladders-grid one-col" style="margin-top:4px;">'
+      + '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">Enter a team</button>'
+      + '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">View draw &amp; standings</button>'
       + '</div>';
   } else {
     body.style.display='';
@@ -1839,7 +1836,7 @@ const TM = (function () {
   async function readCurrentRating(name) {
     // master keeps player_results.current_rating up to date
     const rows = await sbGet(
-      `player_results?select=current_rating&player=eq.${encodeURIComponent(name)}&club_id=eq.${CLUB_ID}`
+      `player_results?select=current_rating&name=eq.${encodeURIComponent(name)}&club_id=eq.${CLUB_ID}`
     );
     if (rows && rows.length && rows[0].current_rating != null) return Number(rows[0].current_rating);
     return null; // caller decides how to handle an unrated player
@@ -2007,34 +2004,59 @@ async function showEnterTournament(preselect) {
   const body = document.getElementById('etBody');
   body.innerHTML = '<div class="loading">Loading…</div>';
 
-  // active, non-archived internal tournaments
-  const tours = await sbGet(
-    `tournaments?select=name,type,active,archived&club_id=eq.${CLUB_ID}&active=eq.true&archived=eq.false&order=name.asc`
-  ) || [];
+  // The tournament is fixed (we arrived from it). No dropdown needed.
+  const tournament = preselect || TOURNAMENT_EVENT;
+
   const players = await sbGet(
     `players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`
   ) || [];
+  // keep gender lists for category filtering
+  window._etPlayers = players;
 
-  const tOpts = tours.map(t => '<option value="' + t.name.replace(/"/g, '&quot;') + '"' + (t.name === preselect ? ' selected' : '') + '>' + t.name + '</option>').join('');
-  const pOpts = '<option value="">— select —</option>' + players.map(p => '<option value="' + p.name.replace(/"/g, '&quot;') + '">' + p.name + '</option>').join('');
   const sel = 'style="width:100%;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:10px;"';
 
   body.innerHTML =
-      '<div class="card"><h2>Enter Tournament</h2>'
-    + '<p class="sub">Pick the tournament, the category, then the two players. The team is seeded by their combined rating at entry.</p>'
-    + 'Tournament<br><select id="etTour" ' + sel + '>' + tOpts + '</select>'
-    + 'Category<br><select id="etCat" ' + sel + '>'
+      '<div class="card"><h2>Enter a team</h2>'
+    + '<p class="sub">Tournament: <strong>' + tournament + '</strong>. Pick the category, then the two players. The team is seeded by their combined rating at entry.</p>'
+    + '<input type="hidden" id="etTour" value="' + tournament.replace(/"/g,'&quot;') + '">'
+    + 'Category<br><select id="etCat" ' + sel + ' onchange="etRefillPlayers()">'
     +   '<option value="Men\'s">Men\'s</option><option value="Ladies">Ladies</option>'
     +   '<option value="Mixed">Mixed</option><option value="All Sorts">All Sorts</option></select>'
-    + 'Player 1<br><select id="etP1" ' + sel + '>' + pOpts + '</select>'
-    + 'Player 2<br><select id="etP2" ' + sel + '>' + pOpts + '</select>'
+    + 'Player 1<br><select id="etP1" ' + sel + ' onchange="etRefillPlayers()"></select>'
+    + 'Player 2<br><select id="etP2" ' + sel + ' onchange="etRefillPlayers()"></select>'
     + '<button class="menu-btn" style="background:#F1C40F;color:#4A235A;font-weight:700;" onclick="submitTournamentEntry()">Add team</button>'
     + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div>'
     + '</div>'
     + '<div class="card"><h2>Entered teams</h2><div id="etList">—</div></div>';
 
-  if (preselect) refreshEntryList(preselect);
-  document.getElementById('etTour').onchange = e => refreshEntryList(e.target.value);
+  etRefillPlayers();
+  refreshEntryList(tournament);
+}
+
+// Fill the two player dropdowns based on category + gender rules (mirrors score entry).
+function etRefillPlayers(){
+  const players = window._etPlayers || [];
+  const cat = document.getElementById('etCat').value;
+  const p1sel = document.getElementById('etP1');
+  const p2sel = document.getElementById('etP2');
+  const cur1 = p1sel.value, cur2 = p2sel.value;
+  const men = players.filter(p=>p.gender==='M').map(p=>p.name);
+  const ladies = players.filter(p=>p.gender==='F').map(p=>p.name);
+  const all = players.map(p=>p.name);
+  function opts(list, current){
+    return '<option value="">— select —</option>' + list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===current?' selected':'')+'>'+n+'</option>').join('');
+  }
+  if(cat==="Men's"){ p1sel.innerHTML=opts(men,cur1); p2sel.innerHTML=opts(men,cur2); }
+  else if(cat==='Ladies'){ p1sel.innerHTML=opts(ladies,cur1); p2sel.innerHTML=opts(ladies,cur2); }
+  else if(cat==='Mixed'){
+    // one man + one lady: filter partner by the other's gender
+    const p1IsMan = men.includes(cur1), p1IsLady = ladies.includes(cur1);
+    const p2IsMan = men.includes(cur2), p2IsLady = ladies.includes(cur2);
+    p1sel.innerHTML = opts(p2IsMan? ladies : p2IsLady? men : all, cur1);
+    p2sel.innerHTML = opts(p1IsMan? ladies : p1IsLady? men : all, cur2);
+  } else { // All Sorts — anyone
+    p1sel.innerHTML=opts(all,cur1); p2sel.innerHTML=opts(all,cur2);
+  }
 }
 
 async function refreshEntryList(tournament) {
