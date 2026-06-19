@@ -2435,17 +2435,30 @@ async function renderClubLadder(){
   const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}&order=position.asc`) || [];
   const sel = 'width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  // header card: count + entry status (mirrors tournament counter)
-  let counter = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;">'
-    + '<h2 style="margin:0;">' + cat + ': ' + rows.length + ' on ladder</h2>'
-    + '<span style="font-size:12px;font-weight:700;color:#1E8449;">open</span></div></div>';
+  // division pills (same look as the tournament division bar)
+  let divBar = '<div class="tm-divbar">';
+  ["Men's","Ladies","Mixed"].forEach(d=>{ divBar += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+d+'</button>'; });
+  divBar += '</div>';
 
-  // join card with Division dropdown (same styling as Enter a team)
-  const divOpts = ["Men's","Ladies","Mixed"].map(d=>'<option value="'+d.replace(/"/g,'&quot;')+'"'+(d===cat?' selected':'')+'>'+d+'</option>').join('');
-  let joinCard = '<div class="card"><h2>Join the ladder</h2>'
-    + '<p class="sub">Pick the division, then two players. New pairs join at the bottom; the ladder seeds by rating on first pass, then moves on results.</p>'
-    + '<label style="font-size:12px;color:#6b6b76;">Division</label>'
-    + '<select id="clCat" style="' + sel + '" onchange="clChangeCat()">' + divOpts + '</select>'
+  // the ladder table — styled exactly like the tournament Standings/Teams table
+  let listCard = '<div class="card"><h2>Ladder <span class="tm-divtag">'+cat+'</span></h2>';
+  if(!rows.length){
+    listCard += '<p class="sub">No teams on the '+cat+' ladder yet. Add a pair below.</p>';
+  } else {
+    listCard += '<p class="sub">Beat a team above you and you take their place. Ladder matches are entered like any score (event “Ladder Match”).</p>'
+      + '<table><thead><tr><th class="num">#</th><th>Team</th><th></th></tr></thead><tbody>';
+    rows.forEach(r=>{
+      listCard += '<tr><td class="num"><span class="seed'+(r.position===1?' s1':'')+'">'+r.position+'</span></td>'
+        + '<td><b>'+r.p1+' / '+r.p2+'</b></td>'
+        + '<td class="num"><button onclick="clRemove('+r.id+',\''+(r.p1+' / '+r.p2).replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;" title="Remove (admin)">×</button></td></tr>';
+    });
+    listCard += '</tbody></table>';
+  }
+  listCard += '</div>';
+
+  // join card — gender-filtered, dedupe used names, same styling as Enter a team
+  let joinCard = '<div class="card"><h2>Join the ladder <span class="tm-divtag">'+cat+'</span></h2>'
+    + '<p class="sub">Pick two players. New pairs join at the bottom. Names already on this ladder are removed from the list.</p>'
     + '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
     + '<select id="clP1" style="' + sel + '" onchange="clRefill()"></select>'
     + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
@@ -2453,50 +2466,38 @@ async function renderClubLadder(){
     + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="clJoin()">Add pair to ladder</button>'
     + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
 
-  // ladder table card (seed badges, divtag, like entered-teams)
-  let listCard = '<div class="card"><h2>The ladder</h2>';
-  if(!rows.length){
-    listCard += '<p class="sub">No teams on the ' + cat + ' ladder yet. Add a pair above.</p>';
-  } else {
-    listCard += '<div style="margin:6px 0 4px;"><span class="tm-divtag">' + cat + '</span> <span style="font-size:11px;color:#888;">' + rows.length + ' team' + (rows.length!==1?'s':'') + '</span></div>';
-    listCard += '<table><thead><tr><th class="num">#</th><th>Team</th><th></th></tr></thead><tbody>';
-    rows.forEach(r=>{
-      listCard += '<tr><td class="num"><span class="seed' + (r.position===1?' s1':'') + '">' + r.position + '</span></td>'
-        + '<td><b>' + r.p1 + ' / ' + r.p2 + '</b></td>'
-        + '<td class="num"><button onclick="clRemove(' + r.id + ',\'' + (r.p1+' / '+r.p2).replace(/'/g,"\\'") + '\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;" title="Remove (admin)">×</button></td></tr>';
-    });
-    listCard += '</tbody></table>';
-  }
-  listCard += '</div>';
-
   // admin seed card
   let admin = '<div class="card"><h2>Admin · first-pass order</h2>'
-    + '<p class="sub">Sets the ' + cat + ' ladder by combined rating (strongest at the top). Use once when starting a ladder.</p>'
+    + '<p class="sub">Sets the '+cat+' ladder by combined rating (strongest at the top). Use once when starting a ladder.</p>'
     + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
     + '<button class="ac-btn ac-btn-primary" onclick="clSeed()">Seed by rating</button></div>'
     + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
 
-  body.innerHTML = counter + joinCard + listCard + admin;
+  body.innerHTML = divBar + listCard + joinCard + admin;
   clRefill();
 }
 
 function clChangeCat(){ CL_CAT = document.getElementById('clCat').value; renderClubLadder(); }
 function clPick(d){ CL_CAT = d; renderClubLadder(); }
 
-function clRefill(){
+async function clRefill(){
   const players = window._clPlayers || [];
-  const men = players.filter(p=>p.gender==='M').map(p=>p.name);
-  const ladies = players.filter(p=>p.gender==='F').map(p=>p.name);
+  // names already on this category's ladder drop out of the pickers
+  const onLadder = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
+  const used = new Set(); onLadder.forEach(r=>{ used.add(r.p1); used.add(r.p2); });
   const p1=document.getElementById('clP1'), p2=document.getElementById('clP2');
   if(!p1||!p2) return;
   const c1=p1.value, c2=p2.value;
+  const avail = players.filter(p=>!used.has(p.name) || p.name===c1 || p.name===c2);
+  const men = avail.filter(p=>p.gender==='M').map(p=>p.name);
+  const ladies = avail.filter(p=>p.gender==='F').map(p=>p.name);
   function opts(list,cur){ return '<option value="">— select —</option>'+list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join(''); }
   if(CL_CAT==="Men's"){ p1.innerHTML=opts(men,c1); p2.innerHTML=opts(men,c2); }
   else if(CL_CAT==='Ladies'){ p1.innerHTML=opts(ladies,c1); p2.innerHTML=opts(ladies,c2); }
   else { // Mixed: one man + one lady
     const c1m=men.includes(c1), c1l=ladies.includes(c1), c2m=men.includes(c2), c2l=ladies.includes(c2);
-    p1.innerHTML=opts(c2m?ladies:c2l?men:players.map(p=>p.name), c1);
-    p2.innerHTML=opts(c1m?ladies:c1l?men:players.map(p=>p.name), c2);
+    p1.innerHTML=opts(c2m?ladies:c2l?men:avail.map(p=>p.name), c1);
+    p2.innerHTML=opts(c1m?ladies:c1l?men:avail.map(p=>p.name), c2);
   }
 }
 
