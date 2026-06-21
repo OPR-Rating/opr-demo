@@ -1114,17 +1114,29 @@ async function loadTournamentPicker(){
     body.parentNode.insertBefore(internalDiv, body.nextSibling);
   }
   if(isInternal){
-    body.style.display='none';
+    // Internal: TWO views — Tournament Stats (tagged-match standings) OR Draw & Rounds (the draw).
+    // Plus Enter a team. Default to Stats; remember the choice.
+    if(!window._tourInternalView) window._tourInternalView = 'stats';
+    const v = window._tourInternalView;
     internalDiv.style.display='';
-    internalDiv.innerHTML = '<div class="ladders-grid one-col" style="margin-top:4px;">'
-      + '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">Enter a team</button>'
-      + '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">View draw &amp; standings</button>'
+    internalDiv.innerHTML =
+        '<div class="tm-nav" style="margin:4px 0 12px;">'
+      + '<button class="'+(v==='stats'?'active':'')+'" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
+      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">🎾 Draw &amp; Rounds</button>'
+      + '</div>'
+      + '<div class="ladders-grid one-col" style="margin-top:4px;">'
+      + '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team</button>'
+      + (v==='draw' ? '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">Open draw &amp; standings</button>' : '')
       + '</div>';
+    // Stats view → show the standings body; Draw view → hide it (draw opens its own screen)
+    body.style.display = (v==='stats') ? '' : 'none';
   } else {
+    // External: Stats only.
     body.style.display='';
     internalDiv.style.display='none';
   }
 }
+function setTourView(v){ window._tourInternalView = v; loadTournamentPicker(); }
 // Open the internal tournament module view (it navigates to the sheet screen itself)
 function openInternalTournament(name){
   if(typeof loadTournamentSheet==='function'){ loadTournamentSheet(name); }
