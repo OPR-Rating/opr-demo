@@ -260,6 +260,11 @@
 
   .cl-divbar { display:flex; gap:6px; margin:0 12px 12px; }
   .cl-divbar button { flex:1; text-align:center; padding:9px 4px; font-size:12px; }
+
+  .at-divrow { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f0eaf5; }
+  .at-divrow label { font-size:14px; display:flex; align-items:center; gap:7px; }
+  .ac-capf { width:80px; padding:7px 9px; border:1.5px solid #d9cfe3; border-radius:8px; font-size:14px; }
+  .ac-capf:disabled { background:#f4f1f7; color:#bbb; }
 </style>
 </head>
 <body>
@@ -567,22 +572,16 @@
               <option value="internal">Internal — OPR runs it (pairings &amp; rounds)</option>
             </select>
             <div id="atInternalOpts" style="display:none;">
-              <label style="font-size:12px;color:#9b80b3;font-weight:700;">Format</label>
-              <select id="atFormat" class="ac-field" onchange="atToggleDivisions()">
-                <option value="divisional">Divisional — separate Men's / Ladies / Mixed draws</option>
-                <option value="allsorts">All Sorts — one pool, any gender combination</option>
-              </select>
-              <div id="atDivisions" style="margin-bottom:10px;">
-                <label style="font-size:12px;color:#9b80b3;font-weight:700;">Divisions running</label>
-                <div style="display:flex;gap:14px;margin-top:6px;font-size:14px;">
-                  <label><input type="checkbox" id="atDivMen" checked> Men's</label>
-                  <label><input type="checkbox" id="atDivLadies" checked> Ladies</label>
-                  <label><input type="checkbox" id="atDivMixed"> Mixed</label>
-                </div>
+              <label style="font-size:12px;color:#9b80b3;font-weight:700;">Divisions &amp; team caps</label>
+              <p style="font-size:11px;color:#9b80b3;margin:2px 0 8px;">Tick each division to run. Set an optional team cap for each (leave blank for no cap).</p>
+              <div id="atDivRows">
+                <div class="at-divrow"><label><input type="checkbox" id="atDivMen" checked onchange="atSyncCap('Men')"> Men's</label><input id="atCapMen" type="number" min="4" step="2" placeholder="cap" class="ac-capf"></div>
+                <div class="at-divrow"><label><input type="checkbox" id="atDivLadies" checked onchange="atSyncCap('Ladies')"> Ladies</label><input id="atCapLadies" type="number" min="4" step="2" placeholder="cap" class="ac-capf"></div>
+                <div class="at-divrow"><label><input type="checkbox" id="atDivMixed" onchange="atSyncCap('Mixed')"> Mixed</label><input id="atCapMixed" type="number" min="4" step="2" placeholder="cap" class="ac-capf" disabled></div>
+                <div class="at-divrow"><label><input type="checkbox" id="atDivAllSorts" onchange="atSyncCap('AllSorts')"> All Sorts</label><input id="atCapAllSorts" type="number" min="4" step="2" placeholder="cap" class="ac-capf" disabled></div>
               </div>
-              <input id="atCap" type="number" min="4" step="2" placeholder="Team cap per division (e.g. 16) — optional" class="ac-field">
             </div>
-            <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminCreateTournament()">Create tournament</button>
+            <button class="ac-btn ac-btn-primary" style="width:100%;margin-top:8px;" onclick="adminCreateTournament()">Create tournament</button>
             <div id="adminTourMsg" class="ac-msg"></div>
           </div>
         </div>
@@ -817,9 +816,11 @@ function atToggleType(){
   const t=document.getElementById('atType').value;
   document.getElementById('atInternalOpts').style.display = (t==='internal')?'':'none';
 }
-function atToggleDivisions(){
-  const f=document.getElementById('atFormat').value;
-  document.getElementById('atDivisions').style.display = (f==='divisional')?'':'none';
+// enable/disable each division's cap field with its checkbox
+function atSyncCap(which){
+  const cb=document.getElementById('atDiv'+which);
+  const cap=document.getElementById('atCap'+which);
+  if(cb && cap){ cap.disabled = !cb.checked; if(!cb.checked) cap.value=''; }
 }
 async function adminCreateTournament(){
   const cid=document.getElementById('adminClubSelect').value;
@@ -827,26 +828,25 @@ async function adminCreateTournament(){
   const type=document.getElementById('atType').value;
   const msg=document.getElementById('adminTourMsg');
   if(!name){ msg.innerHTML='<span style="color:#c0392b;">Tournament name required.</span>'; return; }
-  let format='divisional', divisions=null, max_teams=null;
+  let divisions=null, caps=null;
   if(type==='internal'){
-    format=document.getElementById('atFormat').value;
-    const capRaw=document.getElementById('atCap').value;
-    max_teams = capRaw ? Number(capRaw) : null;
-    if(format==='divisional'){
-      const ds=[];
-      if(document.getElementById('atDivMen').checked) ds.push("Men's");
-      if(document.getElementById('atDivLadies').checked) ds.push("Ladies");
-      if(document.getElementById('atDivMixed').checked) ds.push("Mixed");
-      if(ds.length===0){ msg.innerHTML='<span style="color:#c0392b;">Pick at least one division.</span>'; return; }
-      divisions = ds.join(',');
-    } else {
-      divisions = 'All Sorts';
-    }
+    const defs=[['Men',"Men's"],['Ladies','Ladies'],['Mixed','Mixed'],['AllSorts','All Sorts']];
+    const ds=[]; caps={};
+    defs.forEach(([id,label])=>{
+      if(document.getElementById('atDiv'+id).checked){
+        ds.push(label);
+        const c=document.getElementById('atCap'+id).value;
+        if(c) caps[label]=Number(c);
+      }
+    });
+    if(ds.length===0){ msg.innerHTML='<span style="color:#c0392b;">Pick at least one division.</span>'; return; }
+    divisions = ds.join(',');
   }
-  const r=await adminCall('create_tournament',{ club_id:Number(cid), name, type, format, divisions, max_teams });
+  const r=await adminCall('create_tournament',{ club_id:Number(cid), name, type, format:'divisional', divisions, caps:caps?JSON.stringify(caps):null });
   if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
-  msg.innerHTML='<span style="color:#1e8449;">Created "'+name+'" ('+type+(type==='internal'?', '+format:'')+').</span>';
-  document.getElementById('atName').value=''; document.getElementById('atCap').value='';
+  msg.innerHTML='<span style="color:#1e8449;">Created "'+name+'" ('+type+').</span>';
+  document.getElementById('atName').value='';
+  ['Men','Ladies','Mixed','AllSorts'].forEach(x=>{ const c=document.getElementById('atCap'+x); if(c) c.value=''; });
   adminLoadTournaments();
 }
 async function adminToggleTournament(id, active){
@@ -2165,17 +2165,16 @@ async function renderEnterScreen(){
   const tournament = window._etTournament;
   const body = document.getElementById('etBody');
 
-  // tournament config: allowed divisions + cap + format
-  let allowedDivs = ["Men's","Ladies","Mixed"]; let cap = window._etCap; let format='divisional';
+  // tournament config: allowed divisions + per-division caps
+  let allowedDivs = ["Men's","Ladies","Mixed"]; let caps = {};
   try{
-    const trow = await sbGet(`tournaments?select=divisions,format,max_teams&name=eq.${encodeURIComponent(tournament)}&club_id=eq.${CLUB_ID}&limit=1`);
+    const trow = await sbGet(`tournaments?select=divisions,caps&name=eq.${encodeURIComponent(tournament)}&club_id=eq.${CLUB_ID}&limit=1`);
     if(trow && trow.length){
       if(trow[0].divisions) allowedDivs = trow[0].divisions.split(',').map(s=>s.trim());
-      if(trow[0].format) format = trow[0].format;
-      if(trow[0].max_teams != null) cap = Number(trow[0].max_teams);
+      if(trow[0].caps){ try{ caps = JSON.parse(trow[0].caps); }catch(_){ caps={}; } }
     }
   }catch(e){}
-  window._etCap = cap; window._etAllowed = allowedDivs; window._etFormat = format;
+  window._etAllowed = allowedDivs; window._etCaps = caps;
 
   // load all entries + which divisions already have a draw (locked)
   const allEntries = await tmLoadEntries(tournament);
@@ -2192,10 +2191,19 @@ async function renderEnterScreen(){
   // current chosen category (default to first allowed not-locked, else first allowed)
   if(!window._etCat || !allowedDivs.includes(window._etCat)) window._etCat = allowedDivs.find(d=>!lockedDivs.has(d)) || allowedDivs[0];
   const cat = window._etCat;
+  const cap = (caps && caps[cat] != null) ? Number(caps[cat]) : null;
   const inCat = (byDiv[cat]||[]).length;
   const catLocked = lockedDivs.has(cat);
   const catAtCap = cap != null && inCat >= cap;
   const entryClosed = catLocked || catAtCap;
+
+  // division BUTTONS (Item 3) — only the tournament's allowed divisions, click to switch
+  let divButtons = '<div class="cl-divbar" style="margin:0 0 14px;">';
+  allowedDivs.forEach(d=>{
+    const dl = lockedDivs.has(d);
+    divButtons += '<button class="'+(d===cat?'active':'')+'" onclick="etPickDiv(\''+d.replace(/'/g,"\\'")+'\')">'+d+(dl?' ✓':'')+'</button>';
+  });
+  divButtons += '</div>';
 
   // counter card (per current division)
   let counter = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;">'
@@ -2205,19 +2213,15 @@ async function renderEnterScreen(){
     counter += '<div style="height:8px;background:#eee;border-radius:5px;margin-top:8px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+(entryClosed?'#c0392b':'var(--purple,#6C3483)')+';"></div></div>'; }
   counter += '</div>';
 
-  // category selector — only the tournament's allowed divisions
-  const catOpts = allowedDivs.map(d=>'<option value="'+d.replace(/"/g,'&quot;')+'"'+(d===cat?' selected':'')+'>'+d+(lockedDivs.has(d)?' (draw done)':'')+'</option>').join('');
-
-  // entry card
-  let entryCard = '<div class="card"><h2>Enter a team</h2>';
-  if(format==='allsorts'){
-    entryCard += '<p class="sub">All Sorts — any two players, one pool. The team is seeded by their weighted rating.</p>';
+  // entry card (no dropdown — division chosen via the buttons above)
+  let entryCard = '<div class="card"><h2>Enter a team <span class="tm-divtag">'+cat+'</span></h2>';
+  if(cat==='All Sorts'){
+    entryCard += '<p class="sub">All Sorts — any two players, any combination. Seeded by weighted rating.</p>';
   } else {
-    entryCard += '<p class="sub">Pick the division, then two players. Each division is its own competition, seeded separately.</p>';
+    entryCard += '<p class="sub">Pick two players for the '+cat+' division. Each division is its own competition, seeded separately.</p>';
   }
   entryCard += '<input type="hidden" id="etTour" value="' + tournament.replace(/"/g,'&quot;') + '">'
-    + '<label style="font-size:12px;color:#6b6b76;">Division</label>'
-    + '<select id="etCat" style="' + sel + '" onchange="etChangeCat()">' + catOpts + '</select>';
+    + '<input type="hidden" id="etCat" value="'+cat.replace(/"/g,'&quot;')+'">';
   if(catLocked){
     entryCard += '<p class="sub" style="color:#c0392b;">The ' + cat + ' draw has been generated — entry for this division is closed.</p>';
   } else if(catAtCap){
@@ -2281,11 +2285,11 @@ async function renderEnterScreen(){
     genCard += '<div id="etGenMsg" class="sub" style="margin:4px 0 0;"></div></div>';
   }
 
-  body.innerHTML = counter + entryCard + listCard + genCard;
+  body.innerHTML = divButtons + counter + entryCard + listCard + genCard;
   if(!entryClosed){ etRefillPlayers(); etUpdateSeedPreview(); }
 }
 
-function etChangeCat(){ window._etCat = document.getElementById('etCat').value; renderEnterScreen(); }
+function etPickDiv(d){ window._etCat = d; renderEnterScreen(); }
 
 // Remove an entered team (admin action). Asks for PIN, verified server-side.
 async function etRemoveTeam(entryId){
