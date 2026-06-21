@@ -265,6 +265,9 @@
   .at-divrow label { font-size:14px; display:flex; align-items:center; gap:7px; }
   .ac-capf { width:80px; padding:7px 9px; border:1.5px solid #d9cfe3; border-radius:8px; font-size:14px; }
   .ac-capf:disabled { background:#f4f1f7; color:#bbb; }
+
+  .name-pick-btn { width:100%; padding:11px; border:1.5px solid #d9cfe3; border-radius:9px; font-size:15px; box-sizing:border-box; margin-bottom:10px; background:#fff; text-align:left; color:#888; cursor:pointer; font-family:inherit; }
+  .name-pick-btn.selected { color:#2C2C34; font-weight:600; border-color:#7D3C98; }
 </style>
 </head>
 <body>
@@ -1768,6 +1771,13 @@ function renderModalList(players) {
 }
 
 function selectModalPlayer(name) {
+  // generic callback mode (tournament entry, ladder) — takes priority
+  if (_modalCallback) {
+    const cb = _modalCallback;
+    closePlayerModal();
+    cb(name);
+    return;
+  }
   if (!_currentModalTarget) return;
   const valEl = document.getElementById(_currentModalTarget + '_val');
   const lblEl = document.getElementById(_currentModalTarget + '_lbl');
@@ -1778,10 +1788,25 @@ function selectModalPlayer(name) {
   closePlayerModal();
 }
 
+// Generic picker: open the same modal with a custom name list + a callback.
+let _modalCallback = null;
+function openNamePicker(label, names, onPick) {
+  _currentModalTarget = null;
+  _modalCallback = onPick;
+  _currentModalPlayers = names.slice();
+  document.getElementById('playerModalTitle').textContent = label;
+  document.getElementById('playerModalSearch').value = '';
+  renderModalList(_currentModalPlayers);
+  document.getElementById('playerModalOverlay').style.display = 'block';
+  document.getElementById('playerModal').style.display = 'flex';
+  document.getElementById('playerModalSearch').focus();
+}
+
 function closePlayerModal() {
   document.getElementById('playerModalOverlay').style.display = 'none';
   document.getElementById('playerModal').style.display = 'none';
   _currentModalTarget = null;
+  _modalCallback = null;
 }
 
 window.onload=function(){ var ht=document.getElementById('heroTitle'); if(ht) ht.textContent='OPR · '+CLUB_NAME; loadRecent(); loadPlayers(); };
@@ -2228,10 +2253,12 @@ async function renderEnterScreen(){
     entryCard += '<p class="sub" style="color:#c0392b;">' + cat + ' has reached its cap of ' + cap + ' teams — entry closed. An admin can raise the cap.</p>';
   } else {
     entryCard += '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
-      + '<select id="etP1" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()"></select>'
+      + '<input type="hidden" id="etP1">'
+      + '<button type="button" class="name-pick-btn" id="etP1btn" onclick="etPick(1)">— select —</button>'
       + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
-      + '<select id="etP2" style="' + sel + '" onchange="etRefillPlayers();etUpdateSeedPreview()"></select>'
-      + '<div id="etSeedPrev" class="sub" style="margin:0 0 8px;"></div>'
+      + '<input type="hidden" id="etP2">'
+      + '<button type="button" class="name-pick-btn" id="etP2btn" onclick="etPick(2)">— select —</button>'
+      + '<div id="etSeedPrev" class="sub" style="margin:8px 0;"></div>'
       + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="submitTournamentEntry()">Add team</button>'
       + '<div id="etMsg" style="margin-top:10px;font-size:13px;"></div>';
   }
@@ -2286,7 +2313,7 @@ async function renderEnterScreen(){
   }
 
   body.innerHTML = divButtons + counter + entryCard + listCard + genCard;
-  if(!entryClosed){ etRefillPlayers(); etUpdateSeedPreview(); }
+  if(!entryClosed){ etUpdateSeedPreview(); }
 }
 
 function etPickDiv(d){ window._etCat = d; renderEnterScreen(); }
@@ -2328,32 +2355,33 @@ function etUpdateSeedPreview(){
 
 // Fill the two player dropdowns based on category + gender rules (mirrors score entry).
 // Excludes players already entered in THIS division (no double-entry).
-function etRefillPlayers(){
-  let players = window._etPlayers || [];
+// Build the eligible name list for a tournament-entry slot (gender + dedupe), then open the modal.
+function etPick(which){
+  const players = window._etPlayers || [];
   const cat = document.getElementById('etCat').value;
-  const p1sel = document.getElementById('etP1');
-  const p2sel = document.getElementById('etP2');
-  if(!p1sel||!p2sel) return;
-  // names already used in this division
+  const otherVal = (which===1) ? (document.getElementById('etP2').value) : (document.getElementById('etP1').value);
+  const thisVal = (which===1) ? (document.getElementById('etP1').value) : (document.getElementById('etP2').value);
   const used = new Set(window._etUsedInDiv && window._etUsedInDiv[cat] ? window._etUsedInDiv[cat] : []);
-  const cur1 = p1sel.value, cur2 = p2sel.value;
-  const avail = players.filter(p=>!used.has(p.name) || p.name===cur1 || p.name===cur2);
+  // exclude the partner already chosen, and names already entered in this division
+  const avail = players.filter(p => (p.name!==otherVal) && (!used.has(p.name) || p.name===thisVal));
   const men = avail.filter(p=>p.gender==='M').map(p=>p.name);
   const ladies = avail.filter(p=>p.gender==='F').map(p=>p.name);
   const all = avail.map(p=>p.name);
-  function opts(list, current){
-    return '<option value="">— select —</option>' + list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===current?' selected':'')+'>'+n+'</option>').join('');
-  }
-  if(cat==="Men's"){ p1sel.innerHTML=opts(men,cur1); p2sel.innerHTML=opts(men,cur2); }
-  else if(cat==='Ladies'){ p1sel.innerHTML=opts(ladies,cur1); p2sel.innerHTML=opts(ladies,cur2); }
+  let list;
+  if(cat==="Men's"){ list=men; }
+  else if(cat==='Ladies'){ list=ladies; }
   else if(cat==='Mixed'){
-    const p1IsMan = men.includes(cur1), p1IsLady = ladies.includes(cur1);
-    const p2IsMan = men.includes(cur2), p2IsLady = ladies.includes(cur2);
-    p1sel.innerHTML = opts(p2IsMan? ladies : p2IsLady? men : all, cur1);
-    p2sel.innerHTML = opts(p1IsMan? ladies : p1IsLady? men : all, cur2);
-  } else {
-    p1sel.innerHTML=opts(all,cur1); p2sel.innerHTML=opts(all,cur2);
-  }
+    // partner gender constrains this slot
+    const partnerIsMan = men.includes(otherVal) || players.some(p=>p.name===otherVal && p.gender==='M');
+    const partnerIsLady = ladies.includes(otherVal) || players.some(p=>p.name===otherVal && p.gender==='F');
+    list = otherVal ? (partnerIsMan? ladies : partnerIsLady? men : all) : all;
+  } else { list=all; } // All Sorts — anyone
+  openNamePicker('Player '+which, list, function(name){
+    document.getElementById('etP'+which).value = name;
+    document.getElementById('etP'+which+'btn').textContent = name;
+    document.getElementById('etP'+which+'btn').classList.add('selected');
+    etUpdateSeedPreview();
+  });
 }
 
 async function refreshEntryList(tournament) { renderEnterScreen(); }
@@ -2522,12 +2550,12 @@ async function renderClubLadder(){
     bodyHTML = '<div class="card"><h2>Join the '+cat+' ladder <span class="tm-divtag">'+cat+'</span></h2>'
       + '<p class="sub">'+joinHint+' Pick two players — names already on this ladder are removed from the list. Type to search.</p>'
       + '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
-      + '<input id="clP1search" placeholder="Type first letter…" style="'+sel+'margin-bottom:4px;" oninput="clFilter(1)" autocomplete="off">'
-      + '<select id="clP1" style="' + sel + '" onchange="clRefill()" size="1"></select>'
+      + '<input type="hidden" id="clP1">'
+      + '<button type="button" class="name-pick-btn" id="clP1btn" onclick="clPickName(1)">— select —</button>'
       + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
-      + '<input id="clP2search" placeholder="Type first letter…" style="'+sel+'margin-bottom:4px;" oninput="clFilter(2)" autocomplete="off">'
-      + '<select id="clP2" style="' + sel + '" onchange="clRefill()" size="1"></select>'
-      + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="clJoin()">Add pair to ladder</button>'
+      + '<input type="hidden" id="clP2">'
+      + '<button type="button" class="name-pick-btn" id="clP2btn" onclick="clPickName(2)">— select —</button>'
+      + '<button class="ac-btn ac-btn-green" style="width:100%;margin-top:6px;" onclick="clJoin()">Add pair to ladder</button>'
       + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
 
     // Item 2: activation card — locks after first activation (with guarded override)
@@ -2547,51 +2575,35 @@ async function renderClubLadder(){
   }
 
   body.innerHTML = divBar + nav + bodyHTML;
-  if(CL_TAB==='enter') clRefill();
 }
 
 function clSetTab(t){ CL_TAB = t; renderClubLadder(); }
 function clPick(d){ CL_CAT = d; CL_TAB='ladder'; renderClubLadder(); }
 // Item 3: first-letter search — filter the select to names starting with typed text
-function clFilter(which){
-  const search = document.getElementById('cl'+(which===1?'P1':'P2')+'search').value.trim().toLowerCase();
-  const selEl = document.getElementById('cl'+(which===1?'P1':'P2'));
-  const full = which===1 ? (window._clP1full||[]) : (window._clP2full||[]);
-  const filtered = search ? full.filter(n=>n.toLowerCase().startsWith(search)) : full;
-  const cur = selEl.value;
-  selEl.innerHTML = '<option value="">— select —</option>' + filtered.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join('');
-}
-
-function clRefill(){
+// Open the modal name picker for a ladder slot (gender by category + dedupe by ladder).
+function clPickName(which){
   const players = window._clPlayers || [];
-  // names already on this category's ladder drop out of the pickers (cached rows)
   const onLadder = window._clRows || [];
   const used = new Set(); onLadder.forEach(r=>{ used.add(r.p1); used.add(r.p2); });
-  const p1=document.getElementById('clP1'), p2=document.getElementById('clP2');
-  if(!p1||!p2) return;
-  const c1=p1.value, c2=p2.value;
-  const avail = players.filter(p=>!used.has(p.name) || p.name===c1 || p.name===c2);
+  const thisVal = document.getElementById('clP'+which).value;
+  const otherVal = document.getElementById('clP'+(which===1?2:1)).value;
+  const avail = players.filter(p => (p.name!==otherVal) && (!used.has(p.name) || p.name===thisVal));
   const men = avail.filter(p=>p.gender==='M').map(p=>p.name);
   const ladies = avail.filter(p=>p.gender==='F').map(p=>p.name);
   const all = avail.map(p=>p.name);
-  let list1, list2;
-  if(CL_CAT==="Men's"){ list1=men; list2=men; }
-  else if(CL_CAT==='Ladies'){ list1=ladies; list2=ladies; }
+  let list;
+  if(CL_CAT==="Men's"){ list=men; }
+  else if(CL_CAT==='Ladies'){ list=ladies; }
   else if(CL_CAT==='Mixed'){
-    const c1m=men.includes(c1), c1l=ladies.includes(c1), c2m=men.includes(c2), c2l=ladies.includes(c2);
-    list1 = c2m?ladies:c2l?men:all;
-    list2 = c1m?ladies:c1l?men:all;
-  } else { // All Sorts — anyone
-    list1=all; list2=all;
-  }
-  // store full lists so the search box can filter them (Item 3)
-  window._clP1full = list1; window._clP2full = list2;
-  function opts(list,cur){ return '<option value="">— select —</option>'+list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join(''); }
-  p1.innerHTML=opts(list1,c1); p2.innerHTML=opts(list2,c2);
-  // re-apply any active search filters
-  const s1=document.getElementById('clP1search'), s2=document.getElementById('clP2search');
-  if(s1 && s1.value) clFilter(1);
-  if(s2 && s2.value) clFilter(2);
+    const partnerIsMan = players.some(p=>p.name===otherVal && p.gender==='M');
+    const partnerIsLady = players.some(p=>p.name===otherVal && p.gender==='F');
+    list = otherVal ? (partnerIsMan? ladies : partnerIsLady? men : all) : all;
+  } else { list=all; } // All Sorts
+  openNamePicker('Player '+which, list, function(name){
+    document.getElementById('clP'+which).value = name;
+    document.getElementById('clP'+which+'btn').textContent = name;
+    document.getElementById('clP'+which+'btn').classList.add('selected');
+  });
 }
 
 async function clJoin(){
