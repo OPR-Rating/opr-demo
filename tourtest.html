@@ -654,7 +654,7 @@ let LADIES = [];
 
 async function loadPlayers() {
   try {
-    const data = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`);
+    const data = await getPlayers();
     const m = data.filter(p=>p.gender==='M').map(p=>p.name);
     const l = data.filter(p=>p.gender==='F').map(p=>p.name);
     if (m.length > 0) MEN = m.sort((a,b)=>a.localeCompare(b));
@@ -869,6 +869,7 @@ async function adminAddMember(){
   const r=await adminCall('add_member',{ club_id:Number(cid), name, gender, initial_rating:Number(rating), pin });
   if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
   msg.innerHTML='<span style="color:#1e8449;">Added '+name+'.</span>';
+  _playersCache=null; _ratingsCache=null;  // refresh caches: new member added
   document.getElementById('amName').value=''; document.getElementById('amRating').value=''; document.getElementById('amPin').value='';
   adminLoadMembers();
 }
@@ -877,11 +878,11 @@ async function adminEditMember(id,name,rating,pin){
   const newRating=prompt('Initial rating:',Math.round(rating)); if(newRating===null) return;
   const newPin=prompt('PIN (4 digits):',pin); if(newPin===null) return;
   const r=await adminCall('edit_member',{ id, name:newName.trim(), initial_rating:Number(newRating), pin:newPin.trim() });
-  if(!r.ok){ alert(r.error); return; } adminLoadMembers();
+  if(!r.ok){ alert(r.error); return; } _playersCache=null; _ratingsCache=null; adminLoadMembers();
 }
 async function adminDeleteMember(id,name){
   if(!confirm('Delete member "'+name+'"?')) return;
-  const r=await adminCall('delete_member',{ id }); if(!r.ok){ alert(r.error); return; } adminLoadMembers();
+  const r=await adminCall('delete_member',{ id }); if(!r.ok){ alert(r.error); return; } _playersCache=null; _ratingsCache=null; adminLoadMembers();
 }
 
 function goHome() {
@@ -948,6 +949,22 @@ async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
   return await r.json();
+}
+// Cached player list — fetched once, reused across score entry, tournament entry, ladder.
+let _playersCache = null;
+async function getPlayers(force){
+  if(_playersCache && !force) return _playersCache;
+  _playersCache = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
+  return _playersCache;
+}
+// Cached ratings map {name: current_rating} — one query for ALL players, not one-per-player.
+let _ratingsCache = null;
+async function getRatings(force){
+  if(_ratingsCache && !force) return _ratingsCache;
+  const rows = await sbGet(`player_results?select=name,current_rating&club_id=eq.${CLUB_ID}`) || [];
+  const map = {}; rows.forEach(r=>{ if(r.current_rating!=null) map[r.name]=Number(r.current_rating); });
+  _ratingsCache = map;
+  return map;
 }
 function rankBadge(n){ const cls=n===1?'rank-1':n===2?'rank-2':n===3?'rank-3':''; return `<span class="rank-badge ${cls}">${n}</span>`; }
 
@@ -1635,6 +1652,7 @@ async function doSubmit(btn){
     }
 
     const who=result.submitted_by||entryData._submitter;
+    _ratingsCache=null;  // ratings changed — refresh cache next time it's needed
 
     // If this was a Ladder Match, apply the position change (insert/shift).
     if((entryData.event||'')==='Ladder Match'){
@@ -2127,7 +2145,7 @@ async function showEnterTournament(preselect) {
   window._etTournament = tournament;
 
   // players (for gender-filtered pickers)
-  const players = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
+  const players = await getPlayers();
   window._etPlayers = players;
   // tournament cap (max_teams) — read defensively in case the column isn't there yet
   let cap = null;
@@ -2434,7 +2452,7 @@ async function loadClubLadder(){
   body.innerHTML = '<div class="loading">Loading ladder…</div>';
   // players for join pickers
   if(!window._clPlayers){
-    window._clPlayers = await sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
+    window._clPlayers = await getPlayers();
   }
   renderClubLadder();
 }
@@ -2444,6 +2462,7 @@ async function renderClubLadder(){
   const body = document.getElementById('clBody');
   const cat = CL_CAT;
   const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}&order=position.asc`) || [];
+  window._clRows = rows;
   const sel = 'width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
   // division pills (Men's / Ladies / Mixed) — same look as tournament
@@ -2498,10 +2517,10 @@ function clSetTab(t){ CL_TAB = t; renderClubLadder(); }
 function clChangeCat(){ CL_CAT = document.getElementById('clCat').value; renderClubLadder(); }
 function clPick(d){ CL_CAT = d; renderClubLadder(); }
 
-async function clRefill(){
+function clRefill(){
   const players = window._clPlayers || [];
-  // names already on this category's ladder drop out of the pickers
-  const onLadder = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
+  // names already on this category's ladder drop out of the pickers (use cached rows)
+  const onLadder = window._clRows || [];
   const used = new Set(); onLadder.forEach(r=>{ used.add(r.p1); used.add(r.p2); });
   const p1=document.getElementById('clP1'), p2=document.getElementById('clP2');
   if(!p1||!p2) return;
@@ -2535,13 +2554,14 @@ async function clSeed(){
   const pin=(document.getElementById('clPin').value||'').trim();
   const msg=document.getElementById('clSeedMsg');
   if(!pin){ msg.innerHTML='<span style="color:#c0392b;">Enter the admin PIN.</span>'; return; }
-  const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
+  const rows = window._clRows || await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
   if(!rows.length){ msg.innerHTML='<span style="color:#c0392b;">No teams to seed yet.</span>'; return; }
-  // compute combined rating for each pair from published ratings
+  // compute combined rating for each pair from published ratings (one batched query)
   msg.textContent='Reading ratings…';
+  const R = await getRatings();
   const withR=[];
   for(const r of rows){
-    const a=await TM.readCurrentRating(r.p1), b=await TM.readCurrentRating(r.p2);
+    const a=R[r.p1], b=R[r.p2];
     withR.push({p1:r.p1,p2:r.p2, rating: TM.pairRating(a||0,b||0,CL_CAT)});
   }
   withR.sort((x,y)=>y.rating-x.rating);
