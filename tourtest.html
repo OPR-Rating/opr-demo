@@ -257,6 +257,9 @@
   #clBody td.num, #clBody th.num { text-align:center; }
   #clBody .seed { display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;background:#6C3483;color:#fff;border-radius:8px;font-weight:700;font-size:12px;padding:0 5px; }
   #clBody .seed.s1 { background:#6C3483;color:#fff; }
+
+  .cl-divbar { display:flex; gap:6px; margin:0 12px 12px; }
+  .cl-divbar button { flex:1; text-align:center; padding:9px 4px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -1403,13 +1406,25 @@ async function toggleRecent(idx){
   }
 }
 
-function step1Next(){
+async function step1Next(){
   const date=document.getElementById('matchDate').value;
   const type=document.getElementById('matchType').value;
   const sets=document.getElementById('setsPlayed').value;
   const event=document.getElementById('matchEvent').value;
   if(!date||!type||!sets||!event){document.getElementById('err1').style.display='block';return;}
   entryData={date,type,sets:parseInt(sets),event};
+  // For a Ladder Match, load who is on that category's ladder so only they can be picked.
+  window._ladderEligible = null;
+  if(event==='Ladder Match'){
+    try{
+      const lad = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(type)}`) || [];
+      const set=new Set(); lad.forEach(r=>{ set.add(r.p1); set.add(r.p2); });
+      window._ladderEligible = set;
+      if(set.size===0){
+        alert('No teams are on the '+type+' ladder yet. Add teams on the Good \u2019ol Club Ladder page before entering a Ladder Match.');
+      }
+    }catch(e){}
+  }
   renderStep2();
 }
 
@@ -1712,14 +1727,19 @@ function openPlayerModal(fieldId, label) {
   const idx = ids.indexOf(fieldId);
   const exclude = sel.filter((v,j) => j !== idx && v !== '');
 
+  // LADDER MATCH: only players who are on this category's Good 'ol Ladder may be picked.
+  if ((entryData.event||'') === 'Ladder Match' && window._ladderEligible) {
+    players = players.filter(p => window._ladderEligible.has(p));
+  }
+
   // MIXED: a team must be one man + one lady. If this slot's PARTNER is already
   // chosen, restrict this slot to the opposite gender.
   if (entryData.type === 'Mixed') {
     const partnerId = (fieldId==='t1p1')?'t1p2':(fieldId==='t1p2')?'t1p1':(fieldId==='t2p1')?'t2p2':'t2p1';
     const partnerName = document.getElementById(partnerId+'_val')?.value || '';
     if (partnerName) {
-      if (MEN.includes(partnerName)) players = LADIES;       // partner is a man -> this slot ladies only
-      else if (LADIES.includes(partnerName)) players = MEN;  // partner is a lady -> this slot men only
+      if (MEN.includes(partnerName)) players = players.filter(p=>LADIES.includes(p));
+      else if (LADIES.includes(partnerName)) players = players.filter(p=>MEN.includes(p));
     }
   }
 
@@ -2440,18 +2460,27 @@ async function loadClubLadder(){
 }
 
 let CL_TAB = 'ladder';  // 'ladder' or 'enter'
+const CL_CATS = ["Men's","Ladies","Mixed","All Sorts"];
 async function renderClubLadder(){
   const body = document.getElementById('clBody');
   const cat = CL_CAT;
   const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}&order=position.asc`) || [];
+  window._clRows = rows;
+  // activation state for this category
+  let activated = false;
+  try {
+    const st = await sbGet(`club_ladder_state?select=activated&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}&limit=1`);
+    activated = !!(st && st.length && st[0].activated);
+  } catch(e){}
+  window._clActivated = activated;
   const sel = 'width:100%;padding:11px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  // division pills (Men's / Ladies / Mixed) — same look as tournament
-  let divBar = '<div class="tm-divbar">';
-  ["Men's","Ladies","Mixed"].forEach(d=>{ divBar += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+d+'</button>'; });
+  // division pills (Men's / Ladies / Mixed / All Sorts) — centred, equal width
+  let divBar = '<div class="tm-divbar cl-divbar">';
+  CL_CATS.forEach(d=>{ divBar += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+d+'</button>'; });
   divBar += '</div>';
 
-  // tab nav (Ladder | Enter) — same look as tournament nav
+  // tab nav (Ladder | Enter)
   let nav = '<div class="tm-nav">'
     + '<button class="'+(CL_TAB==='ladder'?'active':'')+'" onclick="clSetTab(\'ladder\')">🪜 Ladder</button>'
     + '<button class="'+(CL_TAB==='enter'?'active':'')+'" onclick="clSetTab(\'enter\')">➕ Enter / Join</button>'
@@ -2459,12 +2488,20 @@ async function renderClubLadder(){
 
   let bodyHTML = '';
   if(CL_TAB==='ladder'){
-    bodyHTML = '<div class="card"><h2>'+cat+' Ladder <span class="tm-divtag">'+cat+'</span></h2>';
+    // Item 1: explainer text block
+    const explainer = '<div class="card" style="background:#faf8fc;border:1px solid #e6ddf0;">'
+      + '<h2 style="font-size:14px;">How the Club Ladder works</h2>'
+      + '<p class="sub" style="margin:0;line-height:1.6;">The ladder works on a <b>challenge basis only</b>. Ratings are used <b>once</b> — to set the opening order when the ladder is activated. After that, ratings no longer apply and teams move only by results. '
+      + 'A challenger may challenge <b>any team above them</b>. If the challenger <b>wins</b>, they move into the challenged team\u2019s spot and everyone in between moves down one. If the challenger <b>loses</b>, all teams stay where they are. '
+      + 'All ladder matches are <b>best of 3 sets</b>.</p></div>';
+
+    bodyHTML = explainer + '<div class="card"><h2>'+cat+' Ladder <span class="tm-divtag">'+cat+'</span>'
+      + (activated ? ' <span style="font-size:10px;background:#1e8449;color:#fff;padding:2px 7px;border-radius:8px;vertical-align:middle;">ACTIVE</span>' : ' <span style="font-size:10px;background:#b9770e;color:#fff;padding:2px 7px;border-radius:8px;vertical-align:middle;">NOT ACTIVATED</span>')
+      + '</h2>';
     if(!rows.length){
       bodyHTML += '<p class="sub">No teams on the '+cat+' ladder yet. Use the ➕ Enter / Join tab to add a pair.</p>';
     } else {
-      bodyHTML += '<p class="sub">Beat a team above you and you take their place. Ladder matches are entered like any score (event “Ladder Match”).</p>'
-        + '<table><thead><tr><th class="num">#</th><th>Team</th><th class="num"></th></tr></thead><tbody>';
+      bodyHTML += '<table><thead><tr><th class="num">#</th><th>Team</th><th class="num"></th></tr></thead><tbody>';
       rows.forEach(r=>{
         bodyHTML += '<tr><td class="num"><span class="seed'+(r.position===1?' s1':'')+'">'+r.position+'</span></td>'
           + '<td><b>'+r.p1+' / '+r.p2+'</b></td>'
@@ -2474,20 +2511,35 @@ async function renderClubLadder(){
     }
     bodyHTML += '</div>';
   } else {
-    // ENTER / JOIN tab
+    // ENTER / JOIN tab — Item 3: type-to-search pickers; Item 5: join at bottom
+    const joinHint = activated
+      ? 'This ladder is active — new pairs join at the bottom and challenge their way up.'
+      : 'Add pairs, then activate the ladder (admin) to set the opening order by rating.';
     bodyHTML = '<div class="card"><h2>Join the '+cat+' ladder <span class="tm-divtag">'+cat+'</span></h2>'
-      + '<p class="sub">Pick two players. New pairs join at the bottom. Names already on this ladder are removed from the list.</p>'
+      + '<p class="sub">'+joinHint+' Pick two players — names already on this ladder are removed from the list. Type to search.</p>'
       + '<label style="font-size:12px;color:#6b6b76;">Player 1</label>'
-      + '<select id="clP1" style="' + sel + '" onchange="clRefill()"></select>'
+      + '<input id="clP1search" placeholder="Type first letter…" style="'+sel+'margin-bottom:4px;" oninput="clFilter(1)" autocomplete="off">'
+      + '<select id="clP1" style="' + sel + '" onchange="clRefill()" size="1"></select>'
       + '<label style="font-size:12px;color:#6b6b76;">Player 2</label>'
-      + '<select id="clP2" style="' + sel + '" onchange="clRefill()"></select>'
+      + '<input id="clP2search" placeholder="Type first letter…" style="'+sel+'margin-bottom:4px;" oninput="clFilter(2)" autocomplete="off">'
+      + '<select id="clP2" style="' + sel + '" onchange="clRefill()" size="1"></select>'
       + '<button class="ac-btn ac-btn-green" style="width:100%;" onclick="clJoin()">Add pair to ladder</button>'
-      + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>'
-      + '<div class="card"><h2>Admin · first-pass order</h2>'
-      + '<p class="sub">Sets the '+cat+' ladder by combined rating (strongest at the top). Use once when starting a ladder.</p>'
-      + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
-      + '<button class="ac-btn ac-btn-primary" onclick="clSeed()">Seed by rating</button></div>'
-      + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
+      + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
+
+    // Item 2: activation card — locks after first activation (with guarded override)
+    if(!activated){
+      bodyHTML += '<div class="card"><h2>Activate the ladder</h2>'
+        + '<p class="sub">One-time: sets the '+cat+' ladder order by combined rating (strongest at the top). After activation, the ladder moves only on challenge results.</p>'
+        + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
+        + '<button class="ac-btn ac-btn-primary" onclick="clActivate(false)">Activate ladder</button></div>'
+        + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
+    } else {
+      bodyHTML += '<div class="card" style="border:1px dashed #e6b0aa;"><h2 style="color:#922;">Admin override</h2>'
+        + '<p class="sub">This ladder is already activated. Re-activating <b>reshuffles all earned positions back to rating order</b> — only do this to reset the ladder entirely.</p>'
+        + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #c0392b;border-radius:8px;font-size:15px;">'
+        + '<button class="ac-btn ac-btn-danger" onclick="clActivate(true)">Re-activate (reset)</button></div>'
+        + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
+    }
   }
 
   body.innerHTML = divBar + nav + bodyHTML;
@@ -2495,13 +2547,21 @@ async function renderClubLadder(){
 }
 
 function clSetTab(t){ CL_TAB = t; renderClubLadder(); }
-function clChangeCat(){ CL_CAT = document.getElementById('clCat').value; renderClubLadder(); }
-function clPick(d){ CL_CAT = d; renderClubLadder(); }
+function clPick(d){ CL_CAT = d; CL_TAB='ladder'; renderClubLadder(); }
+// Item 3: first-letter search — filter the select to names starting with typed text
+function clFilter(which){
+  const search = document.getElementById('cl'+(which===1?'P1':'P2')+'search').value.trim().toLowerCase();
+  const selEl = document.getElementById('cl'+(which===1?'P1':'P2'));
+  const full = which===1 ? (window._clP1full||[]) : (window._clP2full||[]);
+  const filtered = search ? full.filter(n=>n.toLowerCase().startsWith(search)) : full;
+  const cur = selEl.value;
+  selEl.innerHTML = '<option value="">— select —</option>' + filtered.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join('');
+}
 
-async function clRefill(){
+function clRefill(){
   const players = window._clPlayers || [];
-  // names already on this category's ladder drop out of the pickers
-  const onLadder = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
+  // names already on this category's ladder drop out of the pickers (cached rows)
+  const onLadder = window._clRows || [];
   const used = new Set(); onLadder.forEach(r=>{ used.add(r.p1); used.add(r.p2); });
   const p1=document.getElementById('clP1'), p2=document.getElementById('clP2');
   if(!p1||!p2) return;
@@ -2509,14 +2569,25 @@ async function clRefill(){
   const avail = players.filter(p=>!used.has(p.name) || p.name===c1 || p.name===c2);
   const men = avail.filter(p=>p.gender==='M').map(p=>p.name);
   const ladies = avail.filter(p=>p.gender==='F').map(p=>p.name);
-  function opts(list,cur){ return '<option value="">— select —</option>'+list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join(''); }
-  if(CL_CAT==="Men's"){ p1.innerHTML=opts(men,c1); p2.innerHTML=opts(men,c2); }
-  else if(CL_CAT==='Ladies'){ p1.innerHTML=opts(ladies,c1); p2.innerHTML=opts(ladies,c2); }
-  else { // Mixed: one man + one lady
+  const all = avail.map(p=>p.name);
+  let list1, list2;
+  if(CL_CAT==="Men's"){ list1=men; list2=men; }
+  else if(CL_CAT==='Ladies'){ list1=ladies; list2=ladies; }
+  else if(CL_CAT==='Mixed'){
     const c1m=men.includes(c1), c1l=ladies.includes(c1), c2m=men.includes(c2), c2l=ladies.includes(c2);
-    p1.innerHTML=opts(c2m?ladies:c2l?men:avail.map(p=>p.name), c1);
-    p2.innerHTML=opts(c1m?ladies:c1l?men:avail.map(p=>p.name), c2);
+    list1 = c2m?ladies:c2l?men:all;
+    list2 = c1m?ladies:c1l?men:all;
+  } else { // All Sorts — anyone
+    list1=all; list2=all;
   }
+  // store full lists so the search box can filter them (Item 3)
+  window._clP1full = list1; window._clP2full = list2;
+  function opts(list,cur){ return '<option value="">— select —</option>'+list.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===cur?' selected':'')+'>'+n+'</option>').join(''); }
+  p1.innerHTML=opts(list1,c1); p2.innerHTML=opts(list2,c2);
+  // re-apply any active search filters
+  const s1=document.getElementById('clP1search'), s2=document.getElementById('clP2search');
+  if(s1 && s1.value) clFilter(1);
+  if(s2 && s2.value) clFilter(2);
 }
 
 async function clJoin(){
@@ -2531,13 +2602,14 @@ async function clJoin(){
   renderClubLadder();
 }
 
-async function clSeed(){
+// Item 2/5: one-time activation (force=true is the guarded admin reset/override)
+async function clActivate(force){
   const pin=(document.getElementById('clPin').value||'').trim();
   const msg=document.getElementById('clSeedMsg');
   if(!pin){ msg.innerHTML='<span style="color:#c0392b;">Enter the admin PIN.</span>'; return; }
-  const rows = await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
-  if(!rows.length){ msg.innerHTML='<span style="color:#c0392b;">No teams to seed yet.</span>'; return; }
-  // compute combined rating for each pair from published ratings
+  if(force && !confirm('This will RESET the '+CL_CAT+' ladder back to rating order, discarding all positions earned through challenges. Continue?')) return;
+  const rows = window._clRows || await sbGet(`club_ladder?select=*&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(CL_CAT)}`) || [];
+  if(!rows.length){ msg.innerHTML='<span style="color:#c0392b;">No teams to activate yet.</span>'; return; }
   msg.textContent='Reading ratings…';
   const withR=[];
   for(const r of rows){
@@ -2547,10 +2619,10 @@ async function clSeed(){
   withR.sort((x,y)=>y.rating-x.rating);
   const resp=await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
     headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
-    body:JSON.stringify({action:'seed_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin,order:withR.map(t=>({p1:t.p1,p2:t.p2}))})});
+    body:JSON.stringify({action:'seed_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin,force:!!force,order:withR.map(t=>({p1:t.p1,p2:t.p2}))})});
   const j=await resp.json().catch(()=>({}));
-  if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not seed.')+'</span>'; return; }
-  renderClubLadder();
+  if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not activate.')+'</span>'; return; }
+  CL_TAB='ladder'; renderClubLadder();
 }
 
 async function clRemove(id, label){
