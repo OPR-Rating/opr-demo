@@ -268,6 +268,11 @@
 
   .name-pick-btn { width:100%; padding:11px; border:1.5px solid #d9cfe3; border-radius:9px; font-size:15px; box-sizing:border-box; margin-bottom:10px; background:#fff; text-align:left; color:#888; cursor:pointer; font-family:inherit; }
   .name-pick-btn.selected { color:#2C2C34; font-weight:600; border-color:#7D3C98; }
+
+  #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:12px; line-height:1.25; color:#3a2f44; }
+  #tournamentSheetContent td.ta.winr, #tournamentSheetContent td.tb.winr { color:#1e7a34; font-weight:700; }
+  #tournamentSheetContent th, #tournamentSheetContent td { padding:6px 5px; }
+  #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:34%; }
 </style>
 </head>
 <body>
@@ -288,7 +293,7 @@
     <div class="screen-content home-content">
       <button class="btn-enter" onclick="showScreen('entryScreen')">✚ Enter Match Score</button>
       <div class="menu-grid">
-        <button class="menu-btn" onclick="showScreen('laddersScreen')">Ladders</button>
+        <button class="menu-btn" onclick="showScreen('laddersScreen')">Ratings and Ladders</button>
         <button class="menu-btn" onclick="showProfileSearch()">Member Profile</button>
         <button class="menu-btn" onclick="showScreen('tournamentScreen')">Tournaments</button>
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
@@ -302,26 +307,26 @@
   <div class="screen hidden" id="laddersScreen">
     <div class="header">
       <button class="back-btn" onclick="goHome()">&#8592;</button>
-      <h1>Ladders</h1>
+      <h1>Ratings and Ladders</h1>
     </div>
     <div class="screen-content">
-      <div style="background:#6C3483;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:15px;font-weight:700;text-align:center;letter-spacing:0.3px;">Overall Ladder Standings</div>
-      <div style="background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#5b3a6e;line-height:1.5;text-align:center;">Overall Ladder Standings for ALL Matches recorded in both Social and Tournament records</div>
-      <div class="ladders-group-title">Singles Ladders</div>
+      <div style="background:#6C3483;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:15px;font-weight:700;text-align:center;letter-spacing:0.3px;">Overall Ratings &amp; Ladder Standings</div>
+      <div style="background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#5b3a6e;line-height:1.5;text-align:center;">Overall standings for ALL matches recorded in both Social and Tournament records</div>
+      <div class="ladders-group-title">Singles Ratings</div>
       <div class="ladders-grid">
-        <button class="menu-btn" onclick="loadLadder('mens','Mens Ladder')">Men's Ladder</button>
-        <button class="menu-btn" onclick="loadLadder('ladies','Ladies Ladder')">Ladies Ladder</button>
+        <button class="menu-btn" onclick="loadLadder('mens','Mens Rating')">Men's Rating</button>
+        <button class="menu-btn" onclick="loadLadder('ladies','Ladies Rating')">Ladies Rating</button>
       </div>
-      <div class="ladders-group-title">Doubles Ladders</div>
+      <div class="ladders-group-title">Doubles Ratings</div>
       <div class="ladders-grid">
-        <button class="menu-btn" onclick="loadLadder('mensdoubles','Mens Doubles Rating')">Men's Doubles</button>
-        <button class="menu-btn" onclick="loadLadder('ladiesdoubles','Ladies Doubles Rating')">Ladies Doubles</button>
-        <button class="menu-btn" onclick="loadLadder('mixed','Mixed Doubles Rating')">Mixed Doubles</button>
-        <button class="menu-btn" onclick="loadLadder('allsorts','All Sorts Rating')">All Sorts</button>
+        <button class="menu-btn" onclick="loadLadder('mensdoubles','Mens Doubles Rating')">Men's Doubles Rating</button>
+        <button class="menu-btn" onclick="loadLadder('ladiesdoubles','Ladies Doubles Rating')">Ladies Doubles Rating</button>
+        <button class="menu-btn" onclick="loadLadder('mixed','Mixed Doubles Rating')">Mixed Doubles Rating</button>
+        <button class="menu-btn" onclick="loadLadder('allsorts','All Sorts Rating')">All Sorts Rating</button>
       </div>
       <div class="ladders-group-title">Universal</div>
       <div class="ladders-grid one-col">
-        <button class="menu-btn" onclick="loadLadder('universal','Universal Rating')">Universal Ladder</button>
+        <button class="menu-btn" onclick="loadLadder('universal','Universal Rating')">Universal Rating</button>
       </div>
       <div class="ladders-group-title">Club Ladder</div>
       <div class="ladders-grid one-col">
@@ -425,6 +430,29 @@
       </div>
       <div id="tFormMenu" style="display:none;margin-top:8px;">
         <div style="padding:12px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 0 12px;font-size:12px;color:#5b3a6e;line-height:1.55;"><strong>Tournament Form</strong> shows how each pairing is performing <em>within this tournament</em> — team form computed from tournament matches only.</div>
+        <button class="menu-btn" id="tFormGuideBtn" style="border-color:#7D3C98;font-size:13px;margin-bottom:10px;" onclick="toggleTFormGuide()">📖 Understanding the Form Wall &nbsp;<span id="tFormGuideChevron" style="font-size:12px;">▼</span></button>
+        <div id="tFormGuideBox" style="display:none;padding:14px;background:#fff;border:1px solid #d7bde2;border-radius:10px;margin:0 0 12px;font-size:12px;color:#3a2348;line-height:1.6;">
+          <p style="margin:0 0 8px;"><em>A quick guide to what each column means.</em></p>
+          <p style="margin:0 0 6px;"><strong>The columns explained</strong></p>
+          <ul style="margin:0 0 10px;padding-left:18px;">
+            <li><strong>Player / Pair</strong> — the player's name, or the pairing.</li>
+            <li><strong>Sets</strong> — total sets played (must reach 12 to appear).</li>
+            <li><strong>Sets Won</strong> — how many of those sets were won.</li>
+            <li><strong>Win %</strong> — share of sets won.</li>
+            <li><strong>Game Diff / Set</strong> — average game margin per set. Positive = usually wins convincingly; negative = usually loses.</li>
+            <li><strong>Form</strong> — the overall performance score, 0.0–1.0 (read as 0–100%). The headline number the wall is sorted by.</li>
+          </ul>
+          <p style="margin:0 0 4px;"><strong>Reading Form (0.0 – 1.0)</strong></p>
+          <p style="margin:0 0 8px;">It blends how often you win sets, your game margin per set, and your games won per set — then adjusts for how many sets you've played (more = more reliable). Rough guide:</p>
+          <ul style="margin:0 0 10px;padding-left:18px;">
+            <li><strong>0.70+</strong> — Strong, performing very well.</li>
+            <li><strong>0.55–0.70</strong> — Good, winning more than losing.</li>
+            <li><strong>0.40–0.55</strong> — Middling, competitive but mixed.</li>
+            <li><strong>Below 0.40</strong> — Struggling.</li>
+          </ul>
+          <p style="margin:0 0 4px;"><strong>Why Form, not just Win %?</strong></p>
+          <p style="margin:0;">Win % treats a narrow win the same as a crushing one, and ignores who you played. Form rewards convincing performances and accounts for opponent strength. For doubles, Form shows how a <strong>partnership performs as a team</strong>.</p>
+        </div>
         <div class="ladders-grid one-col">
           <button class="menu-btn" onclick="loadTournamentForm('Men\'s',&quot;Men's Doubles Form&quot;)">Men's Doubles Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Ladies','Ladies Doubles Form')">Ladies Doubles Form</button>
@@ -519,7 +547,7 @@
 
   <!-- ADMIN -->
   <div class="screen hidden" id="adminScreen">
-    <div class="header"><button class="back-btn" onclick="goHome()">&larr;</button><h1>Admin</h1></div>
+    <div class="header"><button class="back-btn" onclick="adminExit()" title="Exit Admin" style="font-size:13px;font-weight:700;width:auto;padding:0 10px;">Exit</button><h1>Admin</h1></div>
     <div class="screen-content">
       <div id="adminGate">
         <div style="padding:14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin-bottom:14px;font-size:13px;color:#5b3a6e;">Enter the Master PIN to manage clubs and members.</div>
@@ -539,6 +567,7 @@
         <div class="ac-tabs">
           <button class="ac-tab active" id="acTabMembers" onclick="acRoom('members')">Members</button>
           <button class="ac-tab" id="acTabTours" onclick="acRoom('tours')">Tournaments</button>
+          <button class="ac-tab" id="acTabMatches" onclick="acRoom('matches')">Matches</button>
           <button class="ac-tab" id="acTabClub" onclick="acRoom('club')">Club</button>
         </div>
 
@@ -586,6 +615,15 @@
             </div>
             <button class="ac-btn ac-btn-primary" style="width:100%;margin-top:8px;" onclick="adminCreateTournament()">Create tournament</button>
             <div id="adminTourMsg" class="ac-msg"></div>
+          </div>
+        </div>
+
+        <!-- ROOM: MATCHES -->
+        <div class="ac-room" id="acRoomMatches">
+          <div class="ac-card">
+            <h4>Edit a match</h4>
+            <p style="font-size:11px;color:#9b80b3;margin:0 0 8px;">Fix a wrong score or event type, or delete a match. Ratings recompute automatically after a change.</p>
+            <div id="adminMatches" style="font-size:13px;">Loading…</div>
           </div>
         </div>
 
@@ -713,14 +751,20 @@ async function adminUnlock(){
   fillClubs(r.clubs);
 }
 // ---- Admin Control Room: tabs + context ----
+function adminExit(){
+  if(confirm('Exit the Admin Control Room?')) goHome();
+}
 function acRoom(which){
-  ['members','tours','club'].forEach(r=>{
-    document.getElementById('acRoom'+r.charAt(0).toUpperCase()+r.slice(1)).classList.toggle('active', r===which);
+  ['members','tours','matches','club'].forEach(r=>{
+    const el=document.getElementById('acRoom'+r.charAt(0).toUpperCase()+r.slice(1));
+    if(el) el.classList.toggle('active', r===which);
   });
   document.getElementById('acTabMembers').classList.toggle('active', which==='members');
   document.getElementById('acTabTours').classList.toggle('active', which==='tours');
+  document.getElementById('acTabMatches').classList.toggle('active', which==='matches');
   document.getElementById('acTabClub').classList.toggle('active', which==='club');
   if(which==='club') renderClubDetails();
+  if(which==='matches') adminLoadMatches();
 }
 function acUpdateContext(){
   const sel=document.getElementById('adminClubSelect');
@@ -814,7 +858,74 @@ async function adminLoadTournaments(){
   html+='</tbody></table>';
   box.innerHTML=html;
 }
-// show internal options only when type=internal; toggle divisions only when divisional
+
+// ---- Admin: edit matches ----
+async function adminLoadMatches(){
+  const box=document.getElementById('adminMatches');
+  const cid=Number(document.getElementById('adminClubSelect').value);
+  box.innerHTML='Loading…';
+  const r=await adminCall('list_matches',{ club_id:cid, limit:40 });
+  if(!r.ok){ box.innerHTML='<span style="color:#c0392b;">'+(r.error||'Could not load.')+'</span>'; return; }
+  const ms=r.matches||[];
+  if(!ms.length){ box.innerHTML='<p class="sub">No matches recorded for this club.</p>'; return; }
+  window._adminMatches = {};
+  let h='';
+  ms.forEach(m=>{
+    window._adminMatches[m.id]=m;
+    const score=(m.t1_sets)+'–'+(m.t2_sets);
+    h+='<div style="border:1px solid #eadff2;border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
+      + '<div style="font-size:11px;color:#9b80b3;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+'</div>'
+      + '<div style="font-size:13px;margin:3px 0;">'+m.t1p1+' &amp; '+m.t1p2+' <b>'+score+'</b> '+m.t2p1+' &amp; '+m.t2p2+'</div>'
+      + '<button class="ac-btn ac-btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="adminEditMatch('+m.id+')">Edit</button> '
+      + '<button class="ac-btn ac-btn-danger" style="font-size:12px;padding:5px 10px;" onclick="adminDeleteMatch('+m.id+')">Delete</button>'
+      + '</div>';
+  });
+  box.innerHTML=h;
+}
+
+function adminEditMatch(id){
+  const m=window._adminMatches[id]; if(!m) return;
+  const box=document.getElementById('adminMatches');
+  const fld='width:100%;padding:8px;border:1.5px solid #d9cfe3;border-radius:7px;font-size:13px;margin-bottom:7px;box-sizing:border-box;';
+  box.innerHTML='<div class="ac-card" style="border:1.5px solid #7D3C98;"><h4>Edit match</h4>'
+    + '<label style="font-size:11px;color:#9b80b3;">Date (yyyy-mm-dd)</label><input id="emDate" value="'+m.match_date+'" style="'+fld+'">'
+    + '<label style="font-size:11px;color:#9b80b3;">Event</label><input id="emEvent" value="'+(m.event||'Social').replace(/"/g,'&quot;')+'" style="'+fld+'">'
+    + '<div style="font-size:12px;margin:4px 0;">'+m.t1p1+' &amp; '+m.t1p2+'</div>'
+    + '<div class="ac-row"><input id="emT1s" type="number" value="'+m.t1_sets+'" placeholder="sets" style="'+fld+'"><input id="emT1g" type="number" value="'+m.t1_games+'" placeholder="games" style="'+fld+'"></div>'
+    + '<div style="font-size:12px;margin:4px 0;">'+m.t2p1+' &amp; '+m.t2p2+'</div>'
+    + '<div class="ac-row"><input id="emT2s" type="number" value="'+m.t2_sets+'" placeholder="sets" style="'+fld+'"><input id="emT2g" type="number" value="'+m.t2_games+'" placeholder="games" style="'+fld+'"></div>'
+    + '<label style="font-size:11px;color:#9b80b3;">Set scores (e.g. 6-4,6-3)</label><input id="emSet" value="'+(m.set_scores||'').replace(/"/g,'&quot;')+'" style="'+fld+'">'
+    + '<button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminSaveMatch('+id+')">Save changes</button>'
+    + '<button class="ac-btn ac-btn-ghost" style="width:100%;margin-top:6px;" onclick="adminLoadMatches()">Cancel</button>'
+    + '<div id="emMsg" class="ac-msg"></div></div>';
+}
+
+async function adminSaveMatch(id){
+  const cid=Number(document.getElementById('adminClubSelect').value);
+  const msg=document.getElementById('emMsg');
+  const args={ id, club_id:cid,
+    match_date:document.getElementById('emDate').value.trim(),
+    event:document.getElementById('emEvent').value.trim(),
+    t1_sets:Number(document.getElementById('emT1s').value),
+    t2_sets:Number(document.getElementById('emT2s').value),
+    t1_games:Number(document.getElementById('emT1g').value),
+    t2_games:Number(document.getElementById('emT2g').value),
+    set_scores:document.getElementById('emSet').value.trim()
+  };
+  const r=await adminCall('edit_match',args);
+  if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(r.error||'Could not save.')+'</span>'; return; }
+  msg.innerHTML='<span style="color:#1e8449;">Saved. Ratings are recomputing…</span>';
+  setTimeout(adminLoadMatches, 1200);
+}
+
+async function adminDeleteMatch(id){
+  if(!confirm('Delete this match? Ratings will recompute.')) return;
+  const cid=Number(document.getElementById('adminClubSelect').value);
+  const r=await adminCall('delete_match',{ id, club_id:cid });
+  if(!r.ok){ alert(r.error||'Could not delete.'); return; }
+  adminLoadMatches();
+}
+// show internal options only when type=internal
 function atToggleType(){
   const t=document.getElementById('atType').value;
   document.getElementById('atInternalOpts').style.display = (t==='internal')?'':'none';
@@ -1010,6 +1121,12 @@ function toggleFormMenu(){
 function toggleFormGuide(){
   const box=document.getElementById('formGuideBox');
   const chev=document.getElementById('formGuideChevron');
+  if(box.style.display==='none'){ box.style.display='block'; chev.textContent='▲'; }
+  else { box.style.display='none'; chev.textContent='▼'; }
+}
+function toggleTFormGuide(){
+  const box=document.getElementById('tFormGuideBox');
+  const chev=document.getElementById('tFormGuideChevron');
   if(box.style.display==='none'){ box.style.display='block'; chev.textContent='▲'; }
   else { box.style.display='none'; chev.textContent='▼'; }
 }
@@ -1428,15 +1545,25 @@ async function step1Next(){
   const event=document.getElementById('matchEvent').value;
   if(!date||!type||!sets||!event){document.getElementById('err1').style.display='block';return;}
   entryData={date,type,sets:parseInt(sets),event};
-  // For a Ladder Match, load who is on that category's ladder so only they can be picked.
+  // For a Ladder Match, the ladder for this category must EXIST and be ACTIVATED.
   window._ladderEligible = null;
   if(event==='Ladder Match'){
+    let activated=false;
+    try{
+      const st = await sbGet(`club_ladder_state?select=activated&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(type)}&limit=1`);
+      activated = !!(st && st.length && st[0].activated);
+    }catch(e){}
+    if(!activated){
+      alert('The '+type+' ladder is not activated yet. A ladder match can only be entered once the '+type+' ladder has been activated on the Good \u2019ol Club Ladder page.');
+      return; // stay on step 1, do not proceed
+    }
     try{
       const lad = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(type)}`) || [];
       const set=new Set(); lad.forEach(r=>{ set.add(r.p1); set.add(r.p2); });
       window._ladderEligible = set;
       if(set.size===0){
-        alert('No teams are on the '+type+' ladder yet. Add teams on the Good \u2019ol Club Ladder page before entering a Ladder Match.');
+        alert('No teams are on the '+type+' ladder yet.');
+        return;
       }
     }catch(e){}
   }
@@ -2130,9 +2257,9 @@ async function loadTournamentSheet(tournament, division) {
       const aWin = played && f.sets_a > f.sets_b, bWin = played && f.sets_b > f.sets_a;
       const score = played ? (f.sets_a + '–' + f.sets_b + ' (' + f.games_a + '–' + f.games_b + ')') : '—';
       h += '<tr><td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
-        + '<td class="ta' + (aWin ? ' winr' : '') + '"><b>' + tName(f.seed_a) + '</b></td>'
+        + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tName(f.seed_a) + '</td>'
         + '<td class="num"><span class="pill ' + f.band + '">' + (f.band||'') + '</span></td>'
-        + '<td class="tb' + (bWin ? ' winr' : '') + '"><b>' + tName(f.seed_b) + '</b></td>'
+        + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tName(f.seed_b) + '</td>'
         + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
         + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#bbb">—</span>') + '</td></tr>';
     });
