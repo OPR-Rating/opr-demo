@@ -1706,6 +1706,21 @@ async function step1Next(){
       }
     }catch(e){}
   }
+  // For an INTERNAL tournament, that division's draw must exist before results can be entered
+  // (mirrors the ladder guard). External tournaments and Social are unaffected.
+  if(event && event!=='Social' && event!=='Ladder Match'){
+    try{
+      const trow = await sbGet(`tournaments?select=type&name=eq.${encodeURIComponent(event)}&club_id=eq.${CLUB_ID}&limit=1`);
+      const isInternal = trow && trow.length && trow[0].type==='internal';
+      if(isInternal){
+        const fx = await sbGet(`tournament_fixtures?select=id&tournament=eq.${encodeURIComponent(event)}&division=eq.${encodeURIComponent(type)}&club_id=eq.${CLUB_ID}&limit=1`) || [];
+        if(fx.length===0){
+          alert('The '+type+' draw for "'+event+'" has not been generated yet.\n\nFor an internal tournament, enter teams and generate the '+type+' draw on the Tournaments page before recording results.');
+          return; // stay on step 1
+        }
+      }
+    }catch(e){}
+  }
   renderStep2();
 }
 
