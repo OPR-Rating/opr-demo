@@ -1335,8 +1335,34 @@ function filterPlayers() {
 async function loadProfile(name, gender) {
   document.getElementById('profileTitle').textContent = name.split(' ')[0];
   window._profileName = name;
+  window._profileGender = gender;
+  window._profileTab = 'individual';
   document.getElementById('profileContent').innerHTML = '<div class="loading"><span class="loading-spinner">⏳</span>Loading...</div>';
   showScreen('profileScreen');
+  renderProfileTabs();
+  loadProfileIndividual(name, gender);
+}
+
+function renderProfileTabs(){
+  const t = window._profileTab;
+  // tabs sit above the content; clicking switches the view
+}
+
+function profileSetTab(tab){
+  window._profileTab = tab;
+  if(tab==='individual') loadProfileIndividual(window._profileName, window._profileGender);
+  else loadProfilePartner();
+}
+
+function profileTabsHTML(active){
+  return '<div class="tm-nav" style="margin-bottom:12px;">'
+    + '<button class="'+(active==='individual'?'active':'')+'" onclick="profileSetTab(\'individual\')">👤 Individual</button>'
+    + '<button class="'+(active==='partner'?'active':'')+'" onclick="profileSetTab(\'partner\')">👥 With Partner</button>'
+    + '</div>';
+}
+
+async function loadProfileIndividual(name, gender) {
+  document.getElementById('profileContent').innerHTML = profileTabsHTML('individual') + '<div class="loading"><span class="loading-spinner">⏳</span>Loading...</div>';
   try {
     const isMen = gender==='M';
     // Player rating/form from player_results
@@ -1390,7 +1416,7 @@ async function loadProfile(name, gender) {
       matchHTML='<div class="empty-state" style="padding:20px 0;"><p>No matches yet</p></div>';
     }
 
-    document.getElementById('profileContent').innerHTML = `
+    document.getElementById('profileContent').innerHTML = profileTabsHTML('individual') + `
       <div class="profile-card">
         <div class="profile-name">${name}</div>
         <div class="profile-rating">${rating}</div>
@@ -1404,7 +1430,117 @@ async function loadProfile(name, gender) {
       </div>
       ${matchHTML}`;
   } catch(e){
-    document.getElementById('profileContent').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load profile: '+(e.message||e)+'</p></div>';
+    document.getElementById('profileContent').innerHTML = profileTabsHTML('individual') + '<div class="empty-state"><div class="icon">⚠️</div><p>Could not load profile: '+(e.message||e)+'</p></div>';
+  }
+}
+
+// ===== WITH PARTNER VIEW =====
+async function loadProfilePartner(){
+  const name = window._profileName;
+  // partner picker (modal name picker, exclude self)
+  let html = profileTabsHTML('partner')
+    + '<div class="card"><div style="font-size:16px;font-weight:700;color:#6C3483;margin:0 0 6px;">How ' + name.split(' ')[0] + ' does with a partner</div>'
+    + '<p class="sub">Pick a partner to see your combined rating and the matches you\u2019ve played together.</p>'
+    + '<input type="hidden" id="ppPartner">'
+    + '<button type="button" class="name-pick-btn" id="ppPartnerBtn" onclick="profilePickPartner()">— select a partner —</button></div>'
+    + '<div id="ppResult"></div>';
+  document.getElementById('profileContent').innerHTML = html;
+}
+
+function profilePickPartner(){
+  const players = (window._clPlayers||[]);
+  // ensure we have a player list (reuse the cached one or fetch)
+  const go = (list)=>{
+    const names = list.map(p=>p.name).filter(n=>n!==window._profileName);
+    openNamePicker('Partner', names, function(partner){
+      document.getElementById('ppPartner').value = partner;
+      document.getElementById('ppPartnerBtn').textContent = partner;
+      document.getElementById('ppPartnerBtn').classList.add('selected');
+      profileShowPartner(partner);
+    });
+  };
+  if(players.length) go(players);
+  else sbGet(`players_public?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`).then(l=>{ window._clPlayers=l||[]; go(window._clPlayers); });
+}
+
+async function profileShowPartner(partner){
+  const name = window._profileName;
+  const box = document.getElementById('ppResult');
+  box.innerHTML = '<div class="loading"><span class="loading-spinner">⏳</span>Loading...</div>';
+  try{
+    // ratings of both players
+    const enc=encodeURIComponent(name), encP=encodeURIComponent(partner);
+    const rA = await sbGet(`player_results?select=current_rating,gender&name=eq.${enc}&club_id=eq.${CLUB_ID}`);
+    const rB = await sbGet(`player_results?select=current_rating,gender&name=eq.${encP}&club_id=eq.${CLUB_ID}`);
+    const ra = rA[0]||{}, rb = rB[0]||{};
+    const va = ra.current_rating!=null?Number(ra.current_rating):null;
+    const vb = rb.current_rating!=null?Number(rb.current_rating):null;
+    // pair rating: same-gender = combined (avg); mixed = weighted (stronger*0.6+weaker*0.4)
+    let pairRating='-', pairLevel='-';
+    if(va!=null && vb!=null){
+      const sameGender = (ra.gender===rb.gender);
+      let val;
+      if(sameGender){ val = (va+vb)/2; }
+      else { const hi=Math.max(va,vb), lo=Math.min(va,vb); val = hi*0.6 + lo*0.4; }
+      pairRating = Math.round(val);
+      pairLevel = (val/200).toFixed(1);
+    }
+    // matches where BOTH were partners on the same team
+    const q=`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&order=match_date.desc,id.desc`
+      + `&or=(and(t1p1.eq.${enc},t1p2.eq.${encP}),and(t1p1.eq.${encP},t1p2.eq.${enc}),and(t2p1.eq.${enc},t2p2.eq.${encP}),and(t2p1.eq.${encP},t2p2.eq.${enc}))`;
+    const together = await sbGet(q);
+    window._profilePartnerMatches = together;
+
+    let setsPlayed=0, setsWon=0;
+    together.forEach(m=>{
+      const onT1=((m.t1p1===name||m.t1p2===name));
+      setsPlayed += (m.t1_sets||0)+(m.t2_sets||0);
+      setsWon += onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
+    });
+    const winPct = setsPlayed>0 ? Math.round(setsWon/setsPlayed*100*10)/10 : '-';
+
+    let matchHTML='';
+    if(together.length>0){
+      matchHTML = `<div class="section-header">Matches together (${together.length})</div>`;
+      together.forEach((m,midx)=>{
+        const date=m.match_date||'', type=m.match_type||'';
+        const onT1=(m.t1p1===name||m.t1p2===name);
+        const opp1 = onT1 ? m.t2p1 : m.t1p1;
+        const opp2 = onT1 ? m.t2p2 : m.t1p2;
+        const mysets = onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
+        const oppsets = onT1 ? (m.t2_sets||0) : (m.t1_sets||0);
+        const won = mysets>oppsets;
+        matchHTML+=`<div class="match-row" onclick="togglePartnerMatch(${midx})" style="cursor:pointer;" id="ppmatch_${midx}">
+            <span class="${won?'win-badge':'loss-badge'}">${won?'W':'L'}</span>
+            <div class="match-info">
+              <div class="opponents">vs ${opp1} & ${opp2}</div>
+            </div>
+            <div class="match-meta">
+              <div class="score">${mysets}-${oppsets}</div>
+              <div class="date">${date} · ${type} ▼</div>
+            </div>
+          </div>
+          <div id="ppmatchdetail_${midx}" style="display:none;background:#F5EEF8;padding:8px 12px;border-radius:8px;margin:-4px 0 4px;font-size:12px;text-align:center;"></div>`;
+      });
+    } else {
+      matchHTML='<div class="empty-state" style="padding:20px 0;"><p>'+name.split(' ')[0]+' and '+partner.split(' ')[0]+' haven\u2019t played any matches together yet.</p></div>';
+    }
+
+    box.innerHTML = `
+      <div class="profile-card">
+        <div class="profile-name">${name.split(' ')[0]} &amp; ${partner.split(' ')[0]}</div>
+        <div class="profile-rating">${pairRating}</div>
+        <div class="profile-level">Level ${pairLevel}</div>
+        <div class="profile-rank">Team rating</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-value">${setsPlayed}</div><div class="stat-label">Sets Played</div></div>
+        <div class="stat-card"><div class="stat-value">${setsWon}</div><div class="stat-label">Sets Won</div></div>
+        <div class="stat-card"><div class="stat-value">${winPct}${winPct==='-'?'':'%'}</div><div class="stat-label">Win %</div></div>
+      </div>
+      ${matchHTML}`;
+  } catch(e){
+    box.innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load: '+(e.message||e)+'</p></div>';
   }
 }
 
@@ -1855,7 +1991,36 @@ async function toggleProfileMatch(idx){
   }
 }
 
-let _currentModalTarget = null;
+async function togglePartnerMatch(idx){
+  const detail=document.getElementById('ppmatchdetail_'+idx);
+  const m=window._profilePartnerMatches?window._profilePartnerMatches[idx]:null;
+  if(!m){return;}
+  if(detail.style.display==='none'){
+    const date=m.match_date||'', type=m.match_type||'';
+    const profileName=window._profileName||'';
+    const onT1=(m.t1p1===profileName||m.t1p2===profileName);
+    detail.style.display='block';
+    let scoresHTML='';
+    const ss=(m.set_scores||'').trim();
+    if(ss!==''){
+      const scores=ss.split(',').map(x=>x.trim()).filter(x=>x);
+      const parts=scores.map(sc=>{
+        const [a,b]=sc.split('-').map(n=>parseInt(n)||0);
+        const myScore = onT1 ? a : b;
+        const oppScore = onT1 ? b : a;
+        const won = myScore>oppScore;
+        const bg = won?'#1e8449':'#c0392b';
+        return '<span style="background:'+bg+';color:white;border-radius:4px;padding:3px 10px;margin:0 3px;font-size:13px;font-weight:700;">'+myScore+'/'+oppScore+'</span>';
+      });
+      if(parts.length>0) scoresHTML=parts.join('');
+    }
+    const mysets = onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
+    const oppsets = onT1 ? (m.t2_sets||0) : (m.t1_sets||0);
+    detail.innerHTML='<div style="text-align:center;padding:4px 0;">'+(scoresHTML||'<span style="color:#888;font-size:11px;">'+mysets+'-'+oppsets+' sets</span>')+'</div><div style="font-size:11px;color:#888;text-align:center;">'+date+' · '+type+'</div>';
+  } else {
+    detail.style.display='none';
+  }
+}
 let _currentModalPlayers = [];
 
 function openPlayerModal(fieldId, label) {
