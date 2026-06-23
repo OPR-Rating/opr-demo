@@ -843,7 +843,9 @@ async function adminLoadTournaments(){
   if(!r.ok){ box.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
   if(r.tournaments.length===0){ box.innerHTML='<div style="color:#888;padding:6px 0;">No tournaments yet.</div>'; return; }
   let html='<table class="ladder-table"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody>';
+  window._adminTours = {};
   r.tournaments.forEach(t=>{
+    window._adminTours[t.id] = t;
     const status = t.archived ? '<span style="color:#888;">closed</span>' : (t.active ? '<span style="color:#1e8449;font-weight:700;">active</span>' : 'off');
     let actions='';
     if(t.archived){ actions='<span style="color:#aaa;">archived</span>'; }
@@ -851,12 +853,49 @@ async function adminLoadTournaments(){
       actions += t.active
         ? '<button onclick="adminToggleTournament('+t.id+',false)" style="background:none;border:none;color:#b9770e;cursor:pointer;">turn off</button>'
         : '<button onclick="adminToggleTournament('+t.id+',true)" style="background:none;border:none;color:#1e8449;cursor:pointer;">turn on</button>';
+      if(t.type==='internal'){
+        actions += ' <button onclick="adminEditCaps('+t.id+')" style="background:none;border:none;color:#6C3483;cursor:pointer;">edit caps</button>';
+      }
       actions += ' <button onclick="adminCloseTournament('+t.id+',\''+t.name.replace(/\x27/g,"\\\x27")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;">close&amp;archive</button>';
     }
     html+='<tr><td>'+t.name+'</td><td>'+t.type+'</td><td>'+status+'</td><td style="white-space:nowrap;">'+actions+'</td></tr>';
   });
-  html+='</tbody></table>';
+  html+='</tbody></table><div id="adminCapEdit"></div>';
   box.innerHTML=html;
+}
+
+// Edit per-division caps for an internal tournament (mainly to extend them)
+function adminEditCaps(id){
+  const t = window._adminTours[id]; if(!t) return;
+  const divs = (t.divisions||'').split(',').map(s=>s.trim()).filter(Boolean);
+  let caps={}; try{ caps = t.caps ? JSON.parse(t.caps) : {}; }catch(e){ caps={}; }
+  const fld='width:80px;padding:7px 9px;border:1.5px solid #d9cfe3;border-radius:8px;font-size:14px;';
+  let h='<div class="ac-card" style="border:1.5px solid #7D3C98;margin-top:10px;"><h4>Edit caps — '+t.name+'</h4>'
+    + '<p style="font-size:11px;color:#9b80b3;margin:0 0 8px;">Set or extend the team cap per division. Leave blank for no cap. A cap can\u2019t be set below teams already entered.</p>';
+  divs.forEach(d=>{
+    const v = (caps[d]!=null) ? caps[d] : '';
+    h+='<div class="at-divrow"><label>'+d+'</label><input id="capEdit_'+d.replace(/[^A-Za-z]/g,'')+'" type="number" min="2" step="2" value="'+v+'" placeholder="no cap" style="'+fld+'"></div>';
+  });
+  h+='<button class="ac-btn ac-btn-primary" style="width:100%;margin-top:8px;" onclick="adminSaveCaps('+id+')">Save caps</button>'
+    + '<button class="ac-btn ac-btn-ghost" style="width:100%;margin-top:6px;" onclick="document.getElementById(\'adminCapEdit\').innerHTML=\'\'">Cancel</button>'
+    + '<div id="capEditMsg" class="ac-msg"></div></div>';
+  document.getElementById('adminCapEdit').innerHTML = h;
+}
+
+async function adminSaveCaps(id){
+  const t = window._adminTours[id]; if(!t) return;
+  const cid=Number(document.getElementById('adminClubSelect').value);
+  const divs = (t.divisions||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const caps={};
+  divs.forEach(d=>{
+    const el=document.getElementById('capEdit_'+d.replace(/[^A-Za-z]/g,''));
+    if(el && el.value) caps[d]=Number(el.value);
+  });
+  const msg=document.getElementById('capEditMsg');
+  const r=await adminCall('set_tournament_caps',{ id, club_id:cid, tournament:t.name, caps });
+  if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(r.error||'Could not save.')+'</span>'; return; }
+  msg.innerHTML='<span style="color:#1e8449;">Caps updated.</span>';
+  setTimeout(adminLoadTournaments, 900);
 }
 
 // ---- Admin: edit matches ----
