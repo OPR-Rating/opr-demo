@@ -990,10 +990,13 @@ async function adminAddMember(){
   adminLoadMembers();
 }
 async function adminEditMember(id,name,rating,pin){
-  const newName=prompt('Name:',name); if(newName===null) return;
+  // Name is LOCKED — the rating engine and all match/ladder records key on the name,
+  // so renaming here would leave old records mismatched. Rating + PIN are editable.
+  // (To correct a misspelt name, use the Supabase rename script — it updates every table.)
+  alert('Editing '+name+'.\n\nName is fixed (the system links results to the name). You can change the rating and PIN.');
   const newRating=prompt('Initial rating:',Math.round(rating)); if(newRating===null) return;
   const newPin=prompt('PIN (4 digits):',pin); if(newPin===null) return;
-  const r=await adminCall('edit_member',{ id, name:newName.trim(), initial_rating:Number(newRating), pin:newPin.trim() });
+  const r=await adminCall('edit_member',{ id, name:name, initial_rating:Number(newRating), pin:newPin.trim() });
   if(!r.ok){ alert(r.error); return; } adminLoadMembers();
 }
 async function adminDeleteMember(id,name){
@@ -1856,6 +1859,7 @@ function renderStep4(){
         <label>Your PIN</label>
         <input type="password" id="submitterPin" maxlength="4" placeholder="4-digit PIN"
           style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-size:18px;font-weight:700;letter-spacing:6px;text-align:center;">
+        <div style="font-size:11px;color:#9b80b3;margin-top:6px;">Players use their own PIN. A club admin can use the club admin code to enter on anyone's behalf.</div>
       </div>
     </div>
     <div id="err4" class="error-msg"></div>
