@@ -2417,6 +2417,10 @@ async function loadTournamentSheet(tournament, division) {
 
   const entries = await tmLoadEntries(tournament, TM_DIVISION);
   const fixtures = await tmLoadFixtures(tournament, TM_DIVISION);
+  // stash for the fixture-result entry (called from onclick outside this scope)
+  window._tmCtx = { tournament, division: TM_DIVISION };
+  window._tmFixturesById = {}; fixtures.forEach(f=>{ window._tmFixturesById[f.id]=f; });
+  window._tmSeedNames = {}; entries.forEach(e=>{ window._tmSeedNames[e.seed] = e.p1 + ' / ' + e.p2; });
 
   // division selector pills (only divisions that have entries)
   let divBar = '<div class="tm-divbar">';
@@ -2475,18 +2479,19 @@ async function loadTournamentSheet(tournament, division) {
     });
     h += '</div><table><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
       + '<th class="tb">Team B</th><th class="num">Sd</th><th class="num">Score</th></tr></thead><tbody>';
-    (rounds[curRound] || []).forEach(f => {
+    (rounds[curRound] || []).forEach((f, fi) => {
       const played = f.sets_a != null;
       const aWin = played && f.sets_a > f.sets_b, bWin = played && f.sets_b > f.sets_a;
       const score = played ? (f.sets_a + '–' + f.sets_b + ' (' + f.games_a + '–' + f.games_b + ')') : '—';
-      h += '<tr><td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
+      h += '<tr style="cursor:pointer;" onclick="tmEnterFixtureResult(' + f.id + ')" title="Tap to enter/edit the score">'
+        + '<td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
         + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tName(f.seed_a) + '</td>'
         + '<td class="num"><span class="pill ' + f.band + '">' + (f.band||'') + '</span></td>'
         + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tName(f.seed_b) + '</td>'
         + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
-        + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#bbb">—</span>') + '</td></tr>';
+        + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#7D3C98;font-weight:700;">enter ▸</span>') + '</td></tr>';
     });
-    h += '</tbody></table></div>';
+    h += '</tbody></table><p class="sub" style="margin-top:8px;">Tap a fixture to enter or edit its score (admin).</p></div>';
     return h;
   }
   function standingsHTML() {
@@ -2517,6 +2522,43 @@ async function loadTournamentSheet(tournament, division) {
   window.tmSetRound = function (r) { curRound = r; render(); };
   window.tmPickDivision = function (t, d) { box._tab='teams'; box._round=null; loadTournamentSheet(t, d); };
   render();
+}
+
+// Enter or edit the score for a specific tournament fixture (admin-gated).
+// Writes the result onto the fixture AND creates a matches row (via the tournament Edge Function).
+async function tmEnterFixtureResult(fixtureId){
+  const f = window._tmFixturesById ? window._tmFixturesById[fixtureId] : null;
+  const ctx = window._tmCtx || {};
+  if(!f || !ctx.tournament){ return; }
+  const names = window._tmSeedNames || {};
+  const teamA = names[f.seed_a] || ('Seed '+f.seed_a);
+  const teamB = names[f.seed_b] || ('Seed '+f.seed_b);
+  const cur = (f.sets_a!=null) ? (f.sets_a+'-'+f.sets_b) : '';
+  // simple, robust prompt-based entry (sets, then games, then optional set scores)
+  const setsRaw = prompt('Score for:\n'+teamA+'  vs  '+teamB+'\n\nEnter SETS as A-B (e.g. 2-1):', cur);
+  if(setsRaw===null) return;
+  const sm = setsRaw.trim().match(/^(\d+)\s*-\s*(\d+)$/);
+  if(!sm){ alert('Please enter sets as A-B, e.g. 2-1'); return; }
+  const sa=Number(sm[1]), sb=Number(sm[2]);
+  const gamesRaw = prompt('Total GAMES as A-B (e.g. 13-9). Leave blank if not tracked:', (f.games_a!=null?(f.games_a+'-'+f.games_b):''));
+  if(gamesRaw===null) return;
+  let ga=0, gb=0;
+  if(gamesRaw.trim()!==''){ const gm=gamesRaw.trim().match(/^(\d+)\s*-\s*(\d+)$/); if(!gm){ alert('Games must be A-B, e.g. 13-9'); return; } ga=Number(gm[1]); gb=Number(gm[2]); }
+  const setScores = (prompt('Optional per-set scores (e.g. 6-4,3-6,6-2). Leave blank to skip:','')||'').trim();
+  const today = new Date().toISOString().slice(0,10);
+  const dateRaw = (prompt('Match date (yyyy-mm-dd):', today)||'').trim() || today;
+  const pin = (prompt('Admin PIN to record this result:')||'').trim();
+  if(!pin) return;
+  const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+    headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+    body: JSON.stringify({ action:'record_fixture_result', club_id:CLUB_ID, admin_pin:pin,
+      fixture_id:fixtureId, tournament:ctx.tournament, division:ctx.division, round:f.round,
+      seed_a:f.seed_a, seed_b:f.seed_b, sets_a:sa, sets_b:sb, games_a:ga, games_b:gb,
+      set_scores:setScores, match_date:dateRaw }) });
+  const j = await resp.json().catch(()=>({}));
+  if(!j.ok){ alert('Could not record: '+((j&&j.error)||resp.status)); return; }
+  // reload the sheet so the board shows the score
+  loadTournamentSheet(ctx.tournament, ctx.division);
 }
 
 /* ============================================================================
