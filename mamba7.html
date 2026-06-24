@@ -269,10 +269,14 @@
   .name-pick-btn { width:100%; padding:11px; border:1.5px solid #d9cfe3; border-radius:9px; font-size:15px; box-sizing:border-box; margin-bottom:10px; background:#fff; text-align:left; color:#888; cursor:pointer; font-family:inherit; }
   .name-pick-btn.selected { color:#2C2C34; font-weight:600; border-color:#7D3C98; }
 
-  #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:12px; line-height:1.25; color:#3a2f44; }
+  #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:13px; line-height:1.4; color:#3a2f44; padding:11px 8px; }
   #tournamentSheetContent td.ta.winr, #tournamentSheetContent td.tb.winr { color:#1e7a34; font-weight:700; }
-  #tournamentSheetContent th, #tournamentSheetContent td { padding:6px 5px; }
-  #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:34%; }
+  #tournamentSheetContent th { padding:9px 6px; font-size:11px; text-transform:uppercase; letter-spacing:0.3px; color:#9b80b3; }
+  #tournamentSheetContent td { padding:11px 6px; }
+  #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:30%; }
+  #tournamentSheetContent tr { border-bottom:1px solid #efeaf4; }
+  #tournamentSheetContent td.num .res-done { font-size:12px; font-weight:700; color:#1e7a34; white-space:nowrap; }
+  #tournamentSheetContent .pill { font-size:10px; padding:2px 7px; }
 </style>
 </head>
 <body>
@@ -848,7 +852,7 @@ async function adminLoadTournaments(){
     window._adminTours[t.id] = t;
     const status = t.archived ? '<span style="color:#888;">closed</span>' : (t.active ? '<span style="color:#1e8449;font-weight:700;">active</span>' : 'off');
     let actions='';
-    if(t.archived){ actions='<span style="color:#aaa;">archived</span>'; }
+    if(t.archived){ actions='<span style="color:#aaa;">archived</span> <button onclick="adminDeleteTournament('+t.id+',\''+t.name.replace(/\x27/g,"\\\x27")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;">delete</button>'; }
     else {
       actions += t.active
         ? '<button onclick="adminToggleTournament('+t.id+',false)" style="background:none;border:none;color:#b9770e;cursor:pointer;">turn off</button>'
@@ -1012,6 +1016,14 @@ async function adminCloseTournament(id, name){
   const r=await adminCall('close_tournament',{ id });
   if(!r.ok){ alert(r.error); return; }
   alert('"'+name+'" archived. Its standings are frozen ('+ (r.frozen||0) +' rows). View it anytime under Tournaments → past tournaments.');
+  adminLoadTournaments();
+}
+async function adminDeleteTournament(id, name){
+  if(!confirm('Permanently DELETE the archived tournament "'+name+'"?\n\nThis removes the tournament, its draw and its team entries. The actual match results and player ratings are NOT affected (they stay in the records). This is for clearing abandoned/unwanted tournaments.')) return;
+  if(!confirm('Are you sure? This cannot be undone.')) return;
+  const r=await adminCall('delete_tournament',{ id });
+  if(!r.ok){ alert(r.error); return; }
+  alert('"'+name+'" deleted.');
   adminLoadTournaments();
 }
 async function adminAddMember(){
@@ -1933,6 +1945,28 @@ async function submitMatch(){
 
   err.style.display='none';
   const btn=document.getElementById('submitBtn');
+  // Duplicate-result guard for INTERNAL tournaments: if a fixture for these two
+  // teams already has a score, warn and let the admin choose to proceed.
+  const ev=(entryData.event||'').trim();
+  if(ev && ev!=='Social' && ev!=='Ladder Match'){
+    try{
+      const trow = await sbGet(`tournaments?select=type&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
+      if(trow && trow.length && trow[0].type==='internal'){
+        const ents = await sbGet(`tournament_entries?select=seed,p1,p2&tournament=eq.${encodeURIComponent(ev)}&category=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
+        const seedOf=(a,b)=>{ const e=ents.find(e=>e.p1===a||e.p2===a||e.p1===b||e.p2===b); return e?e.seed:null; };
+        const sa=seedOf(entryData.t1p1,entryData.t1p2), sb=seedOf(entryData.t2p1,entryData.t2p2);
+        if(sa && sb && sa!==sb){
+          const fxs = await sbGet(`tournament_fixtures?select=round,sets_a&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}&or=(and(seed_a.eq.${sa},seed_b.eq.${sb}),and(seed_a.eq.${sb},seed_b.eq.${sa}))`) || [];
+          const played = fxs.find(f=>f.sets_a!=null);
+          if(played){
+            if(!confirm('A result for this pairing in "'+ev+'" ('+entryData.type+') is already recorded in Round '+played.round+'.\n\nSubmitting again will create a DUPLICATE match. Proceed anyway?')){
+              return; // user chose not to duplicate
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
   btn.disabled=true;
   // PIN is verified SERVER-SIDE by the secure function (never read by the app).
   entryData._submitter=submitter;
@@ -2447,7 +2481,7 @@ async function loadTournamentSheet(tournament, division) {
       t[f.seed_a].gd += (f.games_a - f.games_b); t[f.seed_b].gd += (f.games_b - f.games_a);
     });
     let arr = Object.values(t);
-    arr.sort((x, y) => y.sets - x.sets || y.gw - x.gw || y.gd - x.gd || x.seed - y.seed);
+    arr.sort((x, y) => y.sets - x.sets || y.gd - x.gd || y.gw - x.gw || x.seed - y.seed);
     return arr;
   }
   const maxPlayed = Math.max(0, ...fixtures.filter(f => f.sets_a != null).map(f => f.round));
