@@ -1951,6 +1951,14 @@ async function submitMatch(){
     try{
       const trow = await sbGet(`tournaments?select=type&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
       if(trow && trow.length && trow[0].type==='internal'){
+        // If EVERY fixture in this division already has a result, the draw is complete —
+        // warn (a new match won't appear on the board, no open fixture). Allow override.
+        const allFx = await sbGet(`tournament_fixtures?select=sets_a&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
+        if(allFx.length>0 && allFx.every(f=>f.sets_a!=null)){
+          if(!confirm('All rounds for "'+ev+'" ('+entryData.type+') are complete — there are no open fixtures.\n\nThis result will be recorded and will count toward ratings/stats, but it will NOT appear on the draw board. Proceed anyway?')){
+            return;
+          }
+        }
         const ents = await sbGet(`tournament_entries?select=seed,p1,p2&tournament=eq.${encodeURIComponent(ev)}&category=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
         const seedOf=(a,b)=>{ const e=ents.find(e=>e.p1===a||e.p2===a||e.p1===b||e.p2===b); return e?e.seed:null; };
         const sa=seedOf(entryData.t1p1,entryData.t1p2), sb=seedOf(entryData.t2p1,entryData.t2p2);
