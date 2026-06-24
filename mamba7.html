@@ -2480,13 +2480,14 @@ async function loadTournamentSheet(tournament, division) {
   const tName = s => bySeed[s] ? (bySeed[s].p1 + ' / ' + bySeed[s].p2) : ('Seed ' + s);
 
   const rounds = {};
-  fixtures.forEach(f => { (rounds[f.round] = rounds[f.round] || []).push(f); });
+  fixtures.forEach(f => { if(f.round < 90){ (rounds[f.round] = rounds[f.round] || []).push(f); } });
   const roundNos = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+  const finalsFix = fixtures.filter(f => f.round >= 90);
 
   function standings(maxRound) {
     const t = {};
     entries.forEach(e => t[e.seed] = { seed: e.seed, p: 0, sets: 0, gw: 0, gd: 0 });
-    fixtures.filter(f => f.round <= maxRound && f.sets_a != null).forEach(f => {
+    fixtures.filter(f => f.round < 90 && f.round <= maxRound && f.sets_a != null).forEach(f => {
       if(!t[f.seed_a]||!t[f.seed_b]) return;
       t[f.seed_a].p++; t[f.seed_b].p++;
       t[f.seed_a].sets += f.sets_a; t[f.seed_b].sets += f.sets_b;
@@ -2497,7 +2498,7 @@ async function loadTournamentSheet(tournament, division) {
     arr.sort((x, y) => y.sets - x.sets || y.gd - x.gd || y.gw - x.gw || x.seed - y.seed);
     return arr;
   }
-  const maxPlayed = Math.max(0, ...fixtures.filter(f => f.sets_a != null).map(f => f.round));
+  const maxPlayed = Math.max(0, ...fixtures.filter(f => f.round < 90 && f.sets_a != null).map(f => f.round));
 
   let activeTab = box._tab || 'teams';
   let curRound = box._round || (roundNos[0] || 1);
@@ -2558,18 +2559,154 @@ async function loadTournamentSheet(tournament, division) {
     return h;
   }
 
+  function finalsRowHTML(f, label){
+    const played = f.sets_a != null;
+    const aWin = played && f.sets_a > f.sets_b, bWin = played && f.sets_b > f.sets_a;
+    const score = played ? (f.sets_a + '–' + f.sets_b + ' (' + f.games_a + '–' + f.games_b + ')') : '—';
+    return '<tr style="cursor:pointer;" onclick="tmEnterFixtureResult(' + f.id + ')" title="Tap to enter/edit the score">'
+      + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tName(f.seed_a) + '</td>'
+      + '<td class="num" style="color:#9b80b3;">vs</td>'
+      + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tName(f.seed_b) + '</td>'
+      + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#7D3C98;font-weight:700;">enter ▸</span>') + '</td></tr>';
+  }
+  function bracketGroupHTML(title, semiRound, finalRound, group){
+    const semis = finalsFix.filter(f=> f.round===semiRound);
+    const fin = finalsFix.filter(f=> f.round===finalRound);
+    let h = '<div class="card"><h2>' + title + ' <span class="tm-divtag">' + TM_DIVISION + '</span></h2>';
+    if(!semis.length){ h+='<p class="sub">Not started.</p></div>'; return h; }
+    h += '<p class="sub" style="margin-bottom:4px;">Semi-Finals (1v4, 2v3)</p>'
+      + '<table><tbody>';
+    semis.forEach(s=> h += finalsRowHTML(s));
+    h += '</tbody></table>';
+    const semisDone = semis.length>=2 && semis.every(s=> s.sets_a!=null);
+    if(fin.length){
+      h += '<p class="sub" style="margin:10px 0 4px;">🏆 Final</p><table><tbody>';
+      fin.forEach(s=> h += finalsRowHTML(s));
+      h += '</tbody></table>';
+      const fr = fin[0];
+      if(fr.sets_a!=null){
+        const champ = (fr.sets_a>fr.sets_b)?tName(fr.seed_a):tName(fr.seed_b);
+        h += '<div style="text-align:center;margin-top:10px;padding:10px;background:#f9f3dd;border:1px solid #F1C40F;border-radius:10px;font-weight:700;color:#7d6608;">🏆 Champion: ' + champ + '</div>';
+      }
+    } else if(semisDone){
+      h += '<div style="text-align:center;margin-top:10px;"><button class="menu-btn" style="display:inline-block;width:auto;padding:9px 16px;border-color:#F1C40F;font-weight:700;" onclick="tmMakeFinal(\'' + group + '\')">Set the Final (winners advance)</button></div>';
+    } else {
+      h += '<p class="sub" style="margin-top:8px;">Enter both semi-final results, then set the Final.</p>';
+    }
+    h += '</div>';
+    return h;
+  }
+  function finalsHTML(){
+    if(!N) return '<div class="card"><p class="sub">No teams yet.</p></div>';
+    if(!finalsFix.length){
+      const swissFix = fixtures.filter(f=> f.round < 90);
+      const allDone = swissFix.length>0 && swissFix.every(f=> f.sets_a!=null);
+      let h = '<div class="card"><h2>Semi-Finals &amp; Final <span class="tm-divtag">' + TM_DIVISION + '</span></h2>';
+      if(!allDone){
+        h += '<p class="sub">Once all rounds are complete, an admin can start the finals here. ' + (hasABSplit()? 'This field (' + N + ' teams) splits into Division A and Division B — each with its own top-4 semis and final.' : 'Top 4 teams will contest the semi-finals (1v4, 2v3), winners to the Final.') + '</p></div>';
+        return h;
+      }
+      h += '<p class="sub">All rounds complete. ' + (hasABSplit()? 'Division A (top-half seeds) and Division B (bottom-half) will each get top-4 semis + a final.' : 'Top 4 by standings will contest the semis (1v4, 2v3) → Final.') + '</p>'
+        + '<div style="text-align:center;margin-top:10px;"><button class="menu-btn" style="display:inline-block;width:auto;padding:10px 18px;border-color:#F1C40F;font-weight:700;" onclick="tmStartFinals()">🏆 Start finals</button></div></div>';
+      return h;
+    }
+    // finals exist — render the bracket(s)
+    let h='';
+    if(hasABSplit()){
+      h += bracketGroupHTML('Division A — Finals', FINALS_ROUNDS.aSemi, FINALS_ROUNDS.aFinal, 'A');
+      h += bracketGroupHTML('Division B — Finals', FINALS_ROUNDS.bSemi, FINALS_ROUNDS.bFinal, 'B');
+    } else {
+      h += bracketGroupHTML('Semi-Finals &amp; Final', FINALS_ROUNDS.aSemi, FINALS_ROUNDS.aFinal, 'A');
+    }
+    return h;
+  }
+
   function render() {
+    const swissFix = fixtures.filter(f=> f.round < 90);
+    const swissComplete = swissFix.length>0 && swissFix.every(f=> f.sets_a!=null);
+    const showFinals = swissComplete || finalsFix.length>0;
     const tabs = [['teams', '👥 Teams & Bands'], ['rounds', '🎾 Rounds'], ['standings', '📊 Standings']];
+    if(showFinals) tabs.push(['finals', '🏆 Finals']);
     let nav = '<div class="tm-nav">';
     tabs.forEach(([id, lbl]) => nav += '<button class="' + (id === activeTab ? 'active' : '') + '" onclick="tmSetTab(\'' + id + '\')">' + lbl + '</button>');
     nav += '</div>';
-    let bodyHTML = activeTab === 'teams' ? teamsHTML() : activeTab === 'rounds' ? roundsHTML() : standingsHTML();
+    let bodyHTML = activeTab === 'teams' ? teamsHTML() : activeTab === 'rounds' ? roundsHTML() : activeTab === 'finals' ? finalsHTML() : standingsHTML();
     box.innerHTML = divBar + nav + bodyHTML;
     box._tab = activeTab; box._round = curRound;
   }
   window.tmSetTab = function (id) { activeTab = id; render(); };
   window.tmSetRound = function (r) { curRound = r; render(); };
   window.tmPickDivision = function (t, d) { box._tab='teams'; box._round=null; loadTournamentSheet(t, d); };
+
+  // ---- FINALS (Semi-Finals & Final), per Andre's Excel spec ----
+  // Field 12+ splits into Div A (top-half seeds) and Div B (bottom-half) by the band
+  // split; each gets top-4 by standings → semis (1v4, 2v3) → final. Under 12 = single
+  // division: top 4 overall → semis → final. Finals are stored as fixtures with special
+  // round numbers so they reuse the existing tap-to-enter + result handling:
+  //   90 = Div A semis, 91 = Div A final, 92 = Div B semis, 93 = Div B final
+  //   (single division uses 90/91 only)
+  const FINALS_ROUNDS = { aSemi:90, aFinal:91, bSemi:92, bFinal:93 };
+  function hasABSplit(){ return N >= 12; }
+
+  window.tmStartFinals = async function(){
+    // require all scheduled Swiss/fixed rounds complete
+    const swissFix = fixtures.filter(f=> f.round < 90);
+    if(!swissFix.length){ alert('No rounds to finalise yet.'); return; }
+    const anyOpen = swissFix.some(f=> f.sets_a==null);
+    if(anyOpen){ alert('All rounds must be complete before starting the finals. Enter every result first.'); return; }
+    // build standings over all rounds
+    const table = standings(maxPlayed);
+    const A_END = TM.divSplit(N);
+    let newFix=[];
+    const mk=(round,band,seedA,seedB)=>({ tournament, division:TM_DIVISION, round, round_type:'final', band, seed_a:seedA, seed_b:seedB });
+    if(hasABSplit()){
+      const divA = table.filter(r=> r.seed <= A_END).slice(0,4);
+      const divB = table.filter(r=> r.seed >  A_END).slice(0,4);
+      if(divA.length<4 || divB.length<4){ alert('Need at least 4 teams in each division for semi-finals.'); return; }
+      // 1v4, 2v3 within each division
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SFA', divA[0].seed, divA[3].seed));
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SFA', divA[1].seed, divA[2].seed));
+      newFix.push(mk(FINALS_ROUNDS.bSemi,'SFB', divB[0].seed, divB[3].seed));
+      newFix.push(mk(FINALS_ROUNDS.bSemi,'SFB', divB[1].seed, divB[2].seed));
+    } else {
+      const top4 = table.slice(0,4);
+      if(top4.length<4){ alert('Need at least 4 teams for semi-finals.'); return; }
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SF', top4[0].seed, top4[3].seed));
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SF', top4[1].seed, top4[2].seed));
+    }
+    const pin = (prompt('Admin PIN to start the finals for '+TM_DIVISION+':')||'').trim();
+    if(!pin) return;
+    // write the semi fixtures (replace any existing finals first so it's idempotent)
+    const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+      headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'write_fixtures', club_id:CLUB_ID, admin_pin:pin,
+        tournament, division:TM_DIVISION, replace:false, fixtures:newFix }) });
+    const j = await resp.json().catch(()=>({}));
+    if(!j.ok){ alert('Could not start finals: '+((j&&j.error)||resp.status)); return; }
+    box._tab='finals';
+    loadTournamentSheet(tournament, TM_DIVISION);
+  };
+
+  // After both semis in a group are done, create that group's final from the winners.
+  window.tmMakeFinal = async function(group){
+    const semiRound = group==='B' ? FINALS_ROUNDS.bSemi : FINALS_ROUNDS.aSemi;
+    const finalRound = group==='B' ? FINALS_ROUNDS.bFinal : FINALS_ROUNDS.aFinal;
+    const semis = fixtures.filter(f=> f.round===semiRound);
+    if(semis.length<2 || semis.some(s=> s.sets_a==null)){ alert('Both semi-finals must have results first.'); return; }
+    const winner = s => (s.sets_a > s.sets_b) ? s.seed_a : s.seed_b;
+    const w1 = winner(semis[0]), w2 = winner(semis[1]);
+    const band = group==='B' ? 'FB' : (hasABSplit()?'FA':'F');
+    const pin = (prompt('Admin PIN to set the '+(group==='B'?'Division B ':hasABSplit()?'Division A ':'')+'Final:')||'').trim();
+    if(!pin) return;
+    const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+      headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'write_fixtures', club_id:CLUB_ID, admin_pin:pin,
+        tournament, division:TM_DIVISION, replace:false,
+        fixtures:[{ tournament, division:TM_DIVISION, round:finalRound, round_type:'final', band, seed_a:w1, seed_b:w2 }] }) });
+    const j = await resp.json().catch(()=>({}));
+    if(!j.ok){ alert('Could not set final: '+((j&&j.error)||resp.status)); return; }
+    loadTournamentSheet(tournament, TM_DIVISION);
+  };
 
   // Generate the NEXT Swiss round (admin). Ranks the field by current standings,
   // pairs with the no-rematch band-legal Swiss algorithm, and appends the round.
