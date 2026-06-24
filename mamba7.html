@@ -2491,7 +2491,9 @@ async function loadTournamentSheet(tournament, division) {
         + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
         + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#7D3C98;font-weight:700;">enter ▸</span>') + '</td></tr>';
     });
-    h += '</tbody></table><p class="sub" style="margin-top:8px;">Tap a fixture to enter or edit its score (admin).</p></div>';
+    h += '</tbody></table><p class="sub" style="margin-top:8px;">Tap a fixture to enter or edit its score (admin).</p>'
+      + '<div style="text-align:center;margin-top:10px;"><button class="menu-btn" style="display:inline-block;width:auto;padding:10px 18px;border-color:#7D3C98;font-weight:700;" onclick="tmGenerateNextRound()">➕ Generate next round (Swiss)</button>'
+      + '<div class="sub" style="margin-top:6px;">Enter all current-round results first. Available once the fixed rounds are complete.</div></div></div>';
     return h;
   }
   function standingsHTML() {
@@ -2521,6 +2523,46 @@ async function loadTournamentSheet(tournament, division) {
   window.tmSetTab = function (id) { activeTab = id; render(); };
   window.tmSetRound = function (r) { curRound = r; render(); };
   window.tmPickDivision = function (t, d) { box._tab='teams'; box._round=null; loadTournamentSheet(t, d); };
+
+  // Generate the NEXT Swiss round (admin). Ranks the field by current standings,
+  // pairs with the no-rematch band-legal Swiss algorithm, and appends the round.
+  window.tmGenerateNextRound = async function(){
+    const allFix = await tmLoadFixtures(tournament, TM_DIVISION);
+    const ent = await tmLoadEntries(tournament, TM_DIVISION);
+    const Nn = ent.length;
+    if(Nn < 4){ alert('Need at least 4 teams.'); return; }
+    // rounds present, and whether every fixture in the latest round has a result
+    const byRound={}; allFix.forEach(f=>{(byRound[f.round]=byRound[f.round]||[]).push(f);});
+    const roundsPresent = Object.keys(byRound).map(Number).sort((a,b)=>a-b);
+    const lastRound = roundsPresent[roundsPresent.length-1] || 0;
+    const lastRoundFix = byRound[lastRound] || [];
+    const unplayed = lastRoundFix.filter(f=>f.sets_a==null).length;
+    if(unplayed>0){ alert('Round '+lastRound+' still has '+unplayed+' fixture(s) without a result. Enter all results before generating the next round.'); return; }
+    // no-rematch history from every existing fixture (scheduled or played)
+    const history=new Set();
+    allFix.forEach(f=>{ history.add([f.seed_a,f.seed_b].sort((a,b)=>a-b).join('-')); });
+    // rank the field by standings across all played rounds
+    const ranked = standings(lastRound).map(r=>r.seed);
+    const res = TM.swissRound(Nn, ranked, history);
+    if(!res){ alert('The field is exhausted — every remaining pairing would be a rematch. This division cannot fairly add another round.'); return; }
+    const nextRound = lastRound+1;
+    const A_END = TM.divSplit ? TM.divSplit(Nn) : Math.ceil(Nn/2);
+    const newFix = res.pairs.map(([a,b])=>({
+      tournament, division: TM_DIVISION, round: nextRound, round_type:'swiss',
+      seed_a:a, seed_b:b, band: TM.bandClass(a,b,A_END)
+    }));
+    const pin = (prompt('Admin PIN to generate Round '+nextRound+' ('+TM_DIVISION+'):')||'').trim();
+    if(!pin) return;
+    const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+      headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'write_fixtures', club_id:CLUB_ID, admin_pin:pin,
+        tournament, division:TM_DIVISION, replace:false, fixtures:newFix }) });
+    const j = await resp.json().catch(()=>({}));
+    if(!j.ok){ alert('Could not generate: '+((j&&j.error)||resp.status)); return; }
+    box._round = nextRound;
+    loadTournamentSheet(tournament, TM_DIVISION);
+  };
+
   render();
 }
 
