@@ -2040,6 +2040,11 @@ async function doSubmit(btn){
       }catch(e){ /* ladder update is best-effort; the match itself is saved */ }
     }
 
+    const fxNote = (result.fixture==='ambiguous')
+      ? `<div style="font-size:12px;color:#b9770e;margin-top:10px;background:#fff8e8;border:1px solid #f1c40f;border-radius:8px;padding:8px 10px;line-height:1.4;">⚠️ This result counts toward ratings &amp; stats, but it matched <strong>two open fixtures equally</strong> (because of stand-ins) so it could not be auto-placed on the draw board. Open the tournament → Rounds and <strong>tap the correct fixture</strong> to record its score there.</div>`
+      : (result.fixture==='nomatch')
+      ? `<div style="font-size:12px;color:#b9770e;margin-top:10px;background:#fff8e8;border:1px solid #f1c40f;border-radius:8px;padding:8px 10px;line-height:1.4;">⚠️ This result counts toward ratings &amp; stats, but the players didn\u2019t match a fixture closely enough to auto-place on the draw board. Open the tournament → Rounds and <strong>tap the correct fixture</strong> to record it.</div>`
+      : '';
     document.getElementById('entryContent').innerHTML=`
       <div class="success-icon">✅</div>
       <div style="text-align:center;">
@@ -2047,6 +2052,7 @@ async function doSubmit(btn){
         <div style="font-size:13px;color:#666;">${entryData.t1p1} & ${entryData.t1p2}<br>vs<br>${entryData.t2p1} & ${entryData.t2p2}</div>
         <div style="font-size:12px;color:#888;margin-top:6px;">${entryData.t1sets}-${entryData.t2sets} sets</div>
         <div style="font-size:11px;color:#aaa;margin-top:4px;">Submitted by ${who}</div>
+        ${fxNote}
       </div>
       <button class="btn btn-primary" style="margin-top:20px;" onclick="renderStep1()">Enter Another Match</button>
       <button class="btn btn-secondary" style="margin-top:8px;" onclick="goHome()">Back to Home</button>`;
@@ -3054,9 +3060,11 @@ async function renderClubLadder(){
         + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
     } else {
       bodyHTML += '<div class="card" style="border:1px dashed #e6b0aa;"><h2 style="color:#922;">Admin override</h2>'
-        + '<p class="sub">This ladder is already activated. Re-activating <b>reshuffles all earned positions back to rating order</b> — only do this to reset the ladder entirely.</p>'
+        + '<p class="sub">This ladder is already activated. <b>Re-activate</b> reshuffles all positions back to rating order (keeps the teams, stays active). <b>Total reset</b> wipes every team and returns this ladder to a blank, not-activated state.</p>'
         + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #c0392b;border-radius:8px;font-size:15px;">'
-        + '<button class="ac-btn ac-btn-danger" onclick="clActivate(true)">Re-activate (reset)</button></div>'
+        + '<button class="ac-btn ac-btn-danger" onclick="clActivate(true)">Re-activate (reset order)</button></div>'
+        + '<div style="margin-top:10px;border-top:1px dashed #e6b0aa;padding-top:10px;">'
+        + '<button class="ac-btn ac-btn-danger" style="width:100%;background:#7b241c;" onclick="clTotalReset()">⚠️ Total reset — wipe all teams &amp; deactivate</button></div>'
         + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
     }
   }
@@ -3125,6 +3133,20 @@ async function clActivate(force){
     body:JSON.stringify({action:'seed_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin,force:!!force,order:withR.map(t=>({p1:t.p1,p2:t.p2}))})});
   const j=await resp.json().catch(()=>({}));
   if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not activate.')+'</span>'; return; }
+  CL_TAB='ladder'; renderClubLadder();
+}
+
+async function clTotalReset(){
+  const pin=(document.getElementById('clPin').value||'').trim();
+  const msg=document.getElementById('clSeedMsg');
+  if(!pin){ msg.innerHTML='<span style="color:#c0392b;">Enter the admin PIN.</span>'; return; }
+  if(!confirm('TOTAL RESET of the '+CL_CAT+' ladder.\n\nThis removes EVERY team and returns the ladder to a blank, not-activated state. This cannot be undone. Continue?')) return;
+  if(!confirm('Are you absolutely sure? All '+CL_CAT+' ladder teams and positions will be permanently cleared.')) return;
+  const resp=await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
+    headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'reset_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin})});
+  const j=await resp.json().catch(()=>({}));
+  if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not reset.')+'</span>'; return; }
   CL_TAB='ladder'; renderClubLadder();
 }
 
