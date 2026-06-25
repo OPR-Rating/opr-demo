@@ -460,6 +460,7 @@
           <button class="menu-btn" onclick="loadTournamentForm('Men\'s',&quot;Men's Doubles Form&quot;)">Men's Doubles Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Ladies','Ladies Doubles Form')">Ladies Doubles Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Mixed','Mixed Doubles Form')">Mixed Doubles Form</button>
+          <button class="menu-btn" onclick="loadTournamentForm('All Sorts','All Sorts Form')">All Sorts Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Universal','Universal Form')">Universal Form</button>
         </div>
       </div>
@@ -1289,14 +1290,27 @@ async function loadTournamentPicker(){
     if(!window._tourInternalView) window._tourInternalView = 'stats';
     const v = window._tourInternalView;
     internalDiv.style.display='';
+    // Is any division still open for entry? (a division is "closed" once its draw exists)
+    let entryOpen = false;
+    try{
+      const trow = await sbGet(`tournaments?select=divisions&name=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&club_id=eq.${CLUB_ID}&limit=1`);
+      let divs = trow && trow.length ? trow[0].divisions : null;
+      if(typeof divs==='string'){ try{ divs=JSON.parse(divs); }catch(e){ divs=null; } }
+      if(Array.isArray(divs) && divs.length){
+        const fx = await sbGet(`tournament_fixtures?select=division&tournament=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&club_id=eq.${CLUB_ID}`) || [];
+        const withDraw = new Set(fx.map(f=>f.division));
+        entryOpen = divs.some(d=> !withDraw.has(d));
+      } else { entryOpen = true; }
+    }catch(e){ entryOpen = true; }
     internalDiv.innerHTML =
         '<div class="tm-nav" style="margin:4px 0 12px;">'
       + '<button class="'+(v==='stats'?'active':'')+'" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
-      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">🎾 Draw &amp; Rounds</button>'
+      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">Draw &amp; Rounds</button>'
       + '</div>'
       + '<div class="ladders-grid one-col" style="margin-top:4px;">'
-      + '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team</button>'
-      + (v==='draw' ? '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">Open draw &amp; standings</button>' : '')
+      + (v==='draw'
+          ? '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">Open draw &amp; standings</button>'
+          : (entryOpen ? '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team</button>' : '<p class="sub" style="text-align:center;margin:6px 0;">All divisions are drawn — entry is closed.</p>'))
       + '</div>';
     // Stats view → show the standings body; Draw view → hide it (draw opens its own screen)
     body.style.display = (v==='stats') ? '' : 'none';
@@ -1663,6 +1677,32 @@ async function loadActiveTournaments(){
   lm.value='Ladder Match'; lm.textContent='Ladder Match';
   sel.appendChild(lm);
   if(activeCount===0){ sel.value='Social'; }
+  // When a tournament event is picked, limit the Match Type options to the
+  // divisions that tournament actually runs (avoids wrong-division clicks).
+  // This query only runs on change — no impact on normal speed.
+  sel.onchange = async function(){
+    const typeSel=document.getElementById('matchType');
+    if(!typeSel) return;
+    const ev=(sel.value||'').trim();
+    const ALL=[["Men's","Men's"],["Ladies","Ladies"],["Mixed","Mixed"],["All Sorts","All Sorts"]];
+    let allowed=ALL.map(a=>a[0]);
+    if(ev && ev!=='Social' && ev!=='Ladder Match'){
+      try{
+        const trow=await sbGet(`tournaments?select=type,divisions,caps&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
+        if(trow && trow.length){
+          let divs=trow[0].divisions;
+          if(typeof divs==='string'){ try{ divs=JSON.parse(divs); }catch(e){ divs=null; } }
+          if(Array.isArray(divs) && divs.length){ allowed=divs; }
+        }
+      }catch(e){}
+    }
+    const prev=typeSel.value;
+    typeSel.innerHTML='<option value="">Select type...</option>'+
+      ALL.filter(a=>allowed.indexOf(a[0])>=0).map(a=>`<option value="${a[0]}">${a[1]}</option>`).join('');
+    if(allowed.indexOf(prev)>=0) typeSel.value=prev;
+    // if only one division, preselect it for convenience
+    if(allowed.length===1) typeSel.value=allowed[0];
+  };
 }
 
 // Store recent matches globally for tap-to-expand
