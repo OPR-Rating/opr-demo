@@ -2053,6 +2053,57 @@ async function submitMatch(){
       }
     }catch(e){}
   }
+  // AMBIGUITY PRE-CHECK (internal tournaments): work out, BEFORE saving, whether this
+  // result will land cleanly on one fixture. Uses the same pure name-count rule as the
+  // server. If it's ambiguous (fits 2+ open fixtures) or matches nothing, ask FIRST —
+  // so nothing is written unless the operator confirms.
+  if(ev && ev!=='Social' && ev!=='Ladder Match'){
+    try{
+      const trow = await sbGet(`tournaments?select=type&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
+      if(trow && trow.length && trow[0].type==='internal'){
+        const ents = await sbGet(`tournament_entries?select=seed,p1,p2&tournament=eq.${encodeURIComponent(ev)}&category=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
+        const pairOf=(seed)=>ents.find(e=>e.seed===seed);
+        const hits=(p,x,y)=>{ if(!p) return 0; let n=0; if(x===p.p1||x===p.p2)n++; if(y===p.p1||y===p.p2)n++; return n; };
+        const fixes = await sbGet(`tournament_fixtures?select=id,round,seed_a,seed_b,sets_a&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}&order=round.asc`) || [];
+        // score each UNPLAYED fixture by name-count (max over both orientations)
+        let scored=[];
+        fixes.forEach(f=>{
+          if(f.sets_a!=null) return;
+          const pa=pairOf(f.seed_a), pb=pairOf(f.seed_b);
+          const s1=hits(pa,entryData.t1p1,entryData.t1p2)+hits(pb,entryData.t2p1,entryData.t2p2);
+          const s2=hits(pb,entryData.t1p1,entryData.t1p2)+hits(pa,entryData.t2p1,entryData.t2p2);
+          const sc=Math.max(s1,s2);
+          if(sc>=2) scored.push({round:f.round, score:sc});
+        });
+        // any already-PLAYED fixtures for this same pairing (to flag double-ups)
+        const playedRounds = fixes.filter(f=>f.sets_a!=null).map(f=>{
+          const pa=pairOf(f.seed_a), pb=pairOf(f.seed_b);
+          const s1=hits(pa,entryData.t1p1,entryData.t1p2)+hits(pb,entryData.t2p1,entryData.t2p2);
+          const s2=hits(pb,entryData.t1p1,entryData.t1p2)+hits(pa,entryData.t2p1,entryData.t2p2);
+          return Math.max(s1,s2)>=2 ? f.round : null;
+        }).filter(r=>r!=null);
+
+        if(scored.length===0){
+          // nothing open matched — warn before saving
+          if(!confirm('This result does not clearly match an open fixture in "'+ev+'" ('+entryData.type+').\n\nIt will be saved and count toward ratings/stats, but will NOT appear on the draw board (you can place it by tapping a fixture on the Rounds board).\n\nSave anyway?')){
+            return; // nothing written
+          }
+        } else {
+          const top=Math.max(...scored.map(s=>s.score));
+          const topRounds=[...new Set(scored.filter(s=>s.score===top).map(s=>s.round))].sort((a,b)=>a-b);
+          if(topRounds.length>1){
+            // AMBIGUOUS — name the target round (earliest), flag any already-scored round
+            const target=topRounds[0];
+            let msg='This result fits more than one open fixture — Round '+topRounds.join(' or Round ')+'.\n\n';
+            if(playedRounds.length){ msg+='Note: a similar pairing already has a score in Round '+[...new Set(playedRounds)].sort((a,b)=>a-b).join(', ')+'.\n\n'; }
+            msg+='It will be placed in Round '+target+' (the earliest open one). OK to save & place there, or Cancel to save nothing.';
+            if(!confirm(msg)){ return; } // nothing written
+            entryData._forceFixtureRound=target; // tell the server which round to use
+          }
+        }
+      }
+    }catch(e){}
+  }
   btn.disabled=true;
   // PIN is verified SERVER-SIDE by the secure function (never read by the app).
   entryData._submitter=submitter;
@@ -2080,8 +2131,10 @@ async function doSubmit(btn){
       t1p1:entryData.t1p1, t1p2:entryData.t1p2, t2p1:entryData.t2p1, t2p2:entryData.t2p2,
       t1_sets:entryData.t1sets, t2_sets:entryData.t2sets,
       t1_games:entryData.t1games, t2_games:entryData.t2games,
-      set_scores:setParts.join(',')
+      set_scores:setParts.join(','),
+      force_fixture_round: entryData._forceFixtureRound || null
     };
+    entryData._forceFixtureRound = null; // one-shot; don't carry to the next match
     // Call the SECURE submit-match function: it verifies the PIN server-side,
     // inserts the match, and triggers the full recompute. PIN never stored in the app.
     let result=null;
