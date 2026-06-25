@@ -1295,7 +1295,11 @@ async function loadTournamentPicker(){
     try{
       const trow = await sbGet(`tournaments?select=divisions&name=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&club_id=eq.${CLUB_ID}&limit=1`);
       let divs = trow && trow.length ? trow[0].divisions : null;
-      if(typeof divs==='string'){ try{ divs=JSON.parse(divs); }catch(e){ divs=null; } }
+      if(typeof divs==='string'){
+        const s=divs.trim();
+        if(s.startsWith('[')){ try{ divs=JSON.parse(s); }catch(e){ divs=s.split(',').map(x=>x.trim()).filter(Boolean); } }
+        else { divs=s.split(',').map(x=>x.trim()).filter(Boolean); }
+      }
       if(Array.isArray(divs) && divs.length){
         const fx = await sbGet(`tournament_fixtures?select=division&tournament=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&club_id=eq.${CLUB_ID}`) || [];
         const withDraw = new Set(fx.map(f=>f.division));
@@ -1691,7 +1695,13 @@ async function loadActiveTournaments(){
         const trow=await sbGet(`tournaments?select=type,divisions,caps&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
         if(trow && trow.length){
           let divs=trow[0].divisions;
-          if(typeof divs==='string'){ try{ divs=JSON.parse(divs); }catch(e){ divs=null; } }
+          // divisions is stored as a comma-separated string (e.g. "Men's,Ladies,Mixed").
+          // Older rows might be JSON — handle both.
+          if(typeof divs==='string'){
+            const s=divs.trim();
+            if(s.startsWith('[')){ try{ divs=JSON.parse(s); }catch(e){ divs=s.split(',').map(x=>x.trim()).filter(Boolean); } }
+            else { divs=s.split(',').map(x=>x.trim()).filter(Boolean); }
+          }
           if(Array.isArray(divs) && divs.length){ allowed=divs; }
         }
       }catch(e){}
