@@ -1695,6 +1695,13 @@ async function loadActiveTournaments(){
           if(Array.isArray(divs) && divs.length){ allowed=divs; }
         }
       }catch(e){}
+    } else if(ev==='Ladder Match'){
+      // limit to categories whose ladder is ACTIVATED
+      try{
+        const st=await sbGet(`club_ladder_state?select=category,activated&club_id=eq.${CLUB_ID}&activated=eq.true`) || [];
+        const active=st.map(s=>s.category);
+        allowed = active.length ? ALL.map(a=>a[0]).filter(c=>active.indexOf(c)>=0) : [];
+      }catch(e){ allowed=[]; }
     }
     const prev=typeSel.value;
     typeSel.innerHTML='<option value="">Select type...</option>'+
@@ -1984,6 +1991,28 @@ async function submitMatch(){
 
   err.style.display='none';
   const btn=document.getElementById('submitBtn');
+  // Ladder Match guard: BOTH teams must be EXACT registered pairs on this ladder.
+  // Unlike tournaments, the ladder allows no substitutes — if you change partner you
+  // re-join as a new pair. So reject any team that isn't an exact pair on the ladder.
+  if((entryData.event||'')==='Ladder Match'){
+    try{
+      const cat=entryData.type;
+      const rows = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}`) || [];
+      const norm = (a,b)=>[a,b].sort().join(' || ');
+      const ladderSet = new Set(rows.map(r=>norm(r.p1,r.p2)));
+      const t1 = norm(entryData.t1p1, entryData.t1p2);
+      const t2 = norm(entryData.t2p1, entryData.t2p2);
+      const t1ok = ladderSet.has(t1), t2ok = ladderSet.has(t2);
+      if(!t1ok || !t2ok){
+        const bad = [];
+        if(!t1ok) bad.push(entryData.t1p1+' & '+entryData.t1p2);
+        if(!t2ok) bad.push(entryData.t2p1+' & '+entryData.t2p2);
+        err.innerHTML = 'Not a ladder team: <b>'+bad.join('</b> and <b>')+'</b>.<br>Ladder matches must be exact registered pairs — no substitutes. If a partnership changed, remove the old pair and add the new pair on the ladder first.';
+        err.style.display='block';
+        return;
+      }
+    }catch(e){ /* if the check fails, fall through — the Edge Function also guards activation */ }
+  }
   // Duplicate-result guard for INTERNAL tournaments: if a fixture for these two
   // teams already has a score, warn and let the admin choose to proceed.
   const ev=(entryData.event||'').trim();
