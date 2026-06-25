@@ -1804,9 +1804,10 @@ async function step1Next(){
       return; // stay on step 1, do not proceed
     }
     try{
-      const lad = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(type)}`) || [];
+      const lad = await sbGet(`club_ladder?select=p1,p2,position&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(type)}&order=position.asc`) || [];
       const set=new Set(); lad.forEach(r=>{ set.add(r.p1); set.add(r.p2); });
       window._ladderEligible = set;
+      window._ladderTeams = lad.map(r=>({p1:r.p1, p2:r.p2, position:r.position})); // for the team dropdown
       if(set.size===0){
         alert('No teams are on the '+type+' ladder yet.');
         return;
@@ -1845,6 +1846,37 @@ function populateSel(sel,players,exclude,selected){
 
 function renderStep2(){
   setStep(2);
+  // LADDER MATCH: pick whole teams from the ladder (no building pairs by hand).
+  if((entryData.event||'')==='Ladder Match' && Array.isArray(window._ladderTeams) && window._ladderTeams.length){
+    const teams = window._ladderTeams; // [{p1,p2,position}]
+    const opts = teams.map((t,i)=>`<option value="${i}">${t.p1} & ${t.p2}</option>`).join('');
+    document.getElementById('entryContent').innerHTML=`
+      <p class="sub" style="margin-bottom:10px;">Pick the two ladder teams that played. Only registered ${entryData.type} ladder pairs are listed.</p>
+      <div class="team-card">
+        <div class="team-label"><span>1</span>Team 1</div>
+        <div class="field">
+          <label>Ladder team</label>
+          <select id="ladderT1" style="width:100%;padding:12px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;">
+            <option value="">Select team...</option>${opts}
+          </select>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-label"><span>2</span>Team 2</div>
+        <div class="field">
+          <label>Ladder team</label>
+          <select id="ladderT2" style="width:100%;padding:12px;border:1.5px solid #d9cfe3;border-radius:9px;font-size:15px;">
+            <option value="">Select team...</option>${opts}
+          </select>
+        </div>
+      </div>
+      <div id="err2" class="error-msg">Please select both teams.</div>
+      <div class="nav-row">
+        <button class="btn btn-secondary" onclick="renderStep1()">&larr; Back</button>
+        <button class="btn btn-primary" onclick="step2NextLadder()">Next: Enter Scores &rarr;</button>
+      </div>`;
+    return;
+  }
   document.getElementById('entryContent').innerHTML=`
     <div class="team-card">
       <div class="team-label"><span>1</span>Team 1</div>
@@ -1885,6 +1917,18 @@ function renderStep2(){
       <button class="btn btn-secondary" onclick="renderStep1()">&larr; Back</button>
       <button class="btn btn-primary" onclick="step2Next()">Next: Enter Scores &rarr;</button>
     </div>`;
+}
+
+function step2NextLadder(){
+  const teams = window._ladderTeams || [];
+  const i1 = document.getElementById('ladderT1').value;
+  const i2 = document.getElementById('ladderT2').value;
+  const err = document.getElementById('err2');
+  if(i1==='' || i2===''){ err.textContent='Please select both teams.'; err.style.display='block'; return; }
+  if(i1===i2){ err.textContent='A team cannot play itself — pick two different teams.'; err.style.display='block'; return; }
+  const a=teams[Number(i1)], b=teams[Number(i2)];
+  entryData.t1p1=a.p1; entryData.t1p2=a.p2; entryData.t2p1=b.p1; entryData.t2p2=b.p2;
+  renderStep3();
 }
 
 function filterDrops(){
