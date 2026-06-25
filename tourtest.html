@@ -269,10 +269,13 @@
   .name-pick-btn { width:100%; padding:11px; border:1.5px solid #d9cfe3; border-radius:9px; font-size:15px; box-sizing:border-box; margin-bottom:10px; background:#fff; text-align:left; color:#888; cursor:pointer; font-family:inherit; }
   .name-pick-btn.selected { color:#2C2C34; font-weight:600; border-color:#7D3C98; }
 
-  #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:12px; line-height:1.25; color:#3a2f44; }
+  #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:13px; line-height:1.4; color:#3a2f44; padding:11px 8px; }
   #tournamentSheetContent td.ta.winr, #tournamentSheetContent td.tb.winr { color:#1e7a34; font-weight:700; }
-  #tournamentSheetContent th, #tournamentSheetContent td { padding:6px 5px; }
-  #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:34%; }
+  #tournamentSheetContent td { padding:11px 6px; }
+  #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:30%; }
+  #tournamentSheetContent tr { border-bottom:1px solid #efeaf4; }
+  #tournamentSheetContent td.num .res-done { font-size:12px; font-weight:700; color:#1e7a34; white-space:nowrap; }
+  #tournamentSheetContent .pill { font-size:10px; padding:2px 7px; }
 </style>
 </head>
 <body>
@@ -457,6 +460,7 @@
           <button class="menu-btn" onclick="loadTournamentForm('Men\'s',&quot;Men's Doubles Form&quot;)">Men's Doubles Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Ladies','Ladies Doubles Form')">Ladies Doubles Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Mixed','Mixed Doubles Form')">Mixed Doubles Form</button>
+          <button class="menu-btn" onclick="loadTournamentForm('All Sorts','All Sorts Form')">All Sorts Form</button>
           <button class="menu-btn" onclick="loadTournamentForm('Universal','Universal Form')">Universal Form</button>
         </div>
       </div>
@@ -848,7 +852,7 @@ async function adminLoadTournaments(){
     window._adminTours[t.id] = t;
     const status = t.archived ? '<span style="color:#888;">closed</span>' : (t.active ? '<span style="color:#1e8449;font-weight:700;">active</span>' : 'off');
     let actions='';
-    if(t.archived){ actions='<span style="color:#aaa;">archived</span>'; }
+    if(t.archived){ actions='<span style="color:#aaa;">archived</span> <button onclick="adminDeleteTournament('+t.id+',\''+t.name.replace(/\x27/g,"\\\x27")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;">delete</button>'; }
     else {
       actions += t.active
         ? '<button onclick="adminToggleTournament('+t.id+',false)" style="background:none;border:none;color:#b9770e;cursor:pointer;">turn off</button>'
@@ -1012,6 +1016,14 @@ async function adminCloseTournament(id, name){
   const r=await adminCall('close_tournament',{ id });
   if(!r.ok){ alert(r.error); return; }
   alert('"'+name+'" archived. Its standings are frozen ('+ (r.frozen||0) +' rows). View it anytime under Tournaments → past tournaments.');
+  adminLoadTournaments();
+}
+async function adminDeleteTournament(id, name){
+  if(!confirm('Permanently DELETE the archived tournament "'+name+'"?\n\nThis removes the tournament, its draw and its team entries. The actual match results and player ratings are NOT affected (they stay in the records). This is for clearing abandoned/unwanted tournaments.')) return;
+  if(!confirm('Are you sure? This cannot be undone.')) return;
+  const r=await adminCall('delete_tournament',{ id });
+  if(!r.ok){ alert(r.error); return; }
+  alert('"'+name+'" deleted.');
   adminLoadTournaments();
 }
 async function adminAddMember(){
@@ -1278,14 +1290,31 @@ async function loadTournamentPicker(){
     if(!window._tourInternalView) window._tourInternalView = 'stats';
     const v = window._tourInternalView;
     internalDiv.style.display='';
+    // Is any division still open for entry? (a division is "closed" once its draw exists)
+    let entryOpen = false;
+    try{
+      const trow = await sbGet(`tournaments?select=divisions&name=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&club_id=eq.${CLUB_ID}&limit=1`);
+      let divs = trow && trow.length ? trow[0].divisions : null;
+      if(typeof divs==='string'){
+        const s=divs.trim();
+        if(s.startsWith('[')){ try{ divs=JSON.parse(s); }catch(e){ divs=s.split(',').map(x=>x.trim()).filter(Boolean); } }
+        else { divs=s.split(',').map(x=>x.trim()).filter(Boolean); }
+      }
+      if(Array.isArray(divs) && divs.length){
+        const fx = await sbGet(`tournament_fixtures?select=division&tournament=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&club_id=eq.${CLUB_ID}`) || [];
+        const withDraw = new Set(fx.map(f=>f.division));
+        entryOpen = divs.some(d=> !withDraw.has(d));
+      } else { entryOpen = true; }
+    }catch(e){ entryOpen = true; }
     internalDiv.innerHTML =
         '<div class="tm-nav" style="margin:4px 0 12px;">'
       + '<button class="'+(v==='stats'?'active':'')+'" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
-      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">🎾 Draw &amp; Rounds</button>'
+      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">Draw &amp; Rounds</button>'
       + '</div>'
       + '<div class="ladders-grid one-col" style="margin-top:4px;">'
-      + '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team</button>'
-      + (v==='draw' ? '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">Open draw &amp; standings</button>' : '')
+      + (v==='draw'
+          ? '<button class="menu-btn" style="border-color:#7D3C98;font-weight:700;" onclick="openInternalTournament(TOURNAMENT_EVENT)">Open draw &amp; standings</button>'
+          : (entryOpen ? '<button class="menu-btn" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team</button>' : '<p class="sub" style="text-align:center;margin:6px 0;">All divisions are drawn — entry is closed.</p>'))
       + '</div>';
     // Stats view → show the standings body; Draw view → hide it (draw opens its own screen)
     body.style.display = (v==='stats') ? '' : 'none';
@@ -1652,6 +1681,45 @@ async function loadActiveTournaments(){
   lm.value='Ladder Match'; lm.textContent='Ladder Match';
   sel.appendChild(lm);
   if(activeCount===0){ sel.value='Social'; }
+  // When a tournament event is picked, limit the Match Type options to the
+  // divisions that tournament actually runs (avoids wrong-division clicks).
+  // This query only runs on change — no impact on normal speed.
+  sel.onchange = async function(){
+    const typeSel=document.getElementById('matchType');
+    if(!typeSel) return;
+    const ev=(sel.value||'').trim();
+    const ALL=[["Men's","Men's"],["Ladies","Ladies"],["Mixed","Mixed"],["All Sorts","All Sorts"]];
+    let allowed=ALL.map(a=>a[0]);
+    if(ev && ev!=='Social' && ev!=='Ladder Match'){
+      try{
+        const trow=await sbGet(`tournaments?select=type,divisions,caps&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
+        if(trow && trow.length){
+          let divs=trow[0].divisions;
+          // divisions is stored as a comma-separated string (e.g. "Men's,Ladies,Mixed").
+          // Older rows might be JSON — handle both.
+          if(typeof divs==='string'){
+            const s=divs.trim();
+            if(s.startsWith('[')){ try{ divs=JSON.parse(s); }catch(e){ divs=s.split(',').map(x=>x.trim()).filter(Boolean); } }
+            else { divs=s.split(',').map(x=>x.trim()).filter(Boolean); }
+          }
+          if(Array.isArray(divs) && divs.length){ allowed=divs; }
+        }
+      }catch(e){}
+    } else if(ev==='Ladder Match'){
+      // limit to categories whose ladder is ACTIVATED
+      try{
+        const st=await sbGet(`club_ladder_state?select=category,activated&club_id=eq.${CLUB_ID}&activated=eq.true`) || [];
+        const active=st.map(s=>s.category);
+        allowed = active.length ? ALL.map(a=>a[0]).filter(c=>active.indexOf(c)>=0) : [];
+      }catch(e){ allowed=[]; }
+    }
+    const prev=typeSel.value;
+    typeSel.innerHTML='<option value="">Select type...</option>'+
+      ALL.filter(a=>allowed.indexOf(a[0])>=0).map(a=>`<option value="${a[0]}">${a[1]}</option>`).join('');
+    if(allowed.indexOf(prev)>=0) typeSel.value=prev;
+    // if only one division, preselect it for convenience
+    if(allowed.length===1) typeSel.value=allowed[0];
+  };
 }
 
 // Store recent matches globally for tap-to-expand
@@ -1933,6 +2001,109 @@ async function submitMatch(){
 
   err.style.display='none';
   const btn=document.getElementById('submitBtn');
+  // Ladder Match guard: BOTH teams must be EXACT registered pairs on this ladder.
+  // Unlike tournaments, the ladder allows no substitutes — if you change partner you
+  // re-join as a new pair. So reject any team that isn't an exact pair on the ladder.
+  if((entryData.event||'')==='Ladder Match'){
+    try{
+      const cat=entryData.type;
+      const rows = await sbGet(`club_ladder?select=p1,p2&club_id=eq.${CLUB_ID}&category=eq.${encodeURIComponent(cat)}`) || [];
+      const norm = (a,b)=>[a,b].sort().join(' || ');
+      const ladderSet = new Set(rows.map(r=>norm(r.p1,r.p2)));
+      const t1 = norm(entryData.t1p1, entryData.t1p2);
+      const t2 = norm(entryData.t2p1, entryData.t2p2);
+      const t1ok = ladderSet.has(t1), t2ok = ladderSet.has(t2);
+      if(!t1ok || !t2ok){
+        const bad = [];
+        if(!t1ok) bad.push(entryData.t1p1+' & '+entryData.t1p2);
+        if(!t2ok) bad.push(entryData.t2p1+' & '+entryData.t2p2);
+        err.innerHTML = 'Not a ladder team: <b>'+bad.join('</b> and <b>')+'</b>.<br>Ladder matches must be exact registered pairs — no substitutes. If a partnership changed, remove the old pair and add the new pair on the ladder first.';
+        err.style.display='block';
+        return;
+      }
+    }catch(e){ /* if the check fails, fall through — the Edge Function also guards activation */ }
+  }
+  // Duplicate-result guard for INTERNAL tournaments: if a fixture for these two
+  // teams already has a score, warn and let the admin choose to proceed.
+  const ev=(entryData.event||'').trim();
+  if(ev && ev!=='Social' && ev!=='Ladder Match'){
+    try{
+      const trow = await sbGet(`tournaments?select=type&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
+      if(trow && trow.length && trow[0].type==='internal'){
+        // If EVERY fixture in this division already has a result, the draw is complete —
+        // warn (a new match won't appear on the board, no open fixture). Allow override.
+        const allFx = await sbGet(`tournament_fixtures?select=sets_a&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
+        if(allFx.length>0 && allFx.every(f=>f.sets_a!=null)){
+          if(!confirm('All rounds for "'+ev+'" ('+entryData.type+') are complete — there are no open fixtures.\n\nThis result will be recorded and will count toward ratings/stats, but it will NOT appear on the draw board. Proceed anyway?')){
+            return;
+          }
+        }
+        const ents = await sbGet(`tournament_entries?select=seed,p1,p2&tournament=eq.${encodeURIComponent(ev)}&category=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
+        const seedOf=(a,b)=>{ const e=ents.find(e=>e.p1===a||e.p2===a||e.p1===b||e.p2===b); return e?e.seed:null; };
+        const sa=seedOf(entryData.t1p1,entryData.t1p2), sb=seedOf(entryData.t2p1,entryData.t2p2);
+        if(sa && sb && sa!==sb){
+          const fxs = await sbGet(`tournament_fixtures?select=round,sets_a&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}&or=(and(seed_a.eq.${sa},seed_b.eq.${sb}),and(seed_a.eq.${sb},seed_b.eq.${sa}))`) || [];
+          const played = fxs.find(f=>f.sets_a!=null);
+          if(played){
+            if(!confirm('A result for this pairing in "'+ev+'" ('+entryData.type+') is already recorded in Round '+played.round+'.\n\nSubmitting again will create a DUPLICATE match. Proceed anyway?')){
+              return; // user chose not to duplicate
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  // AMBIGUITY PRE-CHECK (internal tournaments): work out, BEFORE saving, whether this
+  // result will land cleanly on one fixture. Uses the same pure name-count rule as the
+  // server. If it's ambiguous (fits 2+ open fixtures) or matches nothing, ask FIRST —
+  // so nothing is written unless the operator confirms.
+  if(ev && ev!=='Social' && ev!=='Ladder Match'){
+    try{
+      const trow = await sbGet(`tournaments?select=type&name=eq.${encodeURIComponent(ev)}&club_id=eq.${CLUB_ID}&limit=1`);
+      if(trow && trow.length && trow[0].type==='internal'){
+        const ents = await sbGet(`tournament_entries?select=seed,p1,p2&tournament=eq.${encodeURIComponent(ev)}&category=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}`) || [];
+        const pairOf=(seed)=>ents.find(e=>e.seed===seed);
+        const hits=(p,x,y)=>{ if(!p) return 0; let n=0; if(x===p.p1||x===p.p2)n++; if(y===p.p1||y===p.p2)n++; return n; };
+        const fixes = await sbGet(`tournament_fixtures?select=id,round,seed_a,seed_b,sets_a&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(entryData.type)}&club_id=eq.${CLUB_ID}&order=round.asc`) || [];
+        // score each UNPLAYED fixture by name-count (max over both orientations)
+        let scored=[];
+        fixes.forEach(f=>{
+          if(f.sets_a!=null) return;
+          const pa=pairOf(f.seed_a), pb=pairOf(f.seed_b);
+          const s1=hits(pa,entryData.t1p1,entryData.t1p2)+hits(pb,entryData.t2p1,entryData.t2p2);
+          const s2=hits(pb,entryData.t1p1,entryData.t1p2)+hits(pa,entryData.t2p1,entryData.t2p2);
+          const sc=Math.max(s1,s2);
+          if(sc>=2) scored.push({round:f.round, score:sc});
+        });
+        // any already-PLAYED fixtures for this same pairing (to flag double-ups)
+        const playedRounds = fixes.filter(f=>f.sets_a!=null).map(f=>{
+          const pa=pairOf(f.seed_a), pb=pairOf(f.seed_b);
+          const s1=hits(pa,entryData.t1p1,entryData.t1p2)+hits(pb,entryData.t2p1,entryData.t2p2);
+          const s2=hits(pb,entryData.t1p1,entryData.t1p2)+hits(pa,entryData.t2p1,entryData.t2p2);
+          return Math.max(s1,s2)>=2 ? f.round : null;
+        }).filter(r=>r!=null);
+
+        if(scored.length===0){
+          // nothing open matched — warn before saving
+          if(!confirm('This result does not clearly match an open fixture in "'+ev+'" ('+entryData.type+').\n\nIt will be saved and count toward ratings/stats, but will NOT appear on the draw board (you can place it by tapping a fixture on the Rounds board).\n\nSave anyway?')){
+            return; // nothing written
+          }
+        } else {
+          const top=Math.max(...scored.map(s=>s.score));
+          const topRounds=[...new Set(scored.filter(s=>s.score===top).map(s=>s.round))].sort((a,b)=>a-b);
+          if(topRounds.length>1){
+            // AMBIGUOUS — name the target round (earliest), flag any already-scored round
+            const target=topRounds[0];
+            let msg='This result fits more than one open fixture — Round '+topRounds.join(' or Round ')+'.\n\n';
+            if(playedRounds.length){ msg+='Note: a similar pairing already has a score in Round '+[...new Set(playedRounds)].sort((a,b)=>a-b).join(', ')+'.\n\n'; }
+            msg+='It will be placed in Round '+target+' (the earliest open one). OK to save & place there, or Cancel to save nothing.';
+            if(!confirm(msg)){ return; } // nothing written
+            entryData._forceFixtureRound=target; // tell the server which round to use
+          }
+        }
+      }
+    }catch(e){}
+  }
   btn.disabled=true;
   // PIN is verified SERVER-SIDE by the secure function (never read by the app).
   entryData._submitter=submitter;
@@ -1960,8 +2131,10 @@ async function doSubmit(btn){
       t1p1:entryData.t1p1, t1p2:entryData.t1p2, t2p1:entryData.t2p1, t2p2:entryData.t2p2,
       t1_sets:entryData.t1sets, t2_sets:entryData.t2sets,
       t1_games:entryData.t1games, t2_games:entryData.t2games,
-      set_scores:setParts.join(',')
+      set_scores:setParts.join(','),
+      force_fixture_round: entryData._forceFixtureRound || null
     };
+    entryData._forceFixtureRound = null; // one-shot; don't carry to the next match
     // Call the SECURE submit-match function: it verifies the PIN server-side,
     // inserts the match, and triggers the full recompute. PIN never stored in the app.
     let result=null;
@@ -1999,6 +2172,11 @@ async function doSubmit(btn){
       }catch(e){ /* ladder update is best-effort; the match itself is saved */ }
     }
 
+    const fxNote = (result.fixture==='ambiguous')
+      ? `<div style="font-size:12px;color:#b9770e;margin-top:10px;background:#fff8e8;border:1px solid #f1c40f;border-radius:8px;padding:8px 10px;line-height:1.4;">⚠️ This result counts toward ratings &amp; stats, but it matched <strong>two open fixtures equally</strong> (because of stand-ins) so it could not be auto-placed on the draw board. Open the tournament → Rounds and <strong>tap the correct fixture</strong> to record its score there.</div>`
+      : (result.fixture==='nomatch')
+      ? `<div style="font-size:12px;color:#b9770e;margin-top:10px;background:#fff8e8;border:1px solid #f1c40f;border-radius:8px;padding:8px 10px;line-height:1.4;">⚠️ This result counts toward ratings &amp; stats, but the players didn\u2019t match a fixture closely enough to auto-place on the draw board. Open the tournament → Rounds and <strong>tap the correct fixture</strong> to record it.</div>`
+      : '';
     document.getElementById('entryContent').innerHTML=`
       <div class="success-icon">✅</div>
       <div style="text-align:center;">
@@ -2006,6 +2184,7 @@ async function doSubmit(btn){
         <div style="font-size:13px;color:#666;">${entryData.t1p1} & ${entryData.t1p2}<br>vs<br>${entryData.t2p1} & ${entryData.t2p2}</div>
         <div style="font-size:12px;color:#888;margin-top:6px;">${entryData.t1sets}-${entryData.t2sets} sets</div>
         <div style="font-size:11px;color:#aaa;margin-top:4px;">Submitted by ${who}</div>
+        ${fxNote}
       </div>
       <button class="btn btn-primary" style="margin-top:20px;" onclick="renderStep1()">Enter Another Match</button>
       <button class="btn btn-secondary" style="margin-top:8px;" onclick="goHome()">Back to Home</button>`;
@@ -2417,6 +2596,10 @@ async function loadTournamentSheet(tournament, division) {
 
   const entries = await tmLoadEntries(tournament, TM_DIVISION);
   const fixtures = await tmLoadFixtures(tournament, TM_DIVISION);
+  // stash for the fixture-result entry (called from onclick outside this scope)
+  window._tmCtx = { tournament, division: TM_DIVISION };
+  window._tmFixturesById = {}; fixtures.forEach(f=>{ window._tmFixturesById[f.id]=f; });
+  window._tmSeedNames = {}; entries.forEach(e=>{ window._tmSeedNames[e.seed] = e.p1 + ' / ' + e.p2; });
 
   // division selector pills (only divisions that have entries)
   let divBar = '<div class="tm-divbar">';
@@ -2429,13 +2612,14 @@ async function loadTournamentSheet(tournament, division) {
   const tName = s => bySeed[s] ? (bySeed[s].p1 + ' / ' + bySeed[s].p2) : ('Seed ' + s);
 
   const rounds = {};
-  fixtures.forEach(f => { (rounds[f.round] = rounds[f.round] || []).push(f); });
+  fixtures.forEach(f => { if(f.round < 90){ (rounds[f.round] = rounds[f.round] || []).push(f); } });
   const roundNos = Object.keys(rounds).map(Number).sort((a, b) => a - b);
+  const finalsFix = fixtures.filter(f => f.round >= 90);
 
   function standings(maxRound) {
     const t = {};
     entries.forEach(e => t[e.seed] = { seed: e.seed, p: 0, sets: 0, gw: 0, gd: 0 });
-    fixtures.filter(f => f.round <= maxRound && f.sets_a != null).forEach(f => {
+    fixtures.filter(f => f.round < 90 && f.round <= maxRound && f.sets_a != null).forEach(f => {
       if(!t[f.seed_a]||!t[f.seed_b]) return;
       t[f.seed_a].p++; t[f.seed_b].p++;
       t[f.seed_a].sets += f.sets_a; t[f.seed_b].sets += f.sets_b;
@@ -2443,10 +2627,10 @@ async function loadTournamentSheet(tournament, division) {
       t[f.seed_a].gd += (f.games_a - f.games_b); t[f.seed_b].gd += (f.games_b - f.games_a);
     });
     let arr = Object.values(t);
-    arr.sort((x, y) => y.sets - x.sets || y.gw - x.gw || y.gd - x.gd || x.seed - y.seed);
+    arr.sort((x, y) => y.sets - x.sets || y.gd - x.gd || y.gw - x.gw || x.seed - y.seed);
     return arr;
   }
-  const maxPlayed = Math.max(0, ...fixtures.filter(f => f.sets_a != null).map(f => f.round));
+  const maxPlayed = Math.max(0, ...fixtures.filter(f => f.round < 90 && f.sets_a != null).map(f => f.round));
 
   let activeTab = box._tab || 'teams';
   let curRound = box._round || (roundNos[0] || 1);
@@ -2475,18 +2659,21 @@ async function loadTournamentSheet(tournament, division) {
     });
     h += '</div><table><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
       + '<th class="tb">Team B</th><th class="num">Sd</th><th class="num">Score</th></tr></thead><tbody>';
-    (rounds[curRound] || []).forEach(f => {
+    (rounds[curRound] || []).forEach((f, fi) => {
       const played = f.sets_a != null;
       const aWin = played && f.sets_a > f.sets_b, bWin = played && f.sets_b > f.sets_a;
       const score = played ? (f.sets_a + '–' + f.sets_b + ' (' + f.games_a + '–' + f.games_b + ')') : '—';
-      h += '<tr><td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
+      h += '<tr style="cursor:pointer;" onclick="tmEnterFixtureResult(' + f.id + ')" title="Tap to enter/edit the score">'
+        + '<td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
         + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tName(f.seed_a) + '</td>'
         + '<td class="num"><span class="pill ' + f.band + '">' + (f.band||'') + '</span></td>'
         + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tName(f.seed_b) + '</td>'
         + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
-        + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#bbb">—</span>') + '</td></tr>';
+        + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#7D3C98;font-weight:700;">enter ▸</span>') + '</td></tr>';
     });
-    h += '</tbody></table></div>';
+    h += '</tbody></table><p class="sub" style="margin-top:8px;">Tap a fixture to enter or edit its score (admin).</p>'
+      + '<div style="text-align:center;margin-top:10px;"><button class="menu-btn" style="display:inline-block;width:auto;padding:10px 18px;border-color:#7D3C98;font-weight:700;" onclick="tmGenerateNextRound()">➕ Generate next round (Swiss)</button>'
+      + '<div class="sub" style="margin-top:6px;">Enter all current-round results first. Available once the fixed rounds are complete.</div></div></div>';
     return h;
   }
   function standingsHTML() {
@@ -2504,19 +2691,232 @@ async function loadTournamentSheet(tournament, division) {
     return h;
   }
 
+  function finalsRowHTML(f, label){
+    const played = f.sets_a != null;
+    const aWin = played && f.sets_a > f.sets_b, bWin = played && f.sets_b > f.sets_a;
+    const score = played ? (f.sets_a + '–' + f.sets_b + ' (' + f.games_a + '–' + f.games_b + ')') : '—';
+    return '<tr style="cursor:pointer;" onclick="tmEnterFixtureResult(' + f.id + ')" title="Tap to enter/edit the score">'
+      + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tName(f.seed_a) + '</td>'
+      + '<td class="num" style="color:#9b80b3;">vs</td>'
+      + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tName(f.seed_b) + '</td>'
+      + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#7D3C98;font-weight:700;">enter ▸</span>') + '</td></tr>';
+  }
+  function bracketGroupHTML(title, semiRound, finalRound, group){
+    const semis = finalsFix.filter(f=> f.round===semiRound);
+    const fin = finalsFix.filter(f=> f.round===finalRound);
+    let h = '<div class="card"><h2>' + title + ' <span class="tm-divtag">' + TM_DIVISION + '</span></h2>';
+    if(!semis.length){ h+='<p class="sub">Not started.</p></div>'; return h; }
+    h += '<p class="sub" style="margin-bottom:4px;">Semi-Finals (1v4, 2v3)</p>'
+      + '<table><tbody>';
+    semis.forEach(s=> h += finalsRowHTML(s));
+    h += '</tbody></table>';
+    const semisDone = semis.length>=2 && semis.every(s=> s.sets_a!=null);
+    if(fin.length){
+      h += '<p class="sub" style="margin:10px 0 4px;">🏆 Final</p><table><tbody>';
+      fin.forEach(s=> h += finalsRowHTML(s));
+      h += '</tbody></table>';
+      const fr = fin[0];
+      if(fr.sets_a!=null){
+        const champ = (fr.sets_a>fr.sets_b)?tName(fr.seed_a):tName(fr.seed_b);
+        h += '<div style="text-align:center;margin-top:10px;padding:10px;background:#f9f3dd;border:1px solid #F1C40F;border-radius:10px;font-weight:700;color:#7d6608;">🏆 Champion: ' + champ + '</div>';
+      }
+    } else if(semisDone){
+      h += '<div style="text-align:center;margin-top:10px;"><button class="menu-btn" style="display:inline-block;width:auto;padding:9px 16px;border-color:#F1C40F;font-weight:700;" onclick="tmMakeFinal(\'' + group + '\')">Set the Final (winners advance)</button></div>';
+    } else {
+      h += '<p class="sub" style="margin-top:8px;">Enter both semi-final results, then set the Final.</p>';
+    }
+    h += '</div>';
+    return h;
+  }
+  function finalsHTML(){
+    if(!N) return '<div class="card"><p class="sub">No teams yet.</p></div>';
+    if(!finalsFix.length){
+      const swissFix = fixtures.filter(f=> f.round < 90);
+      const allDone = swissFix.length>0 && swissFix.every(f=> f.sets_a!=null);
+      let h = '<div class="card"><h2>Semi-Finals &amp; Final <span class="tm-divtag">' + TM_DIVISION + '</span></h2>';
+      if(!allDone){
+        h += '<p class="sub">Once all rounds are complete, an admin can start the finals here. ' + (hasABSplit()? 'This field (' + N + ' teams) splits into Division A and Division B — each with its own top-4 semis and final.' : 'Top 4 teams will contest the semi-finals (1v4, 2v3), winners to the Final.') + '</p></div>';
+        return h;
+      }
+      h += '<p class="sub">All rounds complete. ' + (hasABSplit()? 'Division A (top-half seeds) and Division B (bottom-half) will each get top-4 semis + a final.' : 'Top 4 by standings will contest the semis (1v4, 2v3) → Final.') + '</p>'
+        + '<div style="text-align:center;margin-top:10px;"><button class="menu-btn" style="display:inline-block;width:auto;padding:10px 18px;border-color:#F1C40F;font-weight:700;" onclick="tmStartFinals()">🏆 Start finals</button></div></div>';
+      return h;
+    }
+    // finals exist — render the bracket(s)
+    let h='';
+    if(hasABSplit()){
+      h += bracketGroupHTML('Division A — Finals', FINALS_ROUNDS.aSemi, FINALS_ROUNDS.aFinal, 'A');
+      h += bracketGroupHTML('Division B — Finals', FINALS_ROUNDS.bSemi, FINALS_ROUNDS.bFinal, 'B');
+    } else {
+      h += bracketGroupHTML('Semi-Finals &amp; Final', FINALS_ROUNDS.aSemi, FINALS_ROUNDS.aFinal, 'A');
+    }
+    return h;
+  }
+
   function render() {
+    const swissFix = fixtures.filter(f=> f.round < 90);
+    const swissComplete = swissFix.length>0 && swissFix.every(f=> f.sets_a!=null);
+    const showFinals = swissComplete || finalsFix.length>0;
     const tabs = [['teams', '👥 Teams & Bands'], ['rounds', '🎾 Rounds'], ['standings', '📊 Standings']];
+    if(showFinals) tabs.push(['finals', '🏆 Finals']);
     let nav = '<div class="tm-nav">';
     tabs.forEach(([id, lbl]) => nav += '<button class="' + (id === activeTab ? 'active' : '') + '" onclick="tmSetTab(\'' + id + '\')">' + lbl + '</button>');
     nav += '</div>';
-    let bodyHTML = activeTab === 'teams' ? teamsHTML() : activeTab === 'rounds' ? roundsHTML() : standingsHTML();
+    let bodyHTML = activeTab === 'teams' ? teamsHTML() : activeTab === 'rounds' ? roundsHTML() : activeTab === 'finals' ? finalsHTML() : standingsHTML();
     box.innerHTML = divBar + nav + bodyHTML;
     box._tab = activeTab; box._round = curRound;
   }
   window.tmSetTab = function (id) { activeTab = id; render(); };
   window.tmSetRound = function (r) { curRound = r; render(); };
   window.tmPickDivision = function (t, d) { box._tab='teams'; box._round=null; loadTournamentSheet(t, d); };
+
+  // ---- FINALS (Semi-Finals & Final), per Andre's Excel spec ----
+  // Field 12+ splits into Div A (top-half seeds) and Div B (bottom-half) by the band
+  // split; each gets top-4 by standings → semis (1v4, 2v3) → final. Under 12 = single
+  // division: top 4 overall → semis → final. Finals are stored as fixtures with special
+  // round numbers so they reuse the existing tap-to-enter + result handling:
+  //   90 = Div A semis, 91 = Div A final, 92 = Div B semis, 93 = Div B final
+  //   (single division uses 90/91 only)
+  const FINALS_ROUNDS = { aSemi:90, aFinal:91, bSemi:92, bFinal:93 };
+  function hasABSplit(){ return N >= 12; }
+
+  window.tmStartFinals = async function(){
+    // require all scheduled Swiss/fixed rounds complete
+    const swissFix = fixtures.filter(f=> f.round < 90);
+    if(!swissFix.length){ alert('No rounds to finalise yet.'); return; }
+    const anyOpen = swissFix.some(f=> f.sets_a==null);
+    if(anyOpen){ alert('All rounds must be complete before starting the finals. Enter every result first.'); return; }
+    // build standings over all rounds
+    const table = standings(maxPlayed);
+    const A_END = TM.divSplit(N);
+    let newFix=[];
+    const mk=(round,band,seedA,seedB)=>({ tournament, division:TM_DIVISION, round, round_type:'final', band, seed_a:seedA, seed_b:seedB });
+    if(hasABSplit()){
+      const divA = table.filter(r=> r.seed <= A_END).slice(0,4);
+      const divB = table.filter(r=> r.seed >  A_END).slice(0,4);
+      if(divA.length<4 || divB.length<4){ alert('Need at least 4 teams in each division for semi-finals.'); return; }
+      // 1v4, 2v3 within each division
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SFA', divA[0].seed, divA[3].seed));
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SFA', divA[1].seed, divA[2].seed));
+      newFix.push(mk(FINALS_ROUNDS.bSemi,'SFB', divB[0].seed, divB[3].seed));
+      newFix.push(mk(FINALS_ROUNDS.bSemi,'SFB', divB[1].seed, divB[2].seed));
+    } else {
+      const top4 = table.slice(0,4);
+      if(top4.length<4){ alert('Need at least 4 teams for semi-finals.'); return; }
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SF', top4[0].seed, top4[3].seed));
+      newFix.push(mk(FINALS_ROUNDS.aSemi,'SF', top4[1].seed, top4[2].seed));
+    }
+    const pin = (prompt('Admin PIN to start the finals for '+TM_DIVISION+':')||'').trim();
+    if(!pin) return;
+    // write the semi fixtures (replace any existing finals first so it's idempotent)
+    const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+      headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'write_fixtures', club_id:CLUB_ID, admin_pin:pin,
+        tournament, division:TM_DIVISION, replace:false, fixtures:newFix }) });
+    const j = await resp.json().catch(()=>({}));
+    if(!j.ok){ alert('Could not start finals: '+((j&&j.error)||resp.status)); return; }
+    box._tab='finals';
+    loadTournamentSheet(tournament, TM_DIVISION);
+  };
+
+  // After both semis in a group are done, create that group's final from the winners.
+  window.tmMakeFinal = async function(group){
+    const semiRound = group==='B' ? FINALS_ROUNDS.bSemi : FINALS_ROUNDS.aSemi;
+    const finalRound = group==='B' ? FINALS_ROUNDS.bFinal : FINALS_ROUNDS.aFinal;
+    const semis = fixtures.filter(f=> f.round===semiRound);
+    if(semis.length<2 || semis.some(s=> s.sets_a==null)){ alert('Both semi-finals must have results first.'); return; }
+    const winner = s => (s.sets_a > s.sets_b) ? s.seed_a : s.seed_b;
+    const w1 = winner(semis[0]), w2 = winner(semis[1]);
+    const band = group==='B' ? 'FB' : (hasABSplit()?'FA':'F');
+    const pin = (prompt('Admin PIN to set the '+(group==='B'?'Division B ':hasABSplit()?'Division A ':'')+'Final:')||'').trim();
+    if(!pin) return;
+    const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+      headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'write_fixtures', club_id:CLUB_ID, admin_pin:pin,
+        tournament, division:TM_DIVISION, replace:false,
+        fixtures:[{ tournament, division:TM_DIVISION, round:finalRound, round_type:'final', band, seed_a:w1, seed_b:w2 }] }) });
+    const j = await resp.json().catch(()=>({}));
+    if(!j.ok){ alert('Could not set final: '+((j&&j.error)||resp.status)); return; }
+    loadTournamentSheet(tournament, TM_DIVISION);
+  };
+
+  // Generate the NEXT Swiss round (admin). Ranks the field by current standings,
+  // pairs with the no-rematch band-legal Swiss algorithm, and appends the round.
+  window.tmGenerateNextRound = async function(){
+    const allFix = await tmLoadFixtures(tournament, TM_DIVISION);
+    const ent = await tmLoadEntries(tournament, TM_DIVISION);
+    const Nn = ent.length;
+    if(Nn < 4){ alert('Need at least 4 teams.'); return; }
+    // rounds present, and whether every fixture in the latest round has a result
+    const byRound={}; allFix.forEach(f=>{(byRound[f.round]=byRound[f.round]||[]).push(f);});
+    const roundsPresent = Object.keys(byRound).map(Number).sort((a,b)=>a-b);
+    const lastRound = roundsPresent[roundsPresent.length-1] || 0;
+    const lastRoundFix = byRound[lastRound] || [];
+    const unplayed = lastRoundFix.filter(f=>f.sets_a==null).length;
+    if(unplayed>0){ alert('Round '+lastRound+' still has '+unplayed+' fixture(s) without a result. Enter all results before generating the next round.'); return; }
+    // no-rematch history from every existing fixture (scheduled or played)
+    const history=new Set();
+    allFix.forEach(f=>{ history.add([f.seed_a,f.seed_b].sort((a,b)=>a-b).join('-')); });
+    // rank the field by standings across all played rounds
+    const ranked = standings(lastRound).map(r=>r.seed);
+    const res = TM.swissRound(Nn, ranked, history);
+    if(!res){ alert('The field is exhausted — every remaining pairing would be a rematch. This division cannot fairly add another round.'); return; }
+    const nextRound = lastRound+1;
+    const A_END = TM.divSplit ? TM.divSplit(Nn) : Math.ceil(Nn/2);
+    const newFix = res.pairs.map(([a,b])=>({
+      tournament, division: TM_DIVISION, round: nextRound, round_type:'swiss',
+      seed_a:a, seed_b:b, band: TM.bandClass(a,b,A_END)
+    }));
+    const pin = (prompt('Admin PIN to generate Round '+nextRound+' ('+TM_DIVISION+'):')||'').trim();
+    if(!pin) return;
+    const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+      headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'write_fixtures', club_id:CLUB_ID, admin_pin:pin,
+        tournament, division:TM_DIVISION, replace:false, fixtures:newFix }) });
+    const j = await resp.json().catch(()=>({}));
+    if(!j.ok){ alert('Could not generate: '+((j&&j.error)||resp.status)); return; }
+    box._round = nextRound;
+    loadTournamentSheet(tournament, TM_DIVISION);
+  };
+
   render();
+}
+
+// Enter or edit the score for a specific tournament fixture (admin-gated).
+// Writes the result onto the fixture AND creates a matches row (via the tournament Edge Function).
+async function tmEnterFixtureResult(fixtureId){
+  const f = window._tmFixturesById ? window._tmFixturesById[fixtureId] : null;
+  const ctx = window._tmCtx || {};
+  if(!f || !ctx.tournament){ return; }
+  const names = window._tmSeedNames || {};
+  const teamA = names[f.seed_a] || ('Seed '+f.seed_a);
+  const teamB = names[f.seed_b] || ('Seed '+f.seed_b);
+  const cur = (f.sets_a!=null) ? (f.sets_a+'-'+f.sets_b) : '';
+  // simple, robust prompt-based entry (sets, then games, then optional set scores)
+  const setsRaw = prompt('Score for:\n'+teamA+'  vs  '+teamB+'\n\nEnter SETS as A-B (e.g. 2-1):', cur);
+  if(setsRaw===null) return;
+  const sm = setsRaw.trim().match(/^(\d+)\s*-\s*(\d+)$/);
+  if(!sm){ alert('Please enter sets as A-B, e.g. 2-1'); return; }
+  const sa=Number(sm[1]), sb=Number(sm[2]);
+  const gamesRaw = prompt('Total GAMES as A-B (e.g. 13-9). Leave blank if not tracked:', (f.games_a!=null?(f.games_a+'-'+f.games_b):''));
+  if(gamesRaw===null) return;
+  let ga=0, gb=0;
+  if(gamesRaw.trim()!==''){ const gm=gamesRaw.trim().match(/^(\d+)\s*-\s*(\d+)$/); if(!gm){ alert('Games must be A-B, e.g. 13-9'); return; } ga=Number(gm[1]); gb=Number(gm[2]); }
+  const setScores = (prompt('Optional per-set scores (e.g. 6-4,3-6,6-2). Leave blank to skip:','')||'').trim();
+  const today = new Date().toISOString().slice(0,10);
+  const dateRaw = (prompt('Match date (yyyy-mm-dd):', today)||'').trim() || today;
+  const pin = (prompt('Admin PIN to record this result:')||'').trim();
+  if(!pin) return;
+  const resp = await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+    headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
+    body: JSON.stringify({ action:'record_fixture_result', club_id:CLUB_ID, admin_pin:pin,
+      fixture_id:fixtureId, tournament:ctx.tournament, division:ctx.division, round:f.round,
+      seed_a:f.seed_a, seed_b:f.seed_b, sets_a:sa, sets_b:sb, games_a:ga, games_b:gb,
+      set_scores:setScores, match_date:dateRaw }) });
+  const j = await resp.json().catch(()=>({}));
+  if(!j.ok){ alert('Could not record: '+((j&&j.error)||resp.status)); return; }
+  // reload the sheet so the board shows the score
+  loadTournamentSheet(ctx.tournament, ctx.division);
 }
 
 /* ============================================================================
@@ -2920,18 +3320,44 @@ async function renderClubLadder(){
       + '<button class="ac-btn ac-btn-green" style="width:100%;margin-top:6px;" onclick="clJoin()">Add pair to ladder</button>'
       + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
 
+    // Show the teams already entered, right here on the Enter/Join tab, so you can
+    // see who has joined before activating (spill list).
+    bodyHTML += '<div class="card"><h2>Teams entered <span class="tm-divtag">'+cat+'</span> <span style="font-size:12px;color:#888;font-weight:400;">('+rows.length+')</span></h2>';
+    if(!rows.length){
+      bodyHTML += '<p class="sub">No teams entered yet. Add pairs above — they\u2019ll appear here as you go.</p>';
+    } else {
+      bodyHTML += '<table><thead><tr><th class="num">'+(activated?'#':'')+'</th><th>Team</th><th class="num"></th></tr></thead><tbody>';
+      rows.forEach((r,i)=>{
+        bodyHTML += '<tr><td class="num">'+(activated?('<span class="seed'+(r.position===1?' s1':'')+'">'+r.position+'</span>'):(i+1))+'</td>'
+          + '<td><b>'+r.p1+' / '+r.p2+'</b></td>'
+          + '<td class="num"><button onclick="clRemove('+r.id+',\''+(r.p1+' / '+r.p2).replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;" title="Remove">×</button></td></tr>';
+      });
+      bodyHTML += '</tbody></table>';
+      if(!activated) bodyHTML += '<p class="sub" style="margin-top:8px;">Order shown is entry order. On activation, teams are ranked by combined rating.</p>';
+    }
+    bodyHTML += '</div>';
+
     // Item 2: activation card — locks after first activation (with guarded override)
     if(!activated){
       bodyHTML += '<div class="card"><h2>Activate the ladder</h2>'
         + '<p class="sub">One-time: sets the '+cat+' ladder order by combined rating (strongest at the top). After activation, the ladder moves only on challenge results.</p>'
         + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
         + '<button class="ac-btn ac-btn-primary" onclick="clActivate(false)">Activate ladder</button></div>'
-        + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
+        + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div>';
+      // Clear-all option before activation (wipe all entered teams in one go)
+      if(rows.length){
+        bodyHTML += '<div style="margin-top:12px;border-top:1px dashed #e6b0aa;padding-top:10px;">'
+          + '<p class="sub" style="margin:0 0 6px;">Want to start over? This clears all '+rows.length+' entered '+cat+' team(s) before activation.</p>'
+          + '<button class="ac-btn ac-btn-danger" style="width:100%;background:#7b241c;" onclick="clTotalReset()">⚠️ Clear all entered teams</button></div>';
+      }
+      bodyHTML += '</div>';
     } else {
       bodyHTML += '<div class="card" style="border:1px dashed #e6b0aa;"><h2 style="color:#922;">Admin override</h2>'
-        + '<p class="sub">This ladder is already activated. Re-activating <b>reshuffles all earned positions back to rating order</b> — only do this to reset the ladder entirely.</p>'
+        + '<p class="sub">This ladder is already activated. <b>Re-activate</b> reshuffles all positions back to rating order (keeps the teams, stays active). <b>Total reset</b> wipes every team and returns this ladder to a blank, not-activated state.</p>'
         + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #c0392b;border-radius:8px;font-size:15px;">'
-        + '<button class="ac-btn ac-btn-danger" onclick="clActivate(true)">Re-activate (reset)</button></div>'
+        + '<button class="ac-btn ac-btn-danger" onclick="clActivate(true)">Re-activate (reset order)</button></div>'
+        + '<div style="margin-top:10px;border-top:1px dashed #e6b0aa;padding-top:10px;">'
+        + '<button class="ac-btn ac-btn-danger" style="width:100%;background:#7b241c;" onclick="clTotalReset()">⚠️ Total reset — wipe all teams &amp; deactivate</button></div>'
         + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
     }
   }
@@ -3000,6 +3426,20 @@ async function clActivate(force){
     body:JSON.stringify({action:'seed_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin,force:!!force,order:withR.map(t=>({p1:t.p1,p2:t.p2}))})});
   const j=await resp.json().catch(()=>({}));
   if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not activate.')+'</span>'; return; }
+  CL_TAB='ladder'; renderClubLadder();
+}
+
+async function clTotalReset(){
+  const pin=(document.getElementById('clPin').value||'').trim();
+  const msg=document.getElementById('clSeedMsg');
+  if(!pin){ msg.innerHTML='<span style="color:#c0392b;">Enter the admin PIN.</span>'; return; }
+  if(!confirm('TOTAL RESET of the '+CL_CAT+' ladder.\n\nThis removes EVERY team and returns the ladder to a blank, not-activated state. This cannot be undone. Continue?')) return;
+  if(!confirm('Are you absolutely sure? All '+CL_CAT+' ladder teams and positions will be permanently cleared.')) return;
+  const resp=await fetch(SB_URL+'/functions/v1/ladder',{method:'POST',
+    headers:{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({action:'reset_ladder',club_id:CLUB_ID,category:CL_CAT,admin_pin:pin})});
+  const j=await resp.json().catch(()=>({}));
+  if(!j.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(j.error||'Could not reset.')+'</span>'; return; }
   CL_TAB='ladder'; renderClubLadder();
 }
 
