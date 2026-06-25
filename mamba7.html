@@ -3228,13 +3228,37 @@ async function renderClubLadder(){
       + '<button class="ac-btn ac-btn-green" style="width:100%;margin-top:6px;" onclick="clJoin()">Add pair to ladder</button>'
       + '<div id="clMsg" style="margin-top:10px;font-size:13px;"></div></div>';
 
+    // Show the teams already entered, right here on the Enter/Join tab, so you can
+    // see who has joined before activating (spill list).
+    bodyHTML += '<div class="card"><h2>Teams entered <span class="tm-divtag">'+cat+'</span> <span style="font-size:12px;color:#888;font-weight:400;">('+rows.length+')</span></h2>';
+    if(!rows.length){
+      bodyHTML += '<p class="sub">No teams entered yet. Add pairs above — they\u2019ll appear here as you go.</p>';
+    } else {
+      bodyHTML += '<table><thead><tr><th class="num">'+(activated?'#':'')+'</th><th>Team</th><th class="num"></th></tr></thead><tbody>';
+      rows.forEach((r,i)=>{
+        bodyHTML += '<tr><td class="num">'+(activated?('<span class="seed'+(r.position===1?' s1':'')+'">'+r.position+'</span>'):(i+1))+'</td>'
+          + '<td><b>'+r.p1+' / '+r.p2+'</b></td>'
+          + '<td class="num"><button onclick="clRemove('+r.id+',\''+(r.p1+' / '+r.p2).replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px;" title="Remove">×</button></td></tr>';
+      });
+      bodyHTML += '</tbody></table>';
+      if(!activated) bodyHTML += '<p class="sub" style="margin-top:8px;">Order shown is entry order. On activation, teams are ranked by combined rating.</p>';
+    }
+    bodyHTML += '</div>';
+
     // Item 2: activation card — locks after first activation (with guarded override)
     if(!activated){
       bodyHTML += '<div class="card"><h2>Activate the ladder</h2>'
         + '<p class="sub">One-time: sets the '+cat+' ladder order by combined rating (strongest at the top). After activation, the ladder moves only on challenge results.</p>'
         + '<div style="display:flex;gap:8px;"><input id="clPin" type="password" placeholder="Admin PIN" style="flex:1;padding:10px;border:1.5px solid #7D3C98;border-radius:8px;font-size:15px;">'
         + '<button class="ac-btn ac-btn-primary" onclick="clActivate(false)">Activate ladder</button></div>'
-        + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div></div>';
+        + '<div id="clSeedMsg" class="sub" style="margin-top:8px;"></div>';
+      // Clear-all option before activation (wipe all entered teams in one go)
+      if(rows.length){
+        bodyHTML += '<div style="margin-top:12px;border-top:1px dashed #e6b0aa;padding-top:10px;">'
+          + '<p class="sub" style="margin:0 0 6px;">Want to start over? This clears all '+rows.length+' entered '+cat+' team(s) before activation.</p>'
+          + '<button class="ac-btn ac-btn-danger" style="width:100%;background:#7b241c;" onclick="clTotalReset()">⚠️ Clear all entered teams</button></div>';
+      }
+      bodyHTML += '</div>';
     } else {
       bodyHTML += '<div class="card" style="border:1px dashed #e6b0aa;"><h2 style="color:#922;">Admin override</h2>'
         + '<p class="sub">This ladder is already activated. <b>Re-activate</b> reshuffles all positions back to rating order (keeps the teams, stays active). <b>Total reset</b> wipes every team and returns this ladder to a blank, not-activated state.</p>'
