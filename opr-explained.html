@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPR — Explained</title>
+<style>
+  :root{
+    --purple:#6C3483; --purple-deep:#3a1d6e; --purple-mid:#7D3C98;
+    --blue:#3498DB; --blue-light:#5DADE2; --wash:#F5EEF8;
+    --ink:#2a2233; --muted:#6b6276; --line:#e8e0f0; --white:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:#faf8fc;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px;}
+
+  /* ---- Hero (matches the app header: header_bg2.png gradient + padel balls) ---- */
+  .hero{background:url("header_bg2.png") center center/cover no-repeat, linear-gradient(120deg,var(--purple-deep) 0%,var(--purple) 42%,var(--blue) 100%);color:#fff;padding:34px 0 56px;position:relative;overflow:hidden;text-shadow:0 2px 6px rgba(0,0,0,0.35);}
+  .hero .ball-row{display:flex;align-items:center;justify-content:center;gap:22px;padding:6px 0 22px;position:relative;z-index:2;flex-wrap:nowrap;}
+  .hero .ball-pair{display:inline-flex;align-items:center;gap:8px;}
+  .hero .pball{width:40px;height:40px;display:block;filter:drop-shadow(0 0 8px rgba(241,196,15,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.3));}
+  .hero-title{text-align:center;font-weight:800;letter-spacing:0.5px;white-space:nowrap;font-size:clamp(20px,5.2vw,38px);line-height:1.1;margin:0 0 16px;}
+  .hero .lede{text-align:center;margin-left:auto;margin-right:auto;}
+  .hero .hero-tags{justify-content:center;}
+  .hero .wrap{position:relative;z-index:2;}
+  .brand{display:inline-flex;align-items:baseline;gap:2px;font-weight:800;letter-spacing:0.5px;font-size:15px;opacity:0.95;margin-bottom:20px;}
+  .brand .dot{width:7px;height:7px;border-radius:50%;background:var(--blue-light);display:inline-block;margin:0 2px 1px;}
+  h1{font-size:clamp(34px,7vw,56px);font-weight:800;line-height:1.05;letter-spacing:-0.5px;}
+  h1 .sub{display:block;font-size:clamp(15px,3vw,20px);font-weight:500;opacity:0.9;letter-spacing:0;margin-top:14px;}
+  .hero p.lede{margin-top:20px;max-width:560px;font-size:17px;opacity:0.92;}
+  .hero-tags{margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;}
+  .hero-tags span{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.25);padding:6px 13px;border-radius:30px;font-size:13px;font-weight:600;}
+
+  /* ---- Nav strip ---- */
+  .jump{position:sticky;top:0;z-index:30;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .jump .wrap{display:flex;gap:6px;overflow-x:auto;padding:10px 20px;}
+  .jump a{white-space:nowrap;font-size:13px;font-weight:700;color:var(--purple-mid);text-decoration:none;padding:7px 13px;border-radius:8px;}
+  .jump a:hover{background:var(--wash);}
+
+  /* ---- Sections ---- */
+  section{padding:52px 0;border-bottom:1px solid var(--line);}
+  .eyebrow{display:inline-block;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:10px;}
+  h2{font-size:clamp(24px,5vw,32px);font-weight:800;letter-spacing:-0.3px;margin-bottom:6px;}
+  h2 .num{color:var(--line);font-weight:800;margin-right:10px;}
+  section > .wrap > p{margin-top:14px;font-size:16px;color:#48404f;}
+  section > .wrap > p + p{margin-top:12px;}
+  .lead{font-size:18px!important;color:var(--ink)!important;font-weight:500;}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 22px;margin-top:18px;box-shadow:0 4px 18px rgba(108,52,131,0.05);}
+  .card h3{font-size:17px;font-weight:800;color:var(--purple-mid);margin-bottom:6px;}
+  .card p{font-size:15px;color:#544b60;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;}
+  @media(max-width:600px){.grid{grid-template-columns:1fr;}}
+
+  .formula-box{background:var(--wash);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:12px;padding:16px 18px;margin-top:18px;}
+  .formula-box .big{font-size:18px;font-weight:800;color:var(--purple-deep);}
+  .formula-box .note{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  ul.clean{margin:14px 0 0;padding-left:0;list-style:none;}
+  ul.clean li{position:relative;padding-left:26px;margin-bottom:10px;font-size:15px;color:#48404f;}
+  ul.clean li::before{content:"";position:absolute;left:6px;top:9px;width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));}
+
+  .step-row{display:flex;gap:14px;margin-top:16px;align-items:flex-start;}
+  .step-n{flex:none;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;}
+  .step-row div p{font-size:15px;color:#48404f;}
+  .step-row div strong{color:var(--ink);}
+
+  /* ---- Club access ---- */
+  .clubs{background:linear-gradient(160deg,#fbf9fd,#f3edf8);}
+  .club-list{margin-top:20px;display:flex;flex-direction:column;gap:10px;}
+  .club{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px 16px;text-decoration:none;color:var(--ink);transition:all 0.15s;}
+  .club:hover{border-color:var(--blue-light);box-shadow:0 6px 20px rgba(52,152,219,0.12);transform:translateY(-1px);}
+  .club .code{flex:none;width:54px;height:40px;border-radius:9px;background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;}
+  .club .meta{flex:1;}
+  .club .meta .name{font-weight:700;font-size:16px;}
+  .club .meta .desc{font-size:12.5px;color:var(--muted);}
+  .club .go{color:var(--blue);font-weight:700;font-size:13px;}
+  .club.disabled{opacity:0.55;pointer-events:none;}
+  details.club-group{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden;}
+  details.club-group summary{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;list-style:none;}
+  details.club-group summary::-webkit-details-marker{display:none;}
+  details.club-group summary .go{margin-left:auto;}
+  details.club-group .inner{border-top:1px solid var(--line);padding:6px;}
+  details.club-group .inner a{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:9px;text-decoration:none;color:var(--ink);font-size:14px;}
+  details.club-group .inner a:hover{background:var(--wash);}
+  details.club-group .inner a .tag{flex:none;width:46px;height:30px;border-radius:7px;background:var(--wash);color:var(--purple-mid);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .clubs .hint{font-size:13px;color:var(--muted);margin-top:14px;}
+
+  /* ---- Contact ---- */
+  .contact{background:linear-gradient(120deg,var(--purple-deep),var(--purple) 55%,var(--blue));color:#fff;}
+  .contact h2{color:#fff;}
+  .contact p{color:rgba(255,255,255,0.9)!important;}
+  .contact-btns{margin-top:24px;display:flex;flex-wrap:wrap;gap:12px;}
+  .cbtn{display:inline-flex;align-items:center;gap:9px;padding:14px 22px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;transition:transform 0.1s;}
+  .cbtn:active{transform:scale(0.97);}
+  .cbtn.wa{background:#25D366;color:#fff;}
+  .cbtn.email{background:#fff;color:var(--purple-deep);}
+  .cbtn svg{width:19px;height:19px;}
+
+  footer{padding:30px 0;text-align:center;font-size:13px;color:var(--muted);background:#faf8fc;}
+  footer .brand-f{font-weight:800;color:var(--purple-mid);}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="ball-row" aria-hidden="true">
+    <span class="ball-pair">
+      <svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg1" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg1)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg>
+      <svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg2" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg2)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg>
+    </span>
+    <span class="ball-pair">
+      <svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg3" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg3)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg>
+      <svg class="pball" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bg4" cx="38%" cy="33%" r="75%"><stop offset="0%" stop-color="#eaff66"/><stop offset="55%" stop-color="#c4e000"/><stop offset="100%" stop-color="#8fb500"/></radialGradient></defs><circle cx="50" cy="50" r="46" fill="url(#bg4)" stroke="#7da300" stroke-width="1"/><path d="M18 18 Q50 50 18 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><path d="M82 18 Q50 50 82 82" fill="none" stroke="#fbfff0" stroke-width="4" stroke-linecap="round"/><ellipse cx="40" cy="32" rx="14" ry="9" fill="rgba(255,255,255,0.35)"/></svg>
+    </span>
+  </div>
+  <div class="wrap">
+    <h1 class="hero-title">OPR - OPEN PADEL RATING</h1>
+    <p class="lede">OPR gives every member a fair, transparent rating that reflects how they actually play — and gives the club the tools to run ladders and tournaments on their own, any day of the week.</p>
+    <div class="hero-tags">
+      <span>Player Ratings</span><span>Club Ladders</span><span>Tournaments</span><span>Member Profiles</span><span>Multi-Club</span>
+    </div>
+  </div>
+</header>
+
+<!-- JUMP NAV -->
+<nav class="jump">
+  <div class="wrap">
+    <a href="#what">What it is</a>
+    <a href="#ratings">Ratings</a>
+    <a href="#form">Form</a>
+    <a href="#ladder">Ladder</a>
+    <a href="#tournaments">Tournaments</a>
+    <a href="#admin">Admin</a>
+    <a href="#clubs">Club Access</a>
+    <a href="#about">About</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- WHAT IT IS -->
+<section id="what">
+  <div class="wrap">
+    <span class="eyebrow">The idea</span>
+    <h2>What OPR is</h2>
+    <p class="lead">A complete rating and competition platform that a padel club owns and runs itself — no monthly per-player fees, no outside gatekeeper.</p>
+    <p>Most rating systems are owned by someone else: your members' data lives on a platform you don't control, and the numbers come out of a black box. OPR flips that. Each club gets its own private space — its own members, its own ladders, its own tournaments — with a rating engine that's explained openly so players trust it.</p>
+    <div class="grid">
+      <div class="card"><h3>Fair</h3><p>Ratings reward how well you play, not just whether you won. A close loss against strong opponents is recognised.</p></div>
+      <div class="card"><h3>Transparent</h3><p>The logic is explained in plain language (right here on this page). No mystery, no hidden agenda.</p></div>
+      <div class="card"><h3>Club-owned</h3><p>Your members, your events, your data — kept separate from every other club.</p></div>
+      <div class="card"><h3>Self-run</h3><p>Run a full tournament in an afternoon, or a season-long ladder, without needing anyone's help.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- RATINGS -->
+<section id="ratings">
+  <div class="wrap">
+    <span class="eyebrow">How the rating works</span>
+    <h2>Player ratings</h2>
+    <p class="lead">Your rating is a single number that reflects your real playing strength — and it moves every time you play.</p>
+    <p>The core principle is simple: <strong>OPR scores how you played, not just the final result.</strong> A match where you take a set and push a strong pair close says far more about your level than a lucky win — and OPR captures that.</p>
+
+    <div class="formula-box">
+      <div class="big">Every match result blends two things: the sets and the games.</div>
+      <div class="note">Sets carry the most weight (winning the match matters most), while the games within those sets fine-tune the picture — so a 6–0, 6–1 win and a 7–6, 7–6 win are correctly treated as very different performances.</div>
+    </div>
+
+    <p style="margin-top:22px;">From there, four ideas shape the number:</p>
+    <ul class="clean">
+      <li><strong>Performance, not just the win.</strong> How dominant or close the match was feeds directly into the rating change.</li>
+      <li><strong>Who you played matters.</strong> Results are weighed against the strength of your opponents — beating a stronger pair moves you more.</li>
+      <li><strong>It updates match by match.</strong> Ratings are rebuilt in order from your full history, so the number always reflects your current level, not a stale snapshot.</li>
+      <li><strong>One rating, all formats.</strong> Singles, doubles, mixed — they feed a single universal rating, with sensible weighting so a strong player carrying a weaker partner is judged fairly.</li>
+    </ul>
+
+    <div class="card" style="margin-top:22px;">
+      <h3>Doubles — how a pair's strength is set</h3>
+      <p>For same-gender pairs, the team strength is the blend of both players. For mixed or mixed-ability pairs, the stronger player carries a little more of the weight — because that's how the game actually plays out on court. The result is a pairing rating that feels right to the people who played.</p>
+    </div>
+
+    <div class="card">
+      <h3>Levels — the friendly version of the number</h3>
+      <p>Alongside the precise rating, OPR shows a simpler <strong>level</strong> — an at-a-glance band that members instantly understand and can use to find well-matched games. The detailed rating drives the system; the level makes it human.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section id="form">
+  <div class="wrap">
+    <span class="eyebrow">Recent shape</span>
+    <h2>Form</h2>
+    <p class="lead">Your rating is your overall level. Your form is whether you're hot or cold <em>right now</em>.</p>
+    <p>Form looks at your recent results and shows whether you've been trending up or down lately — the padel equivalent of "in good touch." It's separate from your rating on purpose: one bad week shouldn't crater your standing, but it should be visible.</p>
+    <ul class="clean">
+      <li><strong>Recent-weighted.</strong> Your latest matches count for more than ones from months ago.</li>
+      <li><strong>Needs a real sample.</strong> Form only shows once you've played enough to be meaningful — it won't over-react to a single match.</li>
+      <li><strong>A coaching cue.</strong> A dipping form line is a nudge; a rising one is a reward. It keeps players engaged between events.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- LADDER -->
+<section id="ladder">
+  <div class="wrap">
+    <span class="eyebrow">Ongoing competition</span>
+    <h2>The Club Ladder</h2>
+    <p class="lead">A living leaderboard of pairs, where you climb by challenging the teams above you.</p>
+    <p>The ladder is the club's heartbeat between tournaments. Pairs sign up, the ladder sets an opening order by rating, and from there it's all earned on court.</p>
+    <div class="step-row"><div class="step-n">1</div><div><p><strong>Teams join.</strong> Pairs enter the ladder for their category — Men's, Ladies, Mixed or All Sorts.</p></div></div>
+    <div class="step-row"><div class="step-n">2</div><div><p><strong>The ladder activates.</strong> Opening positions are set by combined rating — strongest at the top — then it's frozen and the climbing begins.</p></div></div>
+    <div class="step-row"><div class="step-n">3</div><div><p><strong>Challenge upward.</strong> Beat a team above you and you take their spot; they move down. Every result reshapes the ladder.</p></div></div>
+    <div class="step-row"><div class="step-n">4</div><div><p><strong>The club stays in control.</strong> Admins can reshuffle to rating order, or wipe and start a fresh season whenever they like.</p></div></div>
+  </div>
+</section>
+
+<!-- TOURNAMENTS -->
+<section id="tournaments">
+  <div class="wrap">
+    <span class="eyebrow">Events, run by you</span>
+    <h2>Tournaments</h2>
+    <p class="lead">Run a complete, fair tournament — group stages, finals and a champion — in a single afternoon, with no outside help.</p>
+    <p>This is what lets a club host a Saturday social, an office function, or a proper club championship entirely on its own. OPR handles the hard part: pairing teams fairly so nobody gets a string of mismatches, and so the best teams genuinely rise to the top.</p>
+
+    <div class="card">
+      <h3>Banded, fair pairings</h3>
+      <p>Teams are grouped into strength bands so games stay competitive — no top seed steamrolling a beginner in round one. Fairness is the rule the draw bends to, never the other way around.</p>
+    </div>
+    <div class="card">
+      <h3>Swiss-style rounds that scale</h3>
+      <p>After a few fixed opening rounds, OPR generates further rounds based on the standings — winners meet winners — with no team ever playing the same opponent twice. The number of rounds adapts to the size of the field.</p>
+    </div>
+    <div class="card">
+      <h3>Divisions for bigger fields</h3>
+      <p>When a category is large enough, it splits into Division A and Division B by strength — so mid-field teams have their own real competition and their own champion, not just the top seeds sweeping everything.</p>
+    </div>
+    <div class="card">
+      <h3>Semi-finals &amp; a final</h3>
+      <p>When the rounds are done, the top four in each division play off — 1 v 4, 2 v 3 — and the winners contest the final. The champion is crowned automatically. A real finish to a real event.</p>
+    </div>
+    <p style="margin-top:20px;">Results entered during the event flow straight into players' ratings and stats — so the tournament isn't a side-show, it's part of everyone's ongoing OPR story.</p>
+    <div class="card">
+      <h3>An "All Sorts" division for anything goes</h3>
+      <p>Alongside Men's, Ladies and Mixed, OPR has an <strong>All Sorts</strong> category — for bespoke or unconventional pairings that don't fit the usual boxes. Perfect for socials, mixed-ability fun days, office functions or any "just put a team together" event. The same fair engine rates it; you just don't have to force everyone into traditional divisions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ADMIN CONTROL -->
+<section id="admin">
+  <div class="wrap">
+    <span class="eyebrow">Behind the scenes</span>
+    <h2>The Admin Control Room</h2>
+    <p class="lead">Everything the club needs to run itself sits in one secure place.</p>
+    <p>The club's organiser logs into the Admin Control Room to manage the whole operation — no technical know-how needed, and nothing exposed to ordinary members.</p>
+    <ul class="clean">
+      <li><strong>Manage members</strong> — add new players, edit details, keep the roster current.</li>
+      <li><strong>Create &amp; run tournaments</strong> — set up events, choose divisions and caps, generate the draws.</li>
+      <li><strong>Edit or correct results</strong> — fix a wrongly-entered score or remove a match if needed; ratings recalculate automatically.</li>
+      <li><strong>Run the ladders</strong> — activate, reshuffle, or reset a season.</li>
+    </ul>
+    <div class="formula-box" style="border-left-color:var(--purple);">
+      <div class="big">Every score entry is protected by a PIN.</div>
+      <div class="note">Results can only be submitted with a valid PIN — a player's own, the club admin's, or the master code — so the data stays trustworthy and nobody can quietly tamper with the standings. Fair ratings depend on clean inputs, and the PIN is what guards them.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CLUB ACCESS -->
+<section id="clubs" class="clubs">
+  <div class="wrap">
+    <span class="eyebrow">Live access</span>
+    <h2>Club access</h2>
+    <p class="lead">Each club has its own private space. Tap a club to open it.</p>
+    <div class="club-list">
+
+      <a class="club" href="https://opr-rating.github.io/opr-demo/tourtest.html" target="_blank" rel="noopener">
+        <span class="code">1000</span>
+        <span class="meta"><span class="name">Demo · No.1</span><span class="desc">The master demonstration club — see OPR fully populated</span></span>
+        <span class="go">Open ›</span>
+      </a>
+
+      <a class="club" href="https://opr-rating.github.io/opr-demo/kloof.html" target="_blank" rel="noopener">
+        <span class="code">2000</span>
+        <span class="meta"><span class="name">Kloof · No.2</span><span class="desc">Club space</span></span>
+        <span class="go">Open ›</span>
+      </a>
+
+      <a class="club" href="https://opr-rating.github.io/opr-demo/eswatini.html" target="_blank" rel="noopener">
+        <span class="code">3000</span>
+        <span class="meta"><span class="name">Eswatini · No.3</span><span class="desc">Live club — full history migrated</span></span>
+        <span class="go">Open ›</span>
+      </a>
+
+      <a class="club disabled" href="#">
+        <span class="code">4000</span>
+        <span class="meta"><span class="name">New · No.4</span><span class="desc">Available for a new club</span></span>
+        <span class="go">Soon ›</span>
+      </a>
+
+      <details class="club-group">
+        <summary>
+          <span class="code">5000</span>
+          <span class="meta"><span class="name">Generic · No.5</span><span class="desc">Ready-to-use trial clubs — tap to choose</span></span>
+          <span class="go">▾</span>
+        </summary>
+        <div class="inner">
+          <a href="https://opr-rating.github.io/opr-demo/opr-gen1.html" target="_blank" rel="noopener"><span class="tag">5001</span> OPR Gen 1 — open ›</a>
+          <a href="https://opr-rating.github.io/opr-demo/opr-gen2.html" target="_blank" rel="noopener"><span class="tag">5002</span> OPR Gen 2 — open ›</a>
+          <a href="https://opr-rating.github.io/opr-demo/opr-gen3.html" target="_blank" rel="noopener"><span class="tag">5003</span> OPR Gen 3 — open ›</a>
+        </div>
+      </details>
+
+      <a class="club disabled" href="#">
+        <span class="code">6000</span>
+        <span class="meta"><span class="name">New · No.6</span><span class="desc">Available for a new club</span></span>
+        <span class="go">Soon ›</span>
+      </a>
+
+      <a class="club" href="https://opr-rating.github.io/opr-demo/mamba7.html" target="_blank" rel="noopener">
+        <span class="code">7000</span>
+        <span class="meta"><span class="name">Mamba · No.7</span><span class="desc">Working demo club</span></span>
+        <span class="go">Open ›</span>
+      </a>
+
+      <a class="club disabled" href="#">
+        <span class="code">8000+</span>
+        <span class="meta"><span class="name">New clubs · No.8 onward</span><span class="desc">Room to grow — new clubs added on request</span></span>
+        <span class="go">Soon ›</span>
+      </a>
+
+    </div>
+    <p class="hint">Tip: clubs install to your phone like an app — open the link, then "Add to Home Screen".</p>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="wrap">
+    <span class="eyebrow">The story</span>
+    <h2>About OPR</h2>
+    <p class="lead">OPR was built by a padel player, for padel clubs — out of a simple frustration.</p>
+    <p>Existing systems were either locked behind big platforms, expensive per player, or impossible to understand. None of them let a club simply own its own ratings and run its own events. So OPR was built from the ground up to do exactly that: a fair engine, a clean app, and a model where the club is in charge — not a faceless platform.</p>
+    <p>It's been proven on real club data — hundreds of players and hundreds of matches — and it's ready for clubs anywhere to make their own.</p>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="contact">
+  <div class="wrap">
+    <span class="eyebrow" style="color:var(--blue-light);">Let's talk</span>
+    <h2>Bring OPR to your club</h2>
+    <p>Interested in OPR for your club, or want a live walk-through? Reach out — happy to set you up with a trial space to try it yourself.</p>
+    <div class="contact-btns">
+      <a class="cbtn wa" href="https://wa.me/27823720117?text=Hi%20Andre%2C%20I%20saw%20OPR%20and%20I%27d%20like%20to%20know%20more." target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.5A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.8.9.9-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-1.9-1.2 7.3 7.3 0 0 1-1.4-1.7c-.1-.2 0-.4.1-.5l.4-.4.2-.4v-.4l-.8-1.8c-.2-.5-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5 5 0 0 0 1.1 2.7 11.5 11.5 0 0 0 4.4 3.9c.6.3 1.1.4 1.5.5a3.5 3.5 0 0 0 1.6.1c.5-.1 1.4-.6 1.6-1.1s.2-1 .1-1.1z"/></svg>
+        WhatsApp
+      </a>
+      <a class="cbtn email" href="mailto:andre63@outlook.com?subject=OPR%20enquiry">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        Email
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><span class="brand-f">OPR</span> — Open Padel Rating · Built with passion for the game of padel.</p>
+</footer>
+
+</body>
+</html>
