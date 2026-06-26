@@ -422,7 +422,7 @@
     <div class="screen-content">
       <div id="tournamentPicker" style="margin-bottom:14px;"></div>
       <div id="tournamentBody">
-      <div class="ladders-group-title">Tournament Standings</div>
+      <div class="ladders-group-title">Tournament Statistics</div>
       <div class="ladders-grid">
         <button class="menu-btn" onclick="loadTournament('Men\'s','Men\'s Doubles')">Men's Doubles</button>
         <button class="menu-btn" onclick="loadTournament('Ladies','Ladies Doubles')">Ladies Doubles</button>
@@ -910,7 +910,7 @@ async function adminLoadMatches(){
   const box=document.getElementById('adminMatches');
   const cid=Number(document.getElementById('adminClubSelect').value);
   box.innerHTML='Loading…';
-  const r=await adminCall('list_matches',{ club_id:cid, limit:40 });
+  const r=await adminCall('list_matches',{ club_id:cid, limit:60 });
   if(!r.ok){ box.innerHTML='<span style="color:#c0392b;">'+(r.error||'Could not load.')+'</span>'; return; }
   const ms=r.matches||[];
   if(!ms.length){ box.innerHTML='<p class="sub">No matches recorded for this club.</p>'; return; }
@@ -1353,14 +1353,19 @@ async function loadTournament(category, title) {
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
     const usesCombined = (category==="Men's" || category==='Ladies');
-    const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=rank.asc&club_id=eq.${CLUB_ID}`);
+    // Tournament STATISTICS table: rank by PERFORMANCE, not rating.
+    // Statistically fairest order: set-win % (rate) → sets won (volume) → sets played.
+    // (This ordering applies ONLY to this tournament-stats table — not ladders or rating sheets.)
+    const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=set_win_pct.desc.nullslast,sets_won.desc.nullslast,sets.desc&club_id=eq.${CLUB_ID}`);
     if(data.length===0){document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">🎾</div><p>No tournament matches in this category yet.</p></div>';return;}
     const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
     let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
+    let pos=0;
     data.forEach(p=>{
+      pos++;
       const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
       const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-      html += `<tr><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+      html += `<tr><td>${rankBadge(pos)}</td><td>${p.p1} & ${p.p2}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
     });
     html+='</tbody></table>';
     document.getElementById('tournamentSheetContent').className='';
@@ -2048,6 +2053,26 @@ async function submitMatch(){
 
   err.style.display='none';
   const btn=document.getElementById('submitBtn');
+  // DUPLICATE FAILSAFE (all match types, incl. social): before saving, check whether the
+  // SAME FOUR PLAYERS already appear in the most RECENTLY ENTERED matches. This guards the
+  // club-portal model where anyone can walk up and enter a score — including late/next-day
+  // entries where the date wasn't changed. We match on NAMES (not date), within a recent
+  // window so two pairs who legitimately play again weeks later aren't falsely flagged.
+  // If found, warn naming who entered it and when, and let the operator proceed or cancel.
+  try{
+    const four=[entryData.t1p1,entryData.t1p2,entryData.t2p1,entryData.t2p2].map(x=>x.trim()).sort().join('|');
+    const recent = await sbGet(`matches?select=match_date,t1p1,t1p2,t2p1,t2p2,submitted_by&club_id=eq.${CLUB_ID}&order=id.desc&limit=30`) || [];
+    const dup = recent.find(m=>{
+      const mf=[m.t1p1,m.t1p2,m.t2p1,m.t2p2].map(x=>(x||'').trim()).sort().join('|');
+      return mf===four;
+    });
+    if(dup){
+      const who=(dup.submitted_by && dup.submitted_by.trim()) ? dup.submitted_by : 'someone';
+      if(!confirm('This match has previously been recorded by '+who+' on '+dup.match_date+'.\n\nThe same four players are already in the recent matches. Submitting again will create a DUPLICATE.\n\nClick OK to proceed anyway, or Cancel to go back.')){
+        return; // nothing saved
+      }
+    }
+  }catch(e){ /* if the check fails, fall through — better to allow the save than block it */ }
   // Ladder Match guard: BOTH teams must be EXACT registered pairs on this ladder.
   // Unlike tournaments, the ladder allows no substitutes — if you change partner you
   // re-join as a new pair. So reject any team that isn't an exact pair on the ladder.
