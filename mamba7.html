@@ -274,6 +274,9 @@
   #tournamentSheetContent td { padding:11px 6px; }
   #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:30%; }
   #tournamentSheetContent tr { border-bottom:1px solid #efeaf4; }
+  /* alternating row stripe (matches the main ladder/rating tables) */
+  #tournamentSheetContent tbody tr:nth-child(even) td { background:#F5EEF8; }
+  #tournamentSheetContent tbody tr:hover td { background:#f3eef8; }
   #tournamentSheetContent td.num .res-done { font-size:12px; font-weight:700; color:#1e7a34; white-space:nowrap; }
   #tournamentSheetContent .pill { font-size:10px; padding:2px 7px; }
 </style>
@@ -529,7 +532,7 @@
       <div class="about-section">
         <h3>Version</h3>
         <p>OPR Version 2.0 — June 2026</p>
-        <p>Built with passion for the game of padel. 🎾</p>
+        <p>Built with passion for the game of padel.</p>
       </div>
 
       <div class="copyright">© 2026 Andre Farrell · Open Padel Rating · All Rights Reserved</div>
@@ -1849,7 +1852,7 @@ function renderStep2(){
   // LADDER MATCH: pick whole teams from the ladder (no building pairs by hand).
   if((entryData.event||'')==='Ladder Match' && Array.isArray(window._ladderTeams) && window._ladderTeams.length){
     const teams = window._ladderTeams; // [{p1,p2,position}]
-    const opts = teams.map((t,i)=>`<option value="${i}">${t.p1} & ${t.p2}</option>`).join('');
+    const opts = teams.map((t,i)=>`<option value="${i}">${t.position}. ${t.p1} & ${t.p2}</option>`).join('');
     document.getElementById('entryContent').innerHTML=`
       <p class="sub" style="margin-bottom:10px;">Pick the two ladder teams that played. Only registered ${entryData.type} ladder pairs are listed.</p>
       <div class="team-card">
