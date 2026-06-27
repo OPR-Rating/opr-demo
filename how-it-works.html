@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPR — How it works</title>
+<meta name="description" content="How OPR's ratings, form, ladders and tournaments actually work — explained openly. Built for doubles padel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0d0a1f;--ink-soft:#1a1535;
+    --violet:#5b2bd6;--violet-bright:#7b4dff;--azure:#1a9fff;--cyan:#39d0ff;
+    --paper:#f7f6fb;--paper-dim:#e9e6f4;
+    --line:rgba(255,255,255,0.12);--line-dark:rgba(13,10,31,0.10);
+    --muted:#6b6585;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 28px}
+  a{color:inherit;text-decoration:none}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;background:rgba(13,10,31,0.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;min-height:92px;padding:14px 0}
+  .brand{display:flex;flex-direction:column;align-items:center;gap:5px;color:#fff;text-align:center}
+  .logo-balls{display:flex;gap:7px}
+  .bpair{display:flex;gap:3px;padding:4px 5px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  .brand .ball{width:11px;height:11px;border-radius:50%;display:block;position:relative;
+    background:radial-gradient(circle at 35% 30%, #ecff7a, #bce400 60%, #84a800);box-shadow:0 0 5px rgba(198,255,64,.5)}
+  .brand .ball::after{content:"";position:absolute;inset:0;border-radius:50%;
+    background:linear-gradient(115deg,transparent 44%, rgba(255,255,255,.5) 46%, transparent 49%)}
+  .logo-word{font-family:'Inter',sans-serif;font-weight:800;font-size:32px;line-height:.9;letter-spacing:.02em;color:#fff}
+  .logo-sub{font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  .nav-links{display:flex;gap:28px;align-items:center}
+  .nav-links a{color:rgba(255,255,255,.72);font-size:14.5px;font-weight:500;transition:color .2s}
+  .nav-links a:hover{color:#fff}
+  .nav-cta{background:#fff;color:var(--ink)!important;padding:9px 18px;border-radius:9px;font-weight:600!important;font-size:14px!important}
+  @media(max-width:760px){.nav-links a:not(.nav-cta){display:none}}
+
+  /* HERO */
+  .hero{position:relative;background:
+    radial-gradient(120% 90% at 78% 8%, rgba(57,208,255,.20), transparent 55%),
+    radial-gradient(130% 100% at 12% 96%, rgba(91,43,214,.45), transparent 60%),var(--ink);
+    color:#fff;overflow:hidden;padding:72px 0 64px;text-align:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:20px}
+  .eyebrow::before,.eyebrow::after{content:"";width:24px;height:1.5px;background:var(--cyan);display:block}
+  .hero h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(34px,5.5vw,56px);line-height:1.04;letter-spacing:-.02em;margin-bottom:18px}
+  .hero h1 em{font-style:italic;color:var(--cyan)}
+  .hero p{font-size:clamp(16px,2vw,19px);color:rgba(255,255,255,.78);max-width:60ch;margin:0 auto}
+
+  /* SECTION NAV (jump links) */
+  .jump{background:var(--ink-soft);border-bottom:1px solid var(--line);position:sticky;top:92px;z-index:40}
+  .jump-inner{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:14px 0}
+  .jump a{font-size:13px;font-weight:600;color:rgba(255,255,255,.6);padding:7px 14px;border-radius:8px;transition:.2s}
+  .jump a:hover{color:#fff;background:rgba(255,255,255,.07)}
+  @media(max-width:680px){.jump{display:none}}
+
+  /* SECTIONS */
+  section.block{padding:74px 0;border-bottom:1px solid var(--line-dark)}
+  section.block:last-of-type{border-bottom:none}
+  .sec-eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:14px}
+  h2{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(27px,4vw,40px);line-height:1.08;letter-spacing:-.015em;margin-bottom:16px}
+  .lead{font-size:18px;color:var(--muted);max-width:62ch;margin-bottom:14px}
+  .body-text{font-size:16px;color:#2a2540;max-width:64ch;margin-bottom:16px;line-height:1.7}
+  .body-text strong{font-weight:700}
+  .body-text em{font-style:italic;color:var(--violet)}
+
+  .points{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:32px}
+  @media(max-width:680px){.points{grid-template-columns:1fr}}
+  .point{background:#fff;border:1px solid var(--line-dark);border-radius:14px;padding:24px}
+  .point h4{font-size:16.5px;font-weight:700;margin-bottom:7px;color:var(--ink)}
+  .point p{font-size:14.5px;color:var(--muted)}
+  .point .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--azure);margin-bottom:10px}
+
+  .steps{counter-reset:s;margin-top:32px;display:flex;flex-direction:column;gap:14px}
+  .step{display:flex;gap:18px;align-items:flex-start;background:#fff;border:1px solid var(--line-dark);border-radius:14px;padding:22px 24px}
+  .step::before{counter-increment:s;content:counter(s);flex-shrink:0;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--violet-bright),var(--azure));color:#fff;font-family:'Fraunces',serif;font-weight:600;font-size:18px}
+  .step h4{font-size:16.5px;font-weight:700;margin-bottom:4px}
+  .step p{font-size:14.5px;color:var(--muted)}
+
+  .callout{background:linear-gradient(135deg,rgba(91,43,214,.07),rgba(26,159,255,.07));border:1px solid var(--line-dark);border-left:3px solid var(--violet);border-radius:12px;padding:20px 24px;margin-top:24px}
+  .callout p{font-size:15.5px;color:#2a2540;line-height:1.65}
+  .callout strong{font-weight:700;color:var(--ink)}
+
+  .dark-band{background:var(--ink);color:#fff;border-radius:22px;padding:48px;margin-top:36px;position:relative;overflow:hidden}
+  .dark-band::before{content:"";position:absolute;inset:0;background:radial-gradient(90% 120% at 90% 10%,rgba(57,208,255,.16),transparent 50%),radial-gradient(80% 100% at 5% 90%,rgba(91,43,214,.36),transparent 55%)}
+  .dark-band > *{position:relative}
+  .dark-band h3{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin-bottom:12px;color:#fff}
+  .dark-band p{color:rgba(255,255,255,.8);font-size:15.5px;max-width:64ch}
+  .dark-band em{font-style:italic;color:var(--cyan)}
+
+  /* FINAL CTA */
+  .final{background:radial-gradient(110% 120% at 80% 10%,rgba(57,208,255,.22),transparent 55%),radial-gradient(120% 120% at 10% 100%,rgba(91,43,214,.5),transparent 55%),var(--ink);color:#fff;text-align:center;padding:80px 0}
+  .final h2{color:#fff;margin-bottom:14px}
+  .final p{font-size:17px;color:rgba(255,255,255,.78);max-width:46ch;margin:0 auto 30px}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:14px 26px;border-radius:11px;font-weight:600;font-size:15px;transition:transform .15s ease,box-shadow .2s ease}
+  .btn-primary{background:linear-gradient(135deg,var(--violet-bright),var(--azure));color:#fff;box-shadow:0 8px 30px rgba(91,43,214,.5)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--line)}
+  .final-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  /* FOOTER */
+  footer{background:var(--ink);color:rgba(255,255,255,.5);padding:44px 0 40px;border-top:1px solid var(--line);font-size:13px}
+  .foot-links{display:flex;gap:24px;justify-content:center;margin-bottom:26px;flex-wrap:wrap}
+  .foot-links a{color:rgba(255,255,255,.72);font-weight:500}
+  .foot-links a:hover{color:#fff}
+  .foot-statement{max-width:640px;margin:0 auto;text-align:center;line-height:1.65}
+  .foot-statement p{font-size:12.5px;color:rgba(255,255,255,.45)}
+  .foot-legal{margin-top:14px;font-size:11.5px;color:rgba(255,255,255,.35);letter-spacing:.02em}
+
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  .no-js .reveal{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="opr-landing.html" aria-label="OPR — Open Player Rating">
+      <span class="logo-balls">
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+      </span>
+      <span class="logo-word">OPR</span>
+      <span class="logo-sub">Open Player Rating</span>
+    </a>
+    <div class="nav-links">
+      <a href="opr-landing.html#why">Why OPR</a>
+      <a href="opr-landing.html#try">Try it</a>
+      <a href="#ratings">Ratings</a>
+      <a href="#tournaments">Tournaments</a>
+      <a class="nav-cta" href="opr-landing.html#contact">Talk to us</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">How it works</span>
+    <h1>The thinking <em>behind the number</em>.</h1>
+    <p>OPR rewards how well you play — not just whether you won — and the logic is explained openly. Here's exactly how the ratings, form, ladders and tournaments work.</p>
+  </div>
+</header>
+
+<div class="jump">
+  <div class="wrap jump-inner">
+    <a href="#ratings">Player ratings</a>
+    <a href="#doubles">Doubles</a>
+    <a href="#form">Form</a>
+    <a href="#ladder">The ladder</a>
+    <a href="#tournaments">Tournaments</a>
+    <a href="#admin">Admin & PIN</a>
+  </div>
+</div>
+
+<!-- RATINGS -->
+<section class="block" id="ratings">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow">Player ratings</div>
+    <h2>A single number that moves every time you play.</h2>
+    <p class="body-text">Your rating reflects your real playing strength. The core principle is simple: <strong>OPR scores how you played, not just the final result.</strong> A match where you take a set and push a strong pair close says far more about your level than a lucky win — and OPR captures that.</p>
+    <p class="body-text">Every result blends two things: the <em>sets</em> and the <em>games</em>. Sets carry the most weight — winning the match matters most — while the games within those sets fine-tune the picture. So a 6–0, 6–1 win and a 7–6, 7–6 win are correctly treated as very different performances.</p>
+    <div class="points">
+      <div class="point">
+        <span class="tag">Performance</span>
+        <h4>Not just the win</h4>
+        <p>How dominant or close the match was feeds directly into the rating change.</p>
+      </div>
+      <div class="point">
+        <span class="tag">Opponents</span>
+        <h4>Who you played matters</h4>
+        <p>Results are weighed against the strength of your opponents — beating a stronger pair moves you more.</p>
+      </div>
+      <div class="point">
+        <span class="tag">Always current</span>
+        <h4>Updates match by match</h4>
+        <p>Ratings are rebuilt in order from your full history, so the number reflects your current level, not a stale snapshot.</p>
+      </div>
+      <div class="point">
+        <span class="tag">Universal</span>
+        <h4>One rating, all formats</h4>
+        <p>Singles, doubles, mixed — all feed a single rating, with sensible weighting so a strong player carrying a weaker partner is judged fairly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOUBLES -->
+<section class="block" id="doubles">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow">Doubles</div>
+    <h2>How a pair's strength is set.</h2>
+    <p class="body-text">For same-gender pairs, the team strength is the blend of both players. For mixed or mixed-ability pairs, the stronger player carries a little more of the weight — because that's how the game actually plays out on court. The result is a pairing rating that feels right to the people who played.</p>
+    <div class="dark-band">
+      <h3>Levels — the friendly version of the number</h3>
+      <p>Alongside the precise rating, OPR shows a simpler <em>level</em> — an at-a-glance band that members instantly understand and can use to find well-matched games. The detailed rating drives the system; the level makes it human.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section class="block" id="form">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow">Form</div>
+    <h2>Your rating is your level. Your form is right now.</h2>
+    <p class="body-text">Form looks at your recent results and shows whether you've been trending up or down lately — the padel equivalent of being in good touch. It's separate from your rating on purpose: one bad week shouldn't crater your standing, but it should be visible.</p>
+    <div class="points">
+      <div class="point">
+        <span class="tag">Recent-weighted</span>
+        <h4>Latest matches count more</h4>
+        <p>Your most recent results weigh more heavily than ones from months ago.</p>
+      </div>
+      <div class="point">
+        <span class="tag">Meaningful</span>
+        <h4>Needs a real sample</h4>
+        <p>Form only shows once you've played enough for it to mean something — it won't over-react to a single match.</p>
+      </div>
+      <div class="point">
+        <span class="tag">A cue</span>
+        <h4>A coaching nudge</h4>
+        <p>A dipping form line is a nudge; a rising one is a reward. It keeps players engaged between events.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LADDER -->
+<section class="block" id="ladder">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow">The club ladder</div>
+    <h2>A living leaderboard of pairs.</h2>
+    <p class="body-text">The ladder is the club's heartbeat between tournaments. Pairs sign up, the ladder sets an opening order by rating, and from there it's all earned on court.</p>
+    <div class="steps">
+      <div class="step"><div><h4>Teams join</h4><p>Pairs enter the ladder for their category — Men's, Ladies, Mixed or All Sorts.</p></div></div>
+      <div class="step"><div><h4>The ladder activates</h4><p>Opening positions are set by combined rating — strongest at the top — then frozen, and the climbing begins.</p></div></div>
+      <div class="step"><div><h4>Challenge upward</h4><p>Beat a team above you and you take their spot; they move down. Every result reshapes the ladder.</p></div></div>
+      <div class="step"><div><h4>The club stays in control</h4><p>Admins can reshuffle to rating order, or wipe and start a fresh season whenever they like.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TOURNAMENTS -->
+<section class="block" id="tournaments">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow">Tournaments</div>
+    <h2>A complete, fair event in a single afternoon.</h2>
+    <p class="body-text">This is what lets a club host a Saturday social, an office function, or a proper club championship entirely on its own. OPR handles the hard part: pairing teams fairly so nobody gets a string of mismatches, and so the best teams genuinely rise to the top.</p>
+    <div class="points">
+      <div class="point">
+        <span class="tag">Fairness first</span>
+        <h4>Banded pairings</h4>
+        <p>Teams are grouped into strength bands so games stay competitive — no top seed steamrolling a beginner in round one. Fairness is the rule the draw bends to, never the other way around.</p>
+      </div>
+      <div class="point">
+        <span class="tag">Scales</span>
+        <h4>Swiss-style rounds</h4>
+        <p>After a few fixed opening rounds, further rounds are generated from the standings — winners meet winners — with no team ever playing the same opponent twice. The number of rounds adapts to the field.</p>
+      </div>
+      <div class="point">
+        <span class="tag">Big fields</span>
+        <h4>Divisions A & B</h4>
+        <p>When a category is large enough, it splits by strength — so mid-field teams have their own real competition and their own champion, not just the top seeds sweeping everything.</p>
+      </div>
+      <div class="point">
+        <span class="tag">A real finish</span>
+        <h4>Semis & a final</h4>
+        <p>When the rounds are done, the top four in each division play off — 1 v 4, 2 v 3 — and the winners contest the final. The champion is crowned automatically.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <p>Results entered during the event flow straight into players' ratings and stats — so the tournament isn't a side-show, it's part of everyone's ongoing OPR story.</p>
+    </div>
+    <div class="dark-band">
+      <h3>An "All Sorts" category — for anything goes</h3>
+      <p>Alongside Men's, Ladies and Mixed, OPR has an <em>All Sorts</em> category — for bespoke or unconventional pairings that don't fit the usual boxes. Perfect for socials, mixed-ability fun days, office functions or any "just put a team together" event. The same fair engine rates it; you just don't have to force everyone into traditional divisions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ADMIN -->
+<section class="block" id="admin">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow">Behind the scenes</div>
+    <h2>The Admin Control Room.</h2>
+    <p class="body-text">The club's organiser logs in to manage the whole operation — no technical know-how needed, and nothing exposed to ordinary members.</p>
+    <div class="points">
+      <div class="point"><h4>Manage members</h4><p>Add new players, edit details, keep the roster current.</p></div>
+      <div class="point"><h4>Create & run tournaments</h4><p>Set up events, choose divisions and caps, generate the draws.</p></div>
+      <div class="point"><h4>Edit or correct results</h4><p>Fix a wrongly-entered score or remove a match; ratings recalculate automatically.</p></div>
+      <div class="point"><h4>Run the ladders</h4><p>Activate, reshuffle, or reset a season whenever you like.</p></div>
+    </div>
+    <div class="callout">
+      <p><strong>Every score entry is protected by a PIN.</strong> Results can only be submitted with a valid PIN — a player's own, the club admin's, or the master code — so the data stays trustworthy and nobody can quietly tamper with the standings. Fair ratings depend on clean inputs, and the PIN is what guards them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="wrap reveal">
+    <div class="sec-eyebrow" style="color:#39d0ff;justify-content:center;display:flex">See it for yourself</div>
+    <h2>Now go and have a look.</h2>
+    <p>The best way to understand OPR is to open a real club and explore it. No sign-up needed.</p>
+    <div class="final-ctas">
+      <a class="btn btn-primary" href="opr-landing.html#try">Try a live club</a>
+      <a class="btn btn-ghost" href="opr-landing.html">Back to home</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="opr-landing.html">Home</a>
+      <a href="opr-landing.html#try">Try a club</a>
+      <a href="opr-landing.html#contact">Contact</a>
+    </div>
+    <div class="foot-statement">
+      <p>OPR was conceived, designed and built by Andre Farrell. The rating methodology, formula architecture and weighting system are original works, developed exclusively for OPR. Built with passion for the game of padel.</p>
+      <p class="foot-legal">© 2026 Andre Farrell. All rights reserved. · OPR — Open Player Rating</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.1});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  setTimeout(()=>document.querySelectorAll('.reveal:not(.in)').forEach(el=>el.classList.add('in')),3000);
+</script>
+</body>
+</html>
