@@ -43,7 +43,7 @@
     border-bottom:1px solid var(--line);
   }
   .nav-inner{display:flex;align-items:center;justify-content:space-between;min-height:92px;padding:14px 0}
-  .brand{display:flex;flex-direction:column;align-items:center;gap:5px;color:#fff;text-align:center}
+  .brand{display:flex;flex-direction:column;align-items:flex-start;gap:4px;color:#fff;text-align:left}
   .logo-balls{display:flex;gap:7px}
   .bpair{display:flex;gap:3px;padding:4px 5px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--line)}
   .brand .ball{
@@ -55,9 +55,9 @@
     background:linear-gradient(115deg,transparent 44%, rgba(255,255,255,.5) 46%, transparent 49%)}
   .logo-word{
     font-family:'Inter',sans-serif;font-style:normal;font-weight:800;
-    font-size:32px;line-height:.9;letter-spacing:.02em;color:#fff;
+    font-size:30px;line-height:.95;letter-spacing:.34em;color:#fff;
   }
-  .logo-sub{font-size:9.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  .logo-sub{font-size:9.5px;font-weight:600;letter-spacing:.105em;text-transform:uppercase;color:rgba(255,255,255,.55)}
   .nav-links{display:flex;gap:30px;align-items:center}
   .nav-links a{color:rgba(255,255,255,.72);font-size:14.5px;font-weight:500;transition:color .2s}
   .nav-links a:hover{color:#fff}
@@ -122,6 +122,8 @@
   .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 38px rgba(91,43,214,.6)}
   .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--line)}
   .btn-ghost:hover{background:rgba(255,255,255,.14)}
+  .hero-ctas .btn-ghost{background:rgba(57,208,255,.12);border:1px solid rgba(57,208,255,.35);color:#cdefff}
+  .hero-ctas .btn-ghost:hover{background:rgba(57,208,255,.22);border-color:rgba(57,208,255,.55);color:#fff}
 
   /* ---------- HERO SIGNATURE: the doubles form table ---------- */
   .form-card{
@@ -276,7 +278,7 @@
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="reveal in">
-      <span class="eyebrow">Built for doubles · owned by your club</span>
+      <span class="eyebrow">Built for doubles · owned by you or your club</span>
       <h1>Your club's own<br><em>rating, ladder<br>&amp; tournaments</em>.</h1>
       <p class="lede">A doubles-first platform your club owns and runs itself — no global app, no per-player fees, no black box.</p>
       <div class="hero-ctas">
