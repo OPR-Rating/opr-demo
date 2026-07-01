@@ -183,6 +183,11 @@
   .insight-ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(123,77,255,.12),rgba(26,159,255,.12));margin-bottom:16px}
   .insight-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
   .insight-card p{font-size:14.5px;color:var(--muted);line-height:1.6}
+  .adv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;max-width:840px;margin:0 auto}
+  @media(max-width:720px){.adv-grid{grid-template-columns:1fr}}
+  .adv-card{margin:0;background:#fff;border:1px solid var(--line-dark);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(13,10,31,.08)}
+  .adv-card img{display:block;width:100%;height:auto;border-bottom:1px solid var(--line-dark)}
+  .adv-card figcaption{padding:16px 20px;font-size:14.5px;font-weight:600;color:var(--ink);line-height:1.5}
 
   /* doubles band */
   .band{background:var(--ink);color:#fff;border-radius:24px;padding:60px;margin:0 28px;position:relative;overflow:hidden}
@@ -448,6 +453,35 @@
       <a class="btn btn-primary" href="how-it-works.html#insight">See how it works
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
+    </div>
+  </div>
+</section>
+
+<!-- COMPETITIVE ADVANTAGE — 4 SLIDES -->
+<section class="block" id="advantage" style="padding-top:0">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center;max-width:680px;margin:0 auto 34px">
+      <div class="sec-eyebrow" style="justify-content:center;display:inline-flex">What sets OPR apart</div>
+      <h2>Things no other rating app can show you.</h2>
+      <p class="sec-lede">Because OPR is built for doubles from the ground up, it sees your padel life in a way singles-style apps simply can't.</p>
+    </div>
+    <div class="adv-grid">
+      <figure class="adv-card reveal">
+        <img src="post_universal.png" alt="Universal Rating — one player across many partners" loading="lazy">
+        <figcaption>One player, many partners — each pairing rated on its own.</figcaption>
+      </figure>
+      <figure class="adv-card reveal">
+        <img src="post_predict.png" alt="Predicted pair rating for a new partnership" loading="lazy">
+        <figcaption>Predict how a brand-new pairing would rate — before you play.</figcaption>
+      </figure>
+      <figure class="adv-card reveal">
+        <img src="post_form.png" alt="Doubles form table" loading="lazy">
+        <figcaption>Real doubles analytics — sets, win %, form, for the pair.</figcaption>
+      </figure>
+      <figure class="adv-card reveal">
+        <img src="post_history.png" alt="Player profile — match history partner by partner" loading="lazy">
+        <figcaption>Your whole story — every match, partner by partner.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
