@@ -177,6 +177,12 @@
   .why-icon{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;margin-bottom:18px;background:linear-gradient(135deg,rgba(91,43,214,.12),rgba(26,159,255,.12))}
   .why-card h3{font-size:19px;font-weight:700;margin-bottom:9px}
   .why-card p{font-size:15px;color:var(--muted)}
+  .insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:820px){.insight-grid{grid-template-columns:1fr}}
+  .insight-card{background:#fff;border:1px solid var(--line-dark);border-radius:16px;padding:26px;box-shadow:0 4px 18px rgba(13,10,31,.05)}
+  .insight-ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(123,77,255,.12),rgba(26,159,255,.12));margin-bottom:16px}
+  .insight-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+  .insight-card p{font-size:14.5px;color:var(--muted);line-height:1.6}
 
   /* doubles band */
   .band{background:var(--ink);color:#fff;border-radius:24px;padding:60px;margin:0 28px;position:relative;overflow:hidden}
@@ -278,9 +284,9 @@
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="reveal in">
-      <span class="eyebrow">Built for doubles · owned by you or your club</span>
-      <h1>Your club's own<br><em>rating, ladder<br>&amp; tournaments</em>.</h1>
-      <p class="lede">A doubles-first platform your club owns and runs itself — no global app, no per-player fees, no black box.</p>
+      <span class="eyebrow">For you, your group, or your whole club</span>
+      <h1>Your own <em>rating, ladder<br>&amp; tournaments</em>.</h1>
+      <p class="lede">Run it for a whole club, a coaching school, or your regular group — a doubles-first platform you own and run yourself. No global app, no per-player fees, no black box.</p>
       <div class="hero-ctas">
         <a class="btn btn-primary" href="#try">See a live club
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -343,37 +349,37 @@
   <div class="wrap">
     <div class="reveal">
       <div class="sec-eyebrow">Why OPR is different</div>
-      <h2>Built for your club —<br>not a faceless global pool.</h2>
-      <p class="sec-lede">Most rating apps drop your members into one anonymous worldwide ladder. OPR gives each club its own private space, its own standings, and a rating engine you can actually explain.</p>
+      <h2>For anyone who plays —<br>not a faceless global pool.</h2>
+      <p class="sec-lede">You don't need to be a big club. A coach, a social group, a Tuesday morning crowd or a whole club can each run their own OPR — their own private space, their own standings, and a rating engine you can actually explain.</p>
     </div>
     <div class="why-grid">
       <div class="why-card reveal">
         <div class="why-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 21V8l9-5 9 5v13M9 21v-6h6v6" stroke="#5b2bd6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="#5b2bd6" stroke-width="2"/><circle cx="17" cy="10" r="2.4" stroke="#5b2bd6" stroke-width="2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 19c0-1.8.6-3.2 1.8-4" stroke="#5b2bd6" stroke-width="2" stroke-linecap="round"/></svg>
         </div>
-        <h3>The club owns it</h3>
-        <p>Your members, your ladders, your data — in your own space. Not held on a platform you don't control, behind numbers you can't see.</p>
+        <h3>You or your club — anyone can run it</h3>
+        <p>A whole club, a coaching school, or just you and your regular group. OPR is yours to run at whatever size you play — no club membership required.</p>
       </div>
       <div class="why-card reveal">
         <div class="why-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3.2" stroke="#1a9fff" stroke-width="2"/><circle cx="16" cy="16" r="3.2" stroke="#1a9fff" stroke-width="2"/><path d="M10.5 10.5l3 3" stroke="#1a9fff" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 21V8l9-5 9 5v13M9 21v-6h6v6" stroke="#1a9fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <h3>Padel is doubles</h3>
-        <p>You and your regular partner get a standing within your own club — known by name, rising and falling together. Built for pairs from the ground up.</p>
+        <h3>Owned by you, not a platform</h3>
+        <p>Your players, your ladders, your data — in your own space. Not held on a global app you don't control, behind numbers you can't see.</p>
       </div>
       <div class="why-card reveal">
         <div class="why-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="#5b2bd6" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#5b2bd6" stroke-width="2"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3.2" stroke="#5b2bd6" stroke-width="2"/><circle cx="16" cy="16" r="3.2" stroke="#5b2bd6" stroke-width="2"/><path d="M10.5 10.5l3 3" stroke="#5b2bd6" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <h3>See how you play with each partner</h3>
+        <p>Because padel <em>is</em> doubles. OPR rates you as a pair — so you can see how well you do playing with John versus playing with Steve. Real insight no singles-style app can give you.</p>
+      </div>
+      <div class="why-card reveal">
+        <div class="why-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="#1a9fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#1a9fff" stroke-width="2"/></svg>
         </div>
         <h3>Fair &amp; transparent</h3>
         <p>The rating rewards how well you played — sets, games and the strength of who you faced — and the logic is explained openly. No black box.</p>
-      </div>
-      <div class="why-card reveal">
-        <div class="why-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#1a9fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <h3>Run by you</h3>
-        <p>A full tournament — group rounds, semis and a final — in a single afternoon. Or a season-long ladder. No outside help, no technical know-how.</p>
       </div>
     </div>
   </div>
@@ -384,10 +390,10 @@
   <div class="band">
     <div class="band-inner">
       <div class="reveal">
-        <div class="sec-eyebrow" style="color:#39d0ff">A standing of your own</div>
-        <h2>Two players.<br>One rating. Your club.</h2>
-        <p>On a global app you're one more anonymous number. With OPR, you and your partner have a place in <em>your</em> community — a story that rises and falls match by match, known by name at the club you actually play at.</p>
-        <p>For the club, that becomes part of what membership means: a reason to join, a reason to stay, and something genuinely its own.</p>
+        <div class="sec-eyebrow" style="color:#39d0ff">Because padel is doubles</div>
+        <h2>Better with John,<br>or better with Steve?</h2>
+        <p>Singles-style apps give you one number and can't tell you <em>who</em> you play best with. OPR rates you as a pair — so you can actually see how well you do with each partner, and who brings out your best padel.</p>
+        <p>You and a partner get a standing of your own — a story that rises and falls match by match, known by name wherever you play.</p>
       </div>
       <div class="court-wrap reveal">
         <!-- Stylised padel court signature graphic -->
@@ -413,8 +419,38 @@
   </div>
 </section>
 
-<!-- ON YOUR PHONE -->
-<section class="block" id="phone">
+<!-- PARTNER INSIGHT TEASER -->
+<section class="block" id="insight" style="padding-top:0">
+  <div class="wrap">
+    <div class="reveal" style="text-align:center;max-width:720px;margin:0 auto 38px">
+      <div class="sec-eyebrow" style="justify-content:center;display:inline-flex">More than a rating</div>
+      <h2>A storybook of your padel life.</h2>
+      <p class="sec-lede">OPR doesn't just give you a number. It remembers every partner you've played with, how you did together, and even predicts how you'd rate with someone new. This is what a doubles-first system can do — and no singles-style app can.</p>
+    </div>
+    <div class="insight-grid">
+      <div class="insight-card reveal">
+        <div class="insight-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="8" r="2.6" stroke="#5b2bd6" stroke-width="2"/><circle cx="17" cy="8" r="2.6" stroke="#5b2bd6" stroke-width="2"/><path d="M2.5 19c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12.5 19c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5" stroke="#5b2bd6" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <h3>See who you play best with</h3>
+        <p>The same player appears with every partner they've teamed up with — each pairing rated on its own. See at a glance who brings out your best padel.</p>
+      </div>
+      <div class="insight-card reveal">
+        <div class="insight-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3v4M12 17v4M3 12h4M17 12h4" stroke="#1a9fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="#1a9fff" stroke-width="2"/></svg></div>
+        <h3>Predict a new pairing</h3>
+        <p>Thinking of teaming up with someone you've never played with? OPR predicts how you'd rate together — before you step on court.</p>
+      </div>
+      <div class="insight-card reveal">
+        <div class="insight-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h10" stroke="#5b2bd6" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <h3>Your whole story, kept</h3>
+        <p>Inside your profile: every match, partner by partner, win by win. Your padel story, recorded and yours to keep.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:34px">
+      <a class="btn btn-primary" href="how-it-works.html#insight">See how it works
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
   <div class="wrap">
     <div class="band">
       <div class="band-inner">
