@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPR & Playtomic — How They Compare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0D0A1F; --ink-soft:#1A1535; --violet:#5B2BD6; --violet-bright:#7B4DFF;
+    --azure:#1A9FFF; --cyan:#39D0FF; --paper:#F7F6FB; --paper-dim:#E9E6F4;
+    --muted:#6B6585; --body:#2A2540; --ball:#BCE400;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',-apple-system,sans-serif;background:var(--paper);color:var(--body);line-height:1.6;}
+  .wrap{max-width:760px;margin:0 auto;padding:0 22px;}
+
+  .hero{background:linear-gradient(165deg,#0D0A1F 0%,#1A1535 45%,#3A1D8F 80%,#5B2BD6 120%);color:#fff;padding:54px 0 48px;text-align:center;}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;}
+  h1{font-family:'Fraunces',serif;font-weight:700;font-size:clamp(28px,6vw,44px);line-height:1.1;}
+  h1 em{color:var(--cyan);font-style:italic;}
+  .hero p{margin-top:16px;font-size:16px;color:rgba(255,255,255,0.85);max-width:560px;margin-left:auto;margin-right:auto;}
+
+  section{padding:40px 0;border-bottom:1px solid var(--paper-dim);}
+  h2{font-family:'Fraunces',serif;font-weight:700;font-size:clamp(22px,4.5vw,30px);color:var(--ink);margin-bottom:6px;}
+  .sec-eyebrow{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--violet);margin-bottom:8px;}
+  p.lead{font-size:18px;color:var(--ink);font-weight:500;margin-bottom:10px;}
+  p{margin-bottom:12px;}
+
+  .rule-box{background:linear-gradient(135deg,var(--violet-bright),var(--azure));color:#fff;border-radius:16px;padding:24px;text-align:center;margin:20px 0;box-shadow:0 8px 28px rgba(91,43,214,0.25);}
+  .rule-box .big{font-family:'Fraunces',serif;font-size:26px;font-weight:700;}
+  .rule-box .small{font-size:14px;opacity:0.9;margin-top:8px;}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(13,10,31,0.06);}
+  th{background:var(--ink-soft);color:#fff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:11px 14px;text-align:left;}
+  td{padding:11px 14px;border-bottom:1px solid var(--paper-dim);font-size:15px;}
+  tr:last-child td{border-bottom:none;}
+  tr:nth-child(even) td{background:var(--paper);}
+  .opr-num{font-weight:800;color:var(--violet);}
+  .pt-num{font-weight:700;color:var(--azure);}
+
+  .callout{background:var(--paper-dim);border-left:4px solid var(--cyan);border-radius:10px;padding:16px 18px;margin:18px 0;}
+  .callout strong{color:var(--ink);}
+
+  ul.clean{list-style:none;margin:14px 0;}
+  ul.clean li{position:relative;padding-left:26px;margin-bottom:10px;font-size:15px;}
+  ul.clean li::before{content:"";position:absolute;left:6px;top:9px;width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--azure));}
+
+  .say-box{background:#fff;border:1.5px solid var(--violet);border-radius:14px;padding:20px 22px;margin:18px 0;}
+  .say-box .label{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--violet);margin-bottom:8px;}
+  .say-box p{font-style:italic;color:var(--ink);font-size:16px;margin:0;}
+
+  footer{padding:26px 0;text-align:center;font-size:13px;color:var(--muted);}
+  footer b{color:var(--violet);}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Levels Explained</div>
+    <h1>OPR &amp; Playtomic — <em>how they compare</em></h1>
+    <p>A quick, honest guide for players who know their Playtomic level and want to understand where they sit on OPR.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-eyebrow">The quick answer</div>
+    <h2>The rough conversion</h2>
+    <p class="lead">OPR runs on its own scale — built for doubles, and finer-grained than Playtomic's 0–7.</p>
+    <p>As a rough guide, an OPR level sits about <strong>5.5 to 6 points above</strong> the equivalent Playtomic level:</p>
+    <div class="rule-box">
+      <div class="big">OPR level ≈ Playtomic + 5.5</div>
+      <div class="small">So an OPR 9.6 is around a Playtomic 4.</div>
+    </div>
+    <p>It's a <strong>guide, not a strict formula</strong> — and that's deliberate. No two rating systems convert exactly (even Playtomic says its level doesn't convert cleanly to other systems). Giving a range is the honest, accurate way to do it.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-eyebrow">Why it's a guide, not a formula</div>
+    <h2>What the numbers show</h2>
+    <p>Here are three real players across both systems:</p>
+    <table>
+      <thead><tr><th>Player</th><th>OPR level</th><th>Playtomic</th></tr></thead>
+      <tbody>
+        <tr><td>Player A</td><td class="opr-num">9.6</td><td class="pt-num">4.0</td></tr>
+        <tr><td>Player B</td><td class="opr-num">9.7</td><td class="pt-num">3.45</td></tr>
+        <tr><td>Player C</td><td class="opr-num">7.9</td><td class="pt-num">2.0</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <p style="margin:0;">Look at <strong>A and B</strong>. OPR has them almost level — 9.6 and 9.7. Playtomic has them half a point apart, in the <em>opposite</em> order. They can't both be right — and the reason matters.</p>
+    </div>
+    <p>OPR has watched A and B play a <strong>full body of matches at the club</strong>, so it knows they're the same standard. The Playtomic figures come from only a handful of logged rounds — and Playtomic itself says a level isn't reliable until a player has played ~15–20 matches. So the gap wanders not because OPR is uncertain, but because the Playtomic numbers are still settling.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-eyebrow">Why OPR is the truer read at your club</div>
+    <h2>Built on your real history</h2>
+    <ul class="clean">
+      <li><strong>Full match history.</strong> OPR is built on every match a player has actually played at the club — not a handful of app-logged games.</li>
+      <li><strong>Finer resolution.</strong> Where a broad 0–7 scale lumps players into half-point bands, OPR can separate two players who'd both just show as "a 4" — exactly what you need inside a club where everyone's a similar standard.</li>
+      <li><strong>Built for doubles.</strong> OPR rates how pairs actually perform together, which is how club padel is really played.</li>
+      <li><strong>It's your club's number.</strong> The OPR level is the real standing where a player actually plays — not a global average from elsewhere.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-eyebrow">How to put it</div>
+    <h2>The friendly one-liner</h2>
+    <div class="say-box">
+      <div class="label">When someone says "but we use Playtomic"</div>
+      <p>"Great — roughly, take about 5.5 off an OPR level and you're in Playtomic territory, so a 9.6 is around a Playtomic 4. But OPR's a sharper instrument: it can tell two similar players apart that a broad global scale, on limited rounds, gets in the wrong order — because OPR is reading your actual club history."</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><b>OPR</b> — Open Padel Rating · Built with passion for the game of padel.<br>Designed by Andre Farrell.</p>
+</footer>
+
+</body>
+</html>
