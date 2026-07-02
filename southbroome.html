@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>OPR Demo</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"OPR · Gen 2","short_name":"OPR Gen 2","start_url":"./opr-gen2.html","scope":"./","display":"standalone","background_color":"%236C3483","theme_color":"%236C3483","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
+<link rel="manifest" href='data:application/manifest+json,{"name":"OPR · Southbroome","short_name":"OPR Southbroome","start_url":"./southbroome.html","scope":"./","display":"standalone","background_color":"%236C3483","theme_color":"%236C3483","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
 <meta name="theme-color" content="#6C3483">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1155,8 +1155,8 @@ const SB_URL = "https://farlrjnaeojmypzbplmz.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmxyam5hZW9qbXlwemJwbG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDkyNjYsImV4cCI6MjA5NjkyNTI2Nn0.SL18KYq6F97vsmcazWMsLcwTJm82nttrvXLpJSKiOsA";
 // CLUB IDENTITY — each club's copy of the app sets its own. Demo = 1, Eswatini = 2, etc.
 // This is the ONE value that makes this app belong to a specific club.
-const CLUB_ID = 12;
-const CLUB_NAME = "OPR Gen 2";  // shown in the logo as "OPR · Demo"
+const CLUB_ID = 4;
+const CLUB_NAME = "Southbroome";  // shown in the logo as "OPR · Demo"
 const OPR_VERSION = "OPR v2026.06.30-01";  // bump on every deploy (date + revision)
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
