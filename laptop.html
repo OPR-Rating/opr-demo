@@ -319,10 +319,10 @@
     .menu-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 900px; margin: 10px auto 0; }
     .menu-btn { min-height: 64px; font-size: 15px; }
     #homeRecentList { max-height: none; max-width: 760px; margin: 0 auto; }
-    /* Two-column home on laptop: recent matches + club panel */
+    /* Two-column home on laptop: club overview left, recent matches right */
     .home-lower { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; align-items: start; max-width: 1000px; margin: 0 auto; width: 100%; }
     .home-lower #homeRecentList { max-width: none; max-height: calc(100vh - 340px); }
-    .home-club-col { position: sticky; top: 0; order: 1; }
+    .home-club-col { order: 1; }
     .home-recent-col { order: 2; }
 
     /* Tables breathe on wide screens */
@@ -384,10 +384,6 @@
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
       </div>
       <div class="home-lower">
-        <div class="home-recent-col">
-          <div style="background:#c4e000;color:#2a3000;border:1.5px solid #a9c400;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
-          <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
-        </div>
         <div class="home-club-col">
           <div class="club-panel">
             <div class="club-panel-head">Club Overview</div>
@@ -396,6 +392,10 @@
               <a href="https://www.opr-online.com" target="_blank" rel="noopener" class="club-panel-link">Powered by OPR · opr-online.com ›</a>
             </div>
           </div>
+        </div>
+        <div class="home-recent-col">
+          <div style="background:#c4e000;color:#2a3000;border:1.5px solid #a9c400;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
+          <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
         </div>
       </div>
       <div id="oprVerTag" style="text-align:center;color:#b3a9c4;font-size:10px;letter-spacing:0.5px;margin:14px 0 6px;"></div>
@@ -2720,7 +2720,7 @@ async function refreshClubName(){
 async function loadClubStats(){
   const box=document.getElementById('clubStats'); if(!box) return;
   try{
-    const players=await sbGet(`players?select=id&club_id=eq.${CLUB_ID}`)||[];
+    const players=await sbGet(`players_public?select=name&club_id=eq.${CLUB_ID}`)||[];
     const matches=await sbGet(`matches?select=id&club_id=eq.${CLUB_ID}`)||[];
     const nm=(window.CLUB_NAME_LIVE||CLUB_NAME);
     box.innerHTML =
