@@ -1301,6 +1301,7 @@ async function loadFormWall(type, title) {
     }
     document.getElementById('ladderContent').className='';
     document.getElementById('ladderContent').innerHTML=html;
+    addExportBar('ladderContent','Form',title);
   } catch(e){
     document.getElementById('ladderContent').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load form: '+(e.message||e)+'</p></div>';
   }
@@ -1330,7 +1331,7 @@ const _clubParam = (new URLSearchParams(window.location.search).get('club') || '
 const _club = CLUBS[_clubParam] || CLUBS['1'];
 const CLUB_ID = _club.id;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.02-01";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.03-01";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
@@ -3741,6 +3742,7 @@ async function renderClubLadder(){
   }
 
   body.innerHTML = divBar + nav + bodyHTML;
+  if(CL_TAB==='ladder'){ addExportBar('clBody','Club_Ladder','Club Ladder — '+cat); }
 }
 
 function clSetTab(t){ CL_TAB = t; renderClubLadder(); }
