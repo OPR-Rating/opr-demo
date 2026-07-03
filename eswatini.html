@@ -1760,6 +1760,10 @@ async function loadActiveTournaments(){
         const st=await sbGet(`club_ladder_state?select=category,activated&club_id=eq.${CLUB_ID}&activated=eq.true`) || [];
         const active=st.map(s=>s.category);
         allowed = active.length ? ALL.map(a=>a[0]).filter(c=>active.indexOf(c)>=0) : [];
+        // Tell the user immediately if there are NO active ladders (instead of a silent empty dropdown).
+        if(allowed.length===0){
+          alert('There are no active ladders at this club yet.\n\nA ladder must first be created and activated on the “Good ’ol Club Ladder” page before ladder matches can be entered. You can still enter a Social match in the meantime.');
+        }
       }catch(e){ allowed=[]; }
     }
     const prev=typeSel.value;
