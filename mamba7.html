@@ -754,6 +754,7 @@ async function adminUnlock(){
   ADMIN_PIN=document.getElementById('adminPin').value.trim();
   const r=await adminCall('list_clubs');
   if(!r.ok){ document.getElementById('adminGateErr').textContent=r.error||'Access denied.'; document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return; }
+  window._adminRole = r.role || 'club';
   document.getElementById('adminGate').style.display='none';
   document.getElementById('adminPanel').style.display='block';
   fillClubs(r.clubs);
@@ -778,7 +779,7 @@ function acUpdateContext(){
   const sel=document.getElementById('adminClubSelect');
   const name = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '—';
   const nm=document.getElementById('acClubName'); if(nm) nm.textContent=name.replace(/^[0-9]+\s*—\s*/,'');
-  const ac=document.getElementById('acAccess'); if(ac) ac.textContent = (ADMIN_PIN==='1963') ? 'Master admin' : 'Club admin';
+  const ac=document.getElementById('acAccess'); if(ac) ac.textContent = (window._adminRole==='master') ? 'Master admin' : 'Club admin';
 }
 let _adminClubs=[];
 function renderClubDetails(){

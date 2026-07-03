@@ -864,6 +864,7 @@ async function adminUnlock(){
   ADMIN_PIN=document.getElementById('adminPin').value.trim();
   const r=await adminCall('list_clubs');
   if(!r.ok){ document.getElementById('adminGateErr').textContent=r.error||'Access denied.'; document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return; }
+  window._adminRole = r.role || 'club';
   document.getElementById('adminGate').style.display='none';
   document.getElementById('adminPanel').style.display='block';
   fillClubs(r.clubs);
@@ -888,7 +889,7 @@ function acUpdateContext(){
   const sel=document.getElementById('adminClubSelect');
   const name = sel && sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '—';
   const nm=document.getElementById('acClubName'); if(nm) nm.textContent=name.replace(/^[0-9]+\s*—\s*/,'');
-  const ac=document.getElementById('acAccess'); if(ac) ac.textContent = (ADMIN_PIN==='1963') ? 'Master admin' : 'Club admin';
+  const ac=document.getElementById('acAccess'); if(ac) ac.textContent = (window._adminRole==='master') ? 'Master admin' : 'Club admin';
 }
 let _adminClubs=[];
 function renderClubDetails(){
@@ -1320,9 +1321,7 @@ const CLUBS = {
   '3':  {id:3,  name:'Eswatini'},
   '4':  {id:4,  name:'Southbroome'},
   '7':  {id:7,  name:'Mamba No.7'},
-  '11': {id:11, name:'OPR Gen 1'},
-  '12': {id:12, name:'OPR Gen 2'},
-  '13': {id:13, name:'OPR Gen 3'},
+  '5':  {id:5,  name:'OPR Gen 1'},
   // friendly aliases
   'demo':{id:1,name:'Demo'}, 'eswatini':{id:3,name:'Eswatini'},
   'southbroome':{id:4,name:'Southbroome'}, 'mamba':{id:7,name:'Mamba No.7'}
