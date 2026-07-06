@@ -1321,16 +1321,20 @@ const CLUBS = {
   '3':  {id:3,  name:'Eswatini'},
   '4':  {id:4,  name:'Southbroome'},
   '7':  {id:7,  name:'Mamba No.7'},
-  '5':  {id:5,  name:'OPR Gen 1'},
+  '11': {id:11, name:'OPR Gen 1'},
+  '12': {id:12, name:'OPR Gen 2'},
+  '13': {id:13, name:'OPR Gen 3'},
   // friendly aliases
   'demo':{id:1,name:'Demo'}, 'eswatini':{id:3,name:'Eswatini'},
   'southbroome':{id:4,name:'Southbroome'}, 'mamba':{id:7,name:'Mamba No.7'}
 };
 const _clubParam = (new URLSearchParams(window.location.search).get('club') || '1').toLowerCase();
-const _club = CLUBS[_clubParam] || CLUBS['1'];
+// Known clubs come from the map; any OTHER numeric id (new clubs 20+) is used directly —
+// the real name is fetched from the database on load. Non-numeric unknowns fall back to Demo.
+const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubParam), name:'OPR Club '+_clubParam} : CLUBS['1']);
 const CLUB_ID = _club.id;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.03-01";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.05-02";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
