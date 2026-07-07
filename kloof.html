@@ -922,7 +922,7 @@ async function adminLoadMatches(){
     window._adminMatches[m.id]=m;
     const score=(m.t1_sets)+'–'+(m.t2_sets);
     h+='<div style="border:1px solid #eadff2;border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
-      + '<div style="font-size:11px;color:#9b80b3;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+'</div>'
+      + '<div style="font-size:11px;color:#9b80b3;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+(m.submitted_by?' · entered by '+m.submitted_by:'')+'</div>'
       + '<div style="font-size:13px;margin:3px 0;">'+m.t1p1+' &amp; '+m.t1p2+' <b>'+score+'</b> '+m.t2p1+' &amp; '+m.t2p2+'</div>'
       + '<button class="ac-btn ac-btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="adminEditMatch('+m.id+')">Edit</button> '
       + '<button class="ac-btn ac-btn-danger" style="font-size:12px;padding:5px 10px;" onclick="adminDeleteMatch('+m.id+')">Delete</button>'
@@ -1158,7 +1158,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 2;
 const CLUB_NAME = "Kloof";  // shown in the logo as "OPR · Demo"
-const OPR_VERSION = "OPR v2026.06.30-01";  // bump on every deploy (date + revision)
+const OPR_VERSION = "OPR v2026.07.05-01";  // bump on every deploy (date + revision)
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
