@@ -922,7 +922,7 @@ async function adminLoadMatches(){
     window._adminMatches[m.id]=m;
     const score=(m.t1_sets)+'–'+(m.t2_sets);
     h+='<div style="border:1px solid #eadff2;border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
-      + '<div style="font-size:11px;color:#9b80b3;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+'</div>'
+      + '<div style="font-size:11px;color:#9b80b3;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+(m.submitted_by?' · entered by '+m.submitted_by:'')+'</div>'
       + '<div style="font-size:13px;margin:3px 0;">'+m.t1p1+' &amp; '+m.t1p2+' <b>'+score+'</b> '+m.t2p1+' &amp; '+m.t2p2+'</div>'
       + '<button class="ac-btn ac-btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="adminEditMatch('+m.id+')">Edit</button> '
       + '<button class="ac-btn ac-btn-danger" style="font-size:12px;padding:5px 10px;" onclick="adminDeleteMatch('+m.id+')">Delete</button>'
@@ -1121,6 +1121,8 @@ async function loadFormWall(type, title) {
     if(type==='individual'){
       // Individual Form — full Form Guide columns
       const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&form_npi=not.is.null&order=form_npi.desc&club_id=eq.${CLUB_ID}`);
+      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+      if(data&&data.sort) data.sort((a,b)=>(b.form_npi-a.form_npi)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Player</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1133,6 +1135,8 @@ async function loadFormWall(type, title) {
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
       const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
+      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+      if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1156,9 +1160,9 @@ const SB_URL = "https://farlrjnaeojmypzbplmz.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmxyam5hZW9qbXlwemJwbG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDkyNjYsImV4cCI6MjA5NjkyNTI2Nn0.SL18KYq6F97vsmcazWMsLcwTJm82nttrvXLpJSKiOsA";
 // CLUB IDENTITY — each club's copy of the app sets its own. Demo = 1, Eswatini = 2, etc.
 // This is the ONE value that makes this app belong to a specific club.
-const CLUB_ID = 5;
+const CLUB_ID = 11;
 const CLUB_NAME = "OPR Gen 1";  // shown in the logo as "OPR · Demo"
-const OPR_VERSION = "OPR v2026.06.30-01";  // bump on every deploy (date + revision)
+const OPR_VERSION = "OPR v2026.07.05-02";  // bump on every deploy (date + revision)
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1423,6 +1427,8 @@ async function loadTournamentForm(category, title) {
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
     const data = await sbGet(`${tourTable()}?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
+    // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+    if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
     let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
     data.forEach(p=>{
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1760,6 +1766,10 @@ async function loadActiveTournaments(){
         const st=await sbGet(`club_ladder_state?select=category,activated&club_id=eq.${CLUB_ID}&activated=eq.true`) || [];
         const active=st.map(s=>s.category);
         allowed = active.length ? ALL.map(a=>a[0]).filter(c=>active.indexOf(c)>=0) : [];
+        // Tell the user immediately if there are NO active ladders (instead of a silent empty dropdown).
+        if(allowed.length===0){
+          alert('There are no active ladders at this club yet.\n\nA ladder must first be created and activated on the “Good ’ol Club Ladder” page before ladder matches can be entered. You can still enter a Social match in the meantime.');
+        }
       }catch(e){ allowed=[]; }
     }
     const prev=typeSel.value;

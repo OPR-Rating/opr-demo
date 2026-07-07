@@ -1277,6 +1277,8 @@ async function loadFormWall(type, title) {
     if(type==='individual'){
       // Individual Form — full Form Guide columns
       const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&form_npi=not.is.null&order=form_npi.desc&club_id=eq.${CLUB_ID}`);
+      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+      if(data&&data.sort) data.sort((a,b)=>(b.form_npi-a.form_npi)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Player</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1289,6 +1291,8 @@ async function loadFormWall(type, title) {
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
       const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
+      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+      if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1335,7 +1339,7 @@ const _clubParam = (new URLSearchParams(window.location.search).get('club') || '
 const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubParam), name:'OPR Club '+_clubParam} : CLUBS['1']);
 const CLUB_ID = _club.id;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.05-05";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.05-06";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
@@ -1668,6 +1672,8 @@ async function loadTournamentForm(category, title) {
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
     const data = await sbGet(`${tourTable()}?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
+    // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+    if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
     let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
     data.forEach(p=>{
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);

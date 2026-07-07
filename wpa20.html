@@ -1121,6 +1121,8 @@ async function loadFormWall(type, title) {
     if(type==='individual'){
       // Individual Form — full Form Guide columns
       const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&form_npi=not.is.null&order=form_npi.desc&club_id=eq.${CLUB_ID}`);
+      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+      if(data&&data.sort) data.sort((a,b)=>(b.form_npi-a.form_npi)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Player</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1133,6 +1135,8 @@ async function loadFormWall(type, title) {
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
       const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
+      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+      if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
       data.forEach(p=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
@@ -1158,7 +1162,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 20;
 const CLUB_NAME = "WPA No. 20";  // shown in the logo as "OPR · Demo"
-const OPR_VERSION = "OPR v2026.07.05-01";  // bump on every deploy (date + revision)
+const OPR_VERSION = "OPR v2026.07.05-02";  // bump on every deploy (date + revision)
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1423,6 +1427,8 @@ async function loadTournamentForm(category, title) {
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
     const data = await sbGet(`${tourTable()}?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
+    // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
+    if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
     let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
     data.forEach(p=>{
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
