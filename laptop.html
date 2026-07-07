@@ -452,15 +452,16 @@
             <li><strong>Sets Won</strong> — how many of those sets were won.</li>
             <li><strong>Win %</strong> — share of sets won.</li>
             <li><strong>Game Diff / Set</strong> — average game margin per set. 3.57 means winning sets by about 3–4 games on average. Positive = usually wins convincingly; negative = usually loses.</li>
-            <li><strong>Form</strong> — the overall performance score, 0.0–1.0 (read as 0–100%). The headline number the wall is sorted by.</li>
+            <li><strong>Form</strong> — the overall performance score (typically 0.0–1.0). It is <em>not</em> a win percentage. The headline number the wall is sorted by.</li>
           </ul>
-          <p style="margin:0 0 4px;"><strong>Reading Form (0.0 – 1.0)</strong></p>
-          <p style="margin:0 0 8px;">It blends how often you win sets, your game margin per set, and your games won per set — then adjusts for how many sets you've played (more = more reliable). Rough guide:</p>
+          <p style="margin:0 0 4px;"><strong>Reading Form (typically 0.0 – 1.0)</strong></p>
+          <p style="margin:0 0 8px;">It blends how often you win sets (40%), your game margin per set (40%), and your games won per set (20%) — then adjusts for how many sets you've played (more = more reliable). It is not the same as Win %: winning narrowly scores lower than winning convincingly. Rough guide:</p>
           <ul style="margin:0 0 10px;padding-left:18px;">
             <li><strong>0.70+</strong> — Strong, performing very well.</li>
             <li><strong>0.55–0.70</strong> — Good, winning more than losing.</li>
             <li><strong>0.40–0.55</strong> — Middling, competitive but mixed.</li>
-            <li><strong>Below 0.40</strong> — Struggling.</li>
+            <li><strong>0.00–0.40</strong> — Struggling.</li>
+            <li><strong>Below 0</strong> — Losing sets by wide margins.</li>
           </ul>
           <p style="margin:0 0 4px;"><strong>Why Form, not just Win %?</strong></p>
           <p style="margin:0;">Win % treats a narrow 7–6 win the same as a crushing 6–0, and ignores who you played. Form rewards convincing performances and accounts for opponent strength — a fairer picture of how someone is actually playing. For doubles, Form shows how a <strong>partnership performs as a team</strong>.</p>
@@ -542,15 +543,16 @@
             <li><strong>Sets Won</strong> — how many of those sets were won.</li>
             <li><strong>Win %</strong> — share of sets won.</li>
             <li><strong>Game Diff / Set</strong> — average game margin per set. Positive = usually wins convincingly; negative = usually loses.</li>
-            <li><strong>Form</strong> — the overall performance score, 0.0–1.0 (read as 0–100%). The headline number the wall is sorted by.</li>
+            <li><strong>Form</strong> — the overall performance score (typically 0.0–1.0). It is <em>not</em> a win percentage. The headline number the wall is sorted by.</li>
           </ul>
-          <p style="margin:0 0 4px;"><strong>Reading Form (0.0 – 1.0)</strong></p>
-          <p style="margin:0 0 8px;">It blends how often you win sets, your game margin per set, and your games won per set — then adjusts for how many sets you've played (more = more reliable). Rough guide:</p>
+          <p style="margin:0 0 4px;"><strong>Reading Form (typically 0.0 – 1.0)</strong></p>
+          <p style="margin:0 0 8px;">It blends how often you win sets (40%), your game margin per set (40%), and your games won per set (20%) — then adjusts for how many sets you've played (more = more reliable). It is not the same as Win %: winning narrowly scores lower than winning convincingly. Rough guide:</p>
           <ul style="margin:0 0 10px;padding-left:18px;">
             <li><strong>0.70+</strong> — Strong, performing very well.</li>
             <li><strong>0.55–0.70</strong> — Good, winning more than losing.</li>
             <li><strong>0.40–0.55</strong> — Middling, competitive but mixed.</li>
-            <li><strong>Below 0.40</strong> — Struggling.</li>
+            <li><strong>0.00–0.40</strong> — Struggling.</li>
+            <li><strong>Below 0</strong> — Losing sets by wide margins.</li>
           </ul>
           <p style="margin:0 0 4px;"><strong>Why Form, not just Win %?</strong></p>
           <p style="margin:0;">Win % treats a narrow win the same as a crushing one, and ignores who you played. Form rewards convincing performances and accounts for opponent strength. For doubles, Form shows how a <strong>partnership performs as a team</strong>.</p>
@@ -1342,7 +1344,7 @@ const _clubParam = (new URLSearchParams(window.location.search).get('club') || '
 const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubParam), name:'OPR Club '+_clubParam} : CLUBS['1']);
 const CLUB_ID = _club.id;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.05-07";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.05-08";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
