@@ -320,6 +320,9 @@
     .menu-btn { min-height: 64px; font-size: 15px; }
     #homeRecentList { max-height: none; max-width: 760px; margin: 0 auto; }
     /* Two-column home on laptop: club overview left, recent matches right */
+    /* Home screen: don't cap its height — the hero above eats the budget and clips the bottom
+       (version tag was cut off). Let the page scroll; the matches list keeps its own scroll. */
+    .home-content { max-height: none !important; overflow: visible !important; }
     .home-lower { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; align-items: start; max-width: 1000px; margin: 0 auto; width: 100%; }
     .home-lower #homeRecentList { max-width: none; max-height: calc(100vh - 340px); }
     .home-club-col { order: 1; }
@@ -1339,7 +1342,7 @@ const _clubParam = (new URLSearchParams(window.location.search).get('club') || '
 const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubParam), name:'OPR Club '+_clubParam} : CLUBS['1']);
 const CLUB_ID = _club.id;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.05-06";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.05-07";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
