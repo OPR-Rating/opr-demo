@@ -3,166 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OPR — Starting Ratings &amp; Levels</title>
+<title>OPR — Starting Ratings & Levels, Explained</title>
 <style>
   :root{
-    --ink:#0D0A1F; --ink-soft:#1A1535; --violet:#5B2BD6; --violet-bright:#7B4DFF;
-    --azure:#1A9FFF; --cyan:#39D0FF; --paper:#F7F6FB; --paper-dim:#E9E6F4;
-    --muted:#6B6585; --body:#2A2540; --line:#E1DCEF; --ball:#BCE400;
+    --ink:#0D0A1F; --violet:#5B2BD6; --azure:#1A9FFF; --cyan:#39D0FF;
+    --paper:#F7F6FB; --paper-dim:#E9E6F4; --muted:#6B6585; --body:#2A2540; --line:#E1DCEF;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-    background:var(--paper);color:var(--body);line-height:1.6;padding-bottom:40px;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--body);line-height:1.55;padding-bottom:46px;}
   .wrap{max-width:760px;margin:0 auto;padding:0 22px;}
-
-  header.hero{background:linear-gradient(160deg,#0D0A1F 0%,#1A1535 45%,#3A1D8F 85%,#5B2BD6 125%);
-    color:#fff;padding:40px 0 38px;text-align:center;}
-  .eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:12px;}
-  header.hero h1{font-size:30px;font-weight:800;letter-spacing:0.3px;}
-  header.hero .sub{font-size:15px;color:rgba(255,255,255,0.85);margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;}
-
-  .intro{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 24px;margin-top:-20px;
-    box-shadow:0 6px 24px rgba(13,10,31,0.08);position:relative;z-index:2;}
-  .intro p{font-size:15px;}
-  .intro b{color:var(--ink);}
-
-  section{margin-top:28px;}
-  h2{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--violet);
-    margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--paper-dim);}
-  p{font-size:14px;margin-bottom:10px;}
-  strong{color:var(--ink);}
-
-  .grid{display:flex;gap:14px;margin:6px 0 4px;}
-  .col{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;}
-  .col h3{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--violet);margin-bottom:8px;}
-  .col .band{font-size:22px;font-weight:800;color:var(--ink);}
-  .col .cap{font-size:12.5px;color:var(--muted);margin-top:4px;}
-  .col .big{font-size:30px;font-weight:800;
-    background:linear-gradient(135deg,var(--violet),var(--azure));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-  .col .big span{font-size:13px;color:var(--muted);font-weight:600;-webkit-text-fill-color:var(--muted);}
-
-  table{width:100%;border-collapse:collapse;margin:6px 0 2px;font-size:13px;
-    border:1px solid var(--line);border-radius:12px;overflow:hidden;}
-  th{background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;text-align:left;padding:9px 12px;font-weight:700;font-size:12.5px;}
-  td{padding:9px 12px;border-bottom:1px solid var(--paper-dim);}
-  tr:last-child td{border-bottom:none;}
-  td.lvl{font-weight:800;color:var(--violet);}
-
-  .steps b{color:var(--ink);}
-  .steps .pt{display:flex;gap:12px;margin-bottom:9px;align-items:flex-start;}
-  .steps .dot{flex-shrink:0;width:22px;height:22px;border-radius:50%;
-    background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;font-weight:800;font-size:12px;
-    display:flex;align-items:center;justify-content:center;margin-top:2px;}
-  .steps .pt p{margin-bottom:0;}
-
-  .note{background:var(--paper-dim);border-left:4px solid var(--cyan);border-radius:8px;padding:13px 16px;font-size:13.5px;margin:12px 0;}
-  .note b{color:var(--ink);}
-  .highlight{background:linear-gradient(135deg,rgba(91,43,214,0.06),rgba(26,159,255,0.06));
-    border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0;}
-
-  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:32px;padding-top:16px;border-top:2px solid var(--paper-dim);}
+  header.hero{background:linear-gradient(160deg,#0D0A1F 0%,#1A1535 45%,#3A1D8F 85%,#5B2BD6 125%);color:#fff;padding:36px 0 32px;text-align:center;}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+  header.hero h1{font-size:27px;font-weight:800;}
+  header.hero p{color:rgba(255,255,255,0.8);margin-top:8px;font-size:14px;}
+  section{margin-top:26px;}
+  h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--violet);margin-bottom:8px;padding-bottom:7px;border-bottom:2px solid var(--paper-dim);}
+  p{font-size:14px;margin-bottom:8px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:10px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;border:1px solid var(--line);}
+  th{background:linear-gradient(135deg,var(--violet),#3a1d6e);color:#fff;text-align:left;padding:9px 12px;font-size:12px;letter-spacing:0.5px;}
+  td{padding:8px 12px;border-top:1px solid var(--paper-dim);}
+  tr:nth-child(even) td{background:var(--paper);}
+  .pill{display:inline-block;background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;font-weight:800;border-radius:20px;padding:2px 12px;font-size:13px;}
+  .tip{background:var(--paper-dim);border-left:4px solid var(--cyan);border-radius:8px;padding:12px 15px;font-size:13px;margin-top:10px;}
+  .tip b{color:var(--ink);}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:32px;}
   footer b{color:var(--violet);}
-
-  @media print{
-    body{background:#fff;padding:0;}
-    header.hero{padding:28px 0 24px;}
-    .intro{box-shadow:none;}
-    @page{margin:11mm;}
-  }
-  @media(max-width:600px){.grid{flex-direction:column;}}
 </style>
 </head>
 <body>
 
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">Understanding OPR</div>
-    <h1>Starting Ratings &amp; Levels</h1>
-    <div class="sub">How your players' first ratings are set, how the system settles itself, and how an OPR level compares to the apps you already use.</div>
+    <div class="eyebrow">How OPR works</div>
+    <h1>Starting Ratings &amp; Levels, Explained</h1>
+    <p>How your players get their first number — and why it quickly becomes the right one.</p>
   </div>
 </header>
 
 <div class="wrap">
 
-  <div class="intro">
-    <p>Every player needs a <b>starting rating</b> — a sensible first guess at their standard. It doesn't need to be perfect. From the first match, OPR refines it based on how each player actually performs, so the ratings quickly find their own true level.</p>
-  </div>
-
   <section>
-    <h2>Where every player begins</h2>
-    <p>OPR uses two broad starting bands that reflect the reality of club play:</p>
-    <div class="grid">
-      <div class="col">
-        <h3>Men</h3>
-        <div class="band">1000 – 1800</div>
-        <div class="cap">inexperienced → advanced</div>
-      </div>
-      <div class="col">
-        <h3>Ladies</h3>
-        <div class="band">900 – 1500</div>
-        <div class="cap">inexperienced → advanced</div>
-      </div>
-    </div>
-    <p>You place each member somewhere in their band based on what you already know about their standard.</p>
-  </section>
-
-  <section>
-    <h2>The easy default — start in the middle</h2>
-    <p>If you'd rather not rate each player individually, the simplest and perfectly valid approach is to start everyone at the <strong>middle of their band</strong>:</p>
-    <div class="grid">
-      <div class="col">
-        <h3>Suggested men's start</h3>
-        <div class="big">1500 <span>· level 7.5</span></div>
-      </div>
-      <div class="col">
-        <h3>Suggested ladies' start</h3>
-        <div class="big">1300 <span>· level 6.5</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Why the system quickly sorts itself out</h2>
-    <p>The starting number is only a seed. From the very first match, OPR adjusts each rating based on <strong>how you actually play</strong>:</p>
-    <div class="steps">
-      <div class="pt"><span class="dot">›</span><p>Beating a <strong>stronger</strong> pair moves you up more than beating a weaker one.</p></div>
-      <div class="pt"><span class="dot">›</span><p>Winning <strong>convincingly</strong> counts for more than scraping through.</p></div>
-      <div class="pt"><span class="dot">›</span><p>The <strong>more you play</strong>, the more the rating trusts the result.</p></div>
-    </div>
-    <p>So even if two players both start at 1500, within a handful of matches the stronger one rises and the other settles lower — the ratings <strong>find their own level naturally</strong>. A slightly-off starting guess is corrected by real results, not carried forever. That's why "everyone in the middle" works: <strong>play does the sorting.</strong></p>
-  </section>
-
-  <section>
-    <h2>Prefer to set your own? You can.</h2>
-    <div class="highlight">
-      <p style="margin-bottom:0;">OPR is <strong>club-owned</strong> — nothing is fixed by us. If your coaches or committee know the players well, you're free to <strong>evaluate and set each member's starting rating yourself</strong>, anywhere within (or beyond) the bands. Bespoke starting ratings simply give the system a head start — it will still refine them with every match.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2>From rating to level</h2>
-    <p>Alongside the rating, each player has a simpler <strong>Level</strong> that's easier to talk about — a direct translation of the rating:</p>
-    <div class="note"><b>Level = Rating ÷ 200</b> (to one decimal). A player on 1500 is level 7.5; on 1300, level 6.5.</div>
+    <h2>1 · The starting scale</h2>
+    <p>Every player begins with an <strong>initial rating</strong> — a starting point on OPR's scale, set once when they join. The working ranges:</p>
     <table>
-      <tr><th>Standard</th><th>Rating</th><th>OPR Level</th></tr>
-      <tr><td>Entry / new to the game</td><td>1000</td><td class="lvl">5.0</td></tr>
-      <tr><td>Improver</td><td>1200</td><td class="lvl">6.0</td></tr>
-      <tr><td>Solid club player</td><td>1400</td><td class="lvl">7.0</td></tr>
-      <tr><td>Strong club player</td><td>1600</td><td class="lvl">8.0</td></tr>
-      <tr><td>Advanced</td><td>1800</td><td class="lvl">9.0</td></tr>
+      <tr><th></th><th>Inexperienced</th><th>Improving</th><th>Solid club player</th><th>Strong / advanced</th></tr>
+      <tr><td><strong>Men</strong></td><td>1000–1200</td><td>1200–1400</td><td>1400–1600</td><td>1600–1800</td></tr>
+      <tr><td><strong>Ladies</strong></td><td>900–1050</td><td>1050–1200</td><td>1200–1350</td><td>1350–1500</td></tr>
     </table>
   </section>
 
   <section>
-    <h2>How OPR compares to Playtomic &amp; other apps</h2>
-    <p>Booking apps like Playtomic, MATCHi and Padel Mates use a <strong>0–7 scale</strong>. OPR's level runs on a wider club scale, so the numbers don't read the same — but they line up predictably. As a working guide:</p>
-    <div class="note"><b>Playtomic level ≈ OPR level − 5.5 to 6.</b> An OPR level 7.5 player sits around Playtomic 1.5–2.0; an OPR 8.5 around Playtomic 2.5–3.0.</div>
-    <p>Treat this as a <strong>bridge, not an exact conversion</strong> — the two systems measure different populations in different ways. OPR rates you within <strong>your club and the people you actually play with</strong>, which is what makes it meaningful on your courts. It works <strong>alongside</strong> the booking apps, never against them.</p>
+    <h2>2 · The simple route — one default for everyone</h2>
+    <div class="card">
+      <p>Don't want to grade every member on day one? Use the suggested defaults:</p>
+      <p style="text-align:center;margin:10px 0;"><span class="pill">Men — 1500</span> &nbsp;&nbsp; <span class="pill">Ladies — 1300</span></p>
+      <p>Start everyone there and simply let them play. This is how most clubs begin.</p>
+    </div>
+    <p><strong>Why this works:</strong> OPR recalculates ratings with <em>every match</em> — and it scores <em>how</em> you played (set margins and games), not just whether you won. A player who starts too high loses rating quickly to those beating them; a player who starts too low climbs just as fast. Within a handful of matches, the numbers separate and settle around each player's true level — the starting point simply stops mattering.</p>
+  </section>
+
+  <section>
+    <h2>3 · The bespoke route — grade your own players</h2>
+    <p>If your club knows its players, you can set each member's initial rating individually using the ranges in the table above — your coach or committee simply places each player in a band. OPR's bulk member upload takes a per-player starting rating, so a graded list from a spreadsheet loads in one go. Bespoke seeding means the very first ladder already looks sensible; the engine then fine-tunes from there.</p>
+    <div class="tip"><b>Either way, you can't get it "wrong."</b> Initial ratings are a starting point, not a verdict — the match engine does the real grading, match after match.</div>
+  </section>
+
+  <section>
+    <h2>4 · From rating to Level</h2>
+    <p>OPR shows each player and pair a <strong>Level</strong> — simply the rating divided by 200. It's the friendly headline number used across ladders and tournaments:</p>
+    <table>
+      <tr><th>OPR rating</th><td>1000</td><td>1200</td><td>1400</td><td>1500</td><td>1600</td><td>1800</td></tr>
+      <tr><th>OPR Level</th><td>5.0</td><td>6.0</td><td>7.0</td><td>7.5</td><td>8.0</td><td>9.0</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>5 · Comparing with Playtomic (and similar apps)</h2>
+    <p>Many players already know their Playtomic level and want to know where they sit on OPR. The two systems measure differently — OPR's scale is wider and doubles-first — but as a practical rule of thumb:</p>
+    <p style="text-align:center;margin:10px 0;"><span class="pill">OPR Level ≈ Playtomic level + 5.5 to 6</span></p>
+    <p>So a Playtomic 4.0 typically sits around OPR Level 9.5–10, and an OPR Level 7.5 player is broadly a Playtomic 1.5–2. It's a guide, not a conversion — no two rating systems map exactly — but it gives your members an immediate feel for their number. OPR works happily <em>alongside</em> Playtomic: book your courts there, and let OPR run your club's own ratings, ladders and tournaments.</p>
   </section>
 
   <footer>
-    <b>OPR</b> — Open Player Rating · Club-owned · Transparent · Built around how you really play<br>
-    opr-online.com
+    <b>OPR</b> — Open Player Rating · Your club, your ratings.<br>
+    Questions? Andre Farrell · WhatsApp +27 82 372 0117 · opr-online.com
   </footer>
 
 </div>
