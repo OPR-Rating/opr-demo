@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPR — Club Admin Handbook</title>
+<style>
+  :root{--ink:#0D0A1F;--violet:#5B2BD6;--azure:#1A9FFF;--cyan:#39D0FF;--paper:#F7F6FB;--paper-dim:#E9E6F4;--muted:#6B6585;--body:#2A2540;--line:#E1DCEF;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--body);line-height:1.55;padding-bottom:46px;}
+  .wrap{max-width:780px;margin:0 auto;padding:0 22px;}
+  header.hero{background:linear-gradient(160deg,#0D0A1F 0%,#1A1535 45%,#3A1D8F 85%,#5B2BD6 125%);color:#fff;padding:36px 0 32px;text-align:center;}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+  header.hero h1{font-size:27px;font-weight:800;}
+  header.hero p{color:rgba(255,255,255,0.8);margin-top:8px;font-size:14px;}
+  nav.toc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-top:-20px;position:relative;z-index:2;box-shadow:0 6px 22px rgba(13,10,31,0.08);}
+  nav.toc a{display:inline-block;color:var(--violet);font-weight:700;font-size:13px;text-decoration:none;margin:3px 12px 3px 0;}
+  section{margin-top:28px;}
+  h2{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--violet);margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid var(--paper-dim);}
+  h3{font-size:14px;color:var(--ink);margin:14px 0 6px;}
+  p,li{font-size:14px;}
+  ul,ol{padding-left:20px;margin:6px 0 10px;}
+  li{margin-bottom:4px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:10px;}
+  .tip{background:var(--paper-dim);border-left:4px solid var(--cyan);border-radius:8px;padding:11px 14px;font-size:13px;margin:10px 0;}
+  .warn{background:#FDF3E7;border-left:4px solid #E8A33D;border-radius:8px;padding:11px 14px;font-size:13px;margin:10px 0;}
+  .tip b,.warn b{color:var(--ink);}
+  code{background:#efeaf7;padding:1px 6px;border-radius:5px;font-size:12.5px;color:var(--violet);font-weight:600;}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;}
+  footer b{color:var(--violet);}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">OPR Club Admin Handbook</div>
+    <h1>How to run your club on OPR</h1>
+    <p>Members · Scores · Tournaments · Ladders · Backups — everything an admin does, step by step.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <a href="#in">1 · Getting in</a><a href="#members">2 · Members</a><a href="#scores">3 · Scores</a>
+    <a href="#tournaments">4 · Tournaments</a><a href="#ladder">5 · Club Ladder</a>
+    <a href="#backup">6 · Backups</a><a href="#trouble">7 · Troubleshooting</a>
+  </nav>
+
+  <!-- 1 GETTING IN -->
+  <section id="in">
+    <h2>1 · Getting into Admin Control</h2>
+    <div class="card">
+      <ol>
+        <li>Open your club's app (phone) or desktop link (laptop — best for admin work).</li>
+        <li>Tap <b>Admin</b> and enter your <b>club admin PIN</b> (in your welcome pack).</li>
+        <li>The Admin Control Room opens with four tabs: <b>Members · Tournaments · Matches · Club</b>.</li>
+      </ol>
+      <p>Your PIN manages <em>your club only</em>. Keep it with the committee — anyone holding it can add and edit members, fix scores and run tournaments.</p>
+    </div>
+    <div class="tip"><b>Desktop is the admin's friend.</b> The laptop version has everything the phone has, plus bulk member upload, Excel/PDF export on every table, and more room to work.</div>
+  </section>
+
+  <!-- 2 MEMBERS -->
+  <section id="members">
+    <h2>2 · Members</h2>
+    <h3>Add one member</h3>
+    <div class="card">
+      <p>Admin → <b>Members</b> → fill in <b>Name, Gender (M/F), Initial Rating, PIN</b> → <b>Add member</b>. The player appears on the ladder immediately at their starting rating.</p>
+      <ul>
+        <li><b>Initial rating</b> — their starting point on the scale (Men 1000–1800, Ladies 900–1500; defaults Men 1500 / Ladies 1300). See the <em>Starting Ratings &amp; Levels</em> guide for how to choose.</li>
+        <li><b>PIN</b> — the member's personal 4-digit code for entering their own scores. They can change it later.</li>
+      </ul>
+    </div>
+    <h3>Bulk add (desktop) — the 5-minute club setup</h3>
+    <div class="card">
+      <ol>
+        <li>In Excel, make 4 columns: <b>Name · Gender · Initial Rating · PIN</b> (one row per member).</li>
+        <li>Copy the rows → Admin → Members → paste into the <b>Bulk add</b> box → <b>Add all pasted members</b>.</li>
+        <li>Any faulty row is reported by line number; fix and re-paste just that line.</li>
+      </ol>
+    </div>
+    <h3>Edit or remove a member</h3>
+    <div class="card">
+      <p>Each member row has <b>edit</b> and <b>del</b>. You can correct name, gender, PIN — and the <b>initial rating</b>.</p>
+      <p><b>Important:</b> editing a member's <em>initial rating</em> re-bases that player — the engine automatically recomputes the whole club's ratings from the new starting point (give it a few seconds, then refresh).</p>
+    </div>
+    <div class="tip"><b>Just added members but they're not in the score-entry dropdowns?</b> Refresh the page — player lists load when the page opens.</div>
+    <h3>Club name</h3>
+    <div class="card"><p>Admin → Members → <b>Club name</b> box changes the name shown on your front page for all members.</p></div>
+  </section>
+
+  <!-- 3 SCORES -->
+  <section id="scores">
+    <h2>3 · Scores — entering and fixing</h2>
+    <h3>Three ways a score gets entered</h3>
+    <div class="card">
+      <ul>
+        <li><b>Player</b> — any member enters the match with their own PIN (front page → ✚ Enter score).</li>
+        <li><b>Club admin</b> — enter on behalf of players using the club admin PIN (ideal on a reception laptop/tablet).</li>
+        <li>Every match records <b>who entered it</b> — visible in Admin → Matches.</li>
+      </ul>
+      <p>Choose the <b>Event</b> (Social, Ladder Match, or a running tournament), the match type, the four players, and the set scores. Ratings recompute automatically the moment a match is saved.</p>
+    </div>
+    <div class="tip"><b>Duplicate guard:</b> if the same four players were recently entered, the app warns you (naming who and when) before saving — Cancel saves nothing.</div>
+    <h3>Fixing or deleting a match</h3>
+    <div class="card">
+      <p>Admin → <b>Matches</b> lists recent matches. Open one to <b>fix a wrong score or event type</b>, or delete it entirely. <b>Ratings recompute automatically after any change</b> — no further steps.</p>
+    </div>
+  </section>
+
+  <!-- 4 TOURNAMENTS -->
+  <section id="tournaments">
+    <h2>4 · Tournaments</h2>
+    <h3>Internal vs External — which to pick</h3>
+    <div class="card">
+      <ul>
+        <li><b>Internal</b> — the full club tournament engine: <b>divisions</b> (Men's, Ladies, Mixed, All Sorts), team caps, automatic Swiss draws, rounds, standings, semi-finals and a final. Use this for your club events.</li>
+        <li><b>External</b> — a simple named event without the divisional structure: matches are tagged with the tournament's name and tracked in the tournament statistics. Use it for away days, friendlies or events run outside the draw engine.</li>
+      </ul>
+    </div>
+    <h3>Create an internal tournament</h3>
+    <div class="card">
+      <ol>
+        <li>Admin → <b>Tournaments</b> → enter a <b>name</b> (e.g. "Summer Swing") and choose type <b>Internal</b>.</li>
+        <li>Tick the <b>divisions</b> you're running — Men's and Ladies are on by default; add Mixed and All Sorts if wanted.</li>
+        <li>Set each division's <b>team cap</b> — <b>even numbers, minimum 4</b> (the pairing engine needs even fields). Caps can be extended later from the same tab if demand grows.</li>
+        <li><b>Create tournament</b>. It now appears as an Event choice and on the Current Tournaments page.</li>
+      </ol>
+    </div>
+    <h3>Entries, seeding and the draw</h3>
+    <div class="card">
+      <ul>
+        <li>Enter each <b>pair</b> into its division. A pair's <b>seed rating is frozen at entry time</b> — later rating moves don't reshuffle the seeding, which keeps the draw fair and stable.</li>
+        <li>When the field is in, <b>generate the draw</b>. OPR uses a banded Swiss system: pairs meet opponents of similar seeding, and each round is built from results so far — competitive matches all the way through.</li>
+        <li>After the rounds, run the <b>Semi-Finals and Final</b> bracket from the standings.</li>
+      </ul>
+    </div>
+    <h3>Playing and scoring tournament matches</h3>
+    <div class="card">
+      <p>Tournament scores are entered through the normal <b>✚ Enter score</b> flow — just choose the <b>tournament as the Event</b>. The result files itself against the right fixture automatically, and standings and statistics update. Fixtures show on the Current Tournaments page for everyone to follow.</p>
+    </div>
+    <div class="warn"><b>Even teams only:</b> a division can't generate a draw with an odd number of pairs — keep entries even (minimum 4 per division).</div>
+    <h3>Finishing up</h3>
+    <div class="card"><p>When the event's done, <b>archive</b> the tournament — its results are preserved in the tournament archive and it disappears from the active Event list.</p></div>
+  </section>
+
+  <!-- 5 LADDER -->
+  <section id="ladder">
+    <h2>5 · The Good 'ol Club Ladder</h2>
+    <div class="card">
+      <ol>
+        <li>Open the <b>Club Ladder</b> page, pick the category, and (as admin) <b>Activate the ladder</b> — a one-time step that sets the starting order.</li>
+        <li>Once active, members play <b>Ladder Matches</b>: enter the score with Event = <b>Ladder Match</b>, and positions update by the ladder's challenge rules.</li>
+        <li>Need a fresh start? Admin can <b>Re-activate</b> a ladder — this resets the order, so use deliberately.</li>
+      </ol>
+      <p>If someone picks "Ladder Match" before any ladder is activated, the app tells them so — activate first, then play.</p>
+    </div>
+  </section>
+
+  <!-- 6 BACKUP -->
+  <section id="backup">
+    <h2>6 · Backups</h2>
+    <div class="card">
+      <p>Admin → <b>Matches</b> → <b>Full club backup</b> downloads a single date-stamped file containing your <em>entire club</em>: members and ratings, every match, all tournaments (draws, entries, archives), the ladder — everything.</p>
+      <ul>
+        <li>Take one <b>before anything significant</b> (a big tournament, a bulk change) and <b>monthly</b> as routine.</li>
+        <li>Store it somewhere safe (cloud drive). It's your club's complete restore point.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 TROUBLESHOOT -->
+  <section id="trouble">
+    <h2>7 · Quick troubleshooting</h2>
+    <div class="card">
+      <ul>
+        <li><b>New members missing from dropdowns</b> → refresh the page (lists load at page-open).</li>
+        <li><b>Something looks outdated after an update</b> → hard refresh: <code>Ctrl+F5</code> (computer) or close and reopen the app (phone).</li>
+        <li><b>"No active ladders" when entering a Ladder Match</b> → activate the ladder first (Section 5).</li>
+        <li><b>Ratings look unchanged after a fix</b> → recomputes take a few seconds; refresh once more.</li>
+        <li><b>PIN not accepted</b> → PINs are exact 4-digit codes; check you're on the right club's app.</li>
+        <li><b>A member forgot their PIN</b> → Admin → Members → edit → set a new PIN.</li>
+      </ul>
+    </div>
+    <div class="tip"><b>Want the deeper reading?</b> "How OPR Works" explains ratings, form and the wall; "Starting Ratings &amp; Levels" covers initial ratings and Playtomic comparison — both linked in your welcome pack.</div>
+  </section>
+
+  <footer>
+    <b>OPR</b> — Open Player Rating · Your club, your ratings.<br>
+    Questions? Andre Farrell · WhatsApp +27 82 372 0117 · opr-online.com
+  </footer>
+
+</div>
+</body>
+</html>
