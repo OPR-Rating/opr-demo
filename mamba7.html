@@ -585,6 +585,7 @@
         <div class="ac-room active" id="acRoomMembers">
           <div class="ac-card">
             <h4>Current members</h4>
+            <p style="font-size:11px;color:#7a6688;margin:0 0 8px;">Note: editing a member's <b>initial rating</b> re-bases that player and automatically recomputes the club's ratings.</p>
             <div id="adminMembers" style="font-size:13px;"></div>
           </div>
           <div class="ac-card">
@@ -1164,7 +1165,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 7;
 const CLUB_NAME = "Mamba No.7";  // shown in the logo as "OPR · Demo"
-const OPR_VERSION = "OPR v2026.07.05-03";  // bump on every deploy (date + revision)
+const OPR_VERSION = "OPR v2026.07.05-05";  // bump on every deploy (date + revision)
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1406,13 +1407,13 @@ async function loadTournament(category, title) {
     const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=set_win_pct.desc.nullslast,sets_won.desc.nullslast,sets.desc&club_id=eq.${CLUB_ID}`);
     if(data.length===0){document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">🎾</div><p>No tournament matches in this category yet.</p></div>';return;}
     const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
-    let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
+    let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>Sets</th><th>Won</th><th>% Won</th><th>${ratingHdr}</th><th>Level</th></tr></thead><tbody>`;
     let pos=0;
     data.forEach(p=>{
       pos++;
       const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
       const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-      html += `<tr><td>${rankBadge(pos)}</td><td>${p.p1} & ${p.p2}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+      html += `<tr><td>${rankBadge(pos)}</td><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td></tr>`;
     });
     html+='</tbody></table>';
     document.getElementById('tournamentSheetContent').className='';
