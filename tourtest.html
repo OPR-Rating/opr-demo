@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OPR Demo</title>
+<title>OPR · Demo</title>
 <link rel="manifest" href='data:application/manifest+json,{"name":"OPR · TourTest","short_name":"OPR TourTest","start_url":"./tourtest.html","scope":"./","display":"standalone","background_color":"%236C3483","theme_color":"%236C3483","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
 <meta name="theme-color" content="#6C3483">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1164,8 +1164,8 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // CLUB IDENTITY — each club's copy of the app sets its own. Demo = 1, Eswatini = 2, etc.
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 1;
-const CLUB_NAME = "Demo";  // shown in the logo as "OPR · Demo"
-const OPR_VERSION = "OPR v2026.07.05-05";  // bump on every deploy (date + revision)
+const CLUB_NAME = "Demo";  // shown in the logo and browser tab
+const OPR_VERSION = "OPR v2026.07.10-01";  // bump on every deploy (date + revision)
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);

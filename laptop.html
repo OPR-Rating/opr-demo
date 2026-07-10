@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OPR Demo</title>
+<title>OPR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="manifest" href='data:application/manifest+json,{"name":"OPR · TourTest","short_name":"OPR TourTest","start_url":"./tourtest.html","scope":"./","display":"standalone","background_color":"%236C3483","theme_color":"%236C3483","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
 <meta name="theme-color" content="#6C3483">
@@ -1344,8 +1344,9 @@ const _clubParam = (new URLSearchParams(window.location.search).get('club') || '
 // the real name is fetched from the database on load. Non-numeric unknowns fall back to Demo.
 const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubParam), name:'OPR Club '+_clubParam} : CLUBS['1']);
 const CLUB_ID = _club.id;
+document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.05-10";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.10-01";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
@@ -2734,6 +2735,7 @@ async function refreshClubName(){
       window.CLUB_NAME_LIVE=rows[0].name;
       var ht=document.getElementById('heroTitle');
       if(ht) ht.textContent='OPR · '+rows[0].name;
+      document.title='OPR · '+rows[0].name;
     }
   }catch(e){/* keep the URL-map name if fetch fails */}
 }
