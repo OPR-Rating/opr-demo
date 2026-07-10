@@ -1346,7 +1346,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.10-01";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.10-02";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
@@ -1650,9 +1650,10 @@ async function loadTournament(category, title) {
   try {
     const usesCombined = (category==="Men's" || category==='Ladies');
     // Tournament STATISTICS table: rank by PERFORMANCE, not rating.
-    // Statistically fairest order: set-win % (rate) → sets won (volume) → sets played.
+    // Tournament merit order: sets WON (volume — you earn rank by winning) → win % (efficiency) → sets played.
+    // A 1-match 100% pair no longer outranks a 20-set 95% pair.
     // (This ordering applies ONLY to this tournament-stats table — not ladders or rating sheets.)
-    const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=set_win_pct.desc.nullslast,sets_won.desc.nullslast,sets.desc&club_id=eq.${CLUB_ID}`);
+    const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=sets_won.desc.nullslast,set_win_pct.desc.nullslast,sets.desc&club_id=eq.${CLUB_ID}`);
     if(data.length===0){document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">🎾</div><p>No tournament matches in this category yet.</p></div>';return;}
     const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
     let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>Sets</th><th>Won</th><th>% Won</th><th>${ratingHdr}</th><th>Level</th></tr></thead><tbody>`;
