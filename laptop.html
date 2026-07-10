@@ -1038,7 +1038,7 @@ async function adminLoadMatches(){
     window._adminMatches[m.id]=m;
     const score=(m.t1_sets)+'–'+(m.t2_sets);
     h+='<div style="border:1px solid #eadff2;border-radius:9px;padding:9px 11px;margin-bottom:7px;">'
-      + '<div style="font-size:11px;color:#9b80b3;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+(m.submitted_by?' · entered by '+m.submitted_by:'')+'</div>'
+      + '<div style="font-size:11px;color:#9b80b3;"><input type="checkbox" class="am-pick" data-id="'+m.id+'" style="margin-right:7px;vertical-align:-2px;">'+m.match_date+' · '+m.match_type+' · '+(m.event||'Social')+(m.submitted_by?' · entered by '+m.submitted_by:'')+'</div>'
       + '<div style="font-size:13px;margin:3px 0;">'+m.t1p1+' &amp; '+m.t1p2+' <b>'+score+'</b> '+m.t2p1+' &amp; '+m.t2p2+'</div>'
       + '<button class="ac-btn ac-btn-ghost" style="font-size:12px;padding:5px 10px;" onclick="adminEditMatch('+m.id+')">Edit</button> '
       + '<button class="ac-btn ac-btn-danger" style="font-size:12px;padding:5px 10px;" onclick="adminDeleteMatch('+m.id+')">Delete</button>'
@@ -1055,6 +1055,39 @@ async function adminLoadMatches(){
   exp.textContent='⬇ Full club backup (download)';
   exp.onclick=()=>exportClubBackup(cid);
   box.insertBefore(exp, box.firstChild);
+  // Selection toolbar: tick matches, then export/print just those (e.g. an external tournament's matches).
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;';
+  bar.innerHTML='<button class="ac-btn ac-btn-ghost" style="font-size:12px;padding:6px 10px;" onclick="adminPickAll(true)">Select all</button>'
+    +'<button class="ac-btn ac-btn-ghost" style="font-size:12px;padding:6px 10px;" onclick="adminPickAll(false)">Clear</button>'
+    +'<button class="ac-btn ac-btn-primary" style="font-size:12px;padding:6px 10px;" onclick="adminExportPicked()">⬇ Excel selected</button>'
+    +'<button class="ac-btn ac-btn-primary" style="font-size:12px;padding:6px 10px;" onclick="adminPrintPicked()">🖨 Print selected</button>';
+  box.insertBefore(bar, box.firstChild.nextSibling);
+}
+function adminPickAll(on){ document.querySelectorAll('.am-pick').forEach(c=>c.checked=on); }
+function adminPickedRows(){
+  const ids=[...document.querySelectorAll('.am-pick:checked')].map(c=>c.dataset.id);
+  if(!ids.length){ alert('Tick the matches you want first (checkbox on each match).'); return null; }
+  return ids.map(id=>window._adminMatches[id]).filter(Boolean);
+}
+function adminExportPicked(){
+  const rows=adminPickedRows(); if(!rows) return;
+  const esc=v=>{ v=(v==null?'':String(v)); return (/[",\n]/.test(v))?'"'+v.replace(/"/g,'""')+'"':v; };
+  let csv='Date,Match Type,Event,Team 1,Sets,Team 2,Sets,Entered by\n';
+  rows.forEach(m=>{ csv+=[m.match_date,m.match_type,(m.event||'Social'),m.t1p1+' & '+m.t1p2,m.t1_sets,m.t2p1+' & '+m.t2p2,m.t2_sets,(m.submitted_by||'')].map(esc).join(',')+'\n'; });
+  const today=new Date().toISOString().slice(0,10);
+  downloadCSV('OPR_'+CLUB_NAME.replace(/\s+/g,'_')+'_Matches_'+today+'.csv', csv);
+}
+function adminPrintPicked(){
+  const rows=adminPickedRows(); if(!rows) return;
+  let box=document.getElementById('admPrintBox');
+  if(!box){ box=document.createElement('div'); box.id='admPrintBox'; box.style.display='none'; document.body.appendChild(box); }
+  const eh=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  let t='<table class="ladder-table"><thead><tr><th>Date</th><th>Type</th><th>Event</th><th>Team 1</th><th>Sets</th><th>Team 2</th><th>Sets</th><th>Entered by</th></tr></thead><tbody>';
+  rows.forEach(m=>{ t+='<tr><td>'+eh(m.match_date)+'</td><td>'+eh(m.match_type)+'</td><td>'+eh(m.event||'Social')+'</td><td>'+eh(m.t1p1)+' & '+eh(m.t1p2)+'</td><td>'+eh(m.t1_sets)+'</td><td>'+eh(m.t2p1)+' & '+eh(m.t2p2)+'</td><td>'+eh(m.t2_sets)+'</td><td>'+eh(m.submitted_by||'')+'</td></tr>'; });
+  t+='</tbody></table>';
+  box.innerHTML=t;
+  printTable('admPrintBox','Matches — selected');
 }
 
 // Full-club backup: pull every table for this club and save as one JSON snapshot file.
@@ -1346,7 +1379,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.10-02";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.10-03";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
