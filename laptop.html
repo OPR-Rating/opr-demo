@@ -704,6 +704,21 @@
             <div id="bulkMsg" class="ac-msg"></div>
           </div>
 
+          <!-- BULK RESET INITIAL RATINGS (rescue an over-eager first setup) -->
+          <div class="ac-card">
+            <h4>Reset initial ratings</h4>
+            <p style="font-size:12px;color:#7a6688;margin:0 0 8px;">Set <b>every</b> man's or lady's starting rating to one value and recompute the whole club. Handy when a club's first ratings need a clean restart. Each player's number can still be fine-tuned individually afterwards.</p>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+              <input id="resetMenVal" type="number" placeholder="All Men → e.g. 1500" class="ac-field" style="margin-bottom:0;flex:1;">
+              <button class="ac-btn ac-btn-ghost" style="white-space:nowrap;" onclick="adminBulkReset('M')">Reset Men</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="resetLadiesVal" type="number" placeholder="All Ladies → e.g. 1300" class="ac-field" style="margin-bottom:0;flex:1;">
+              <button class="ac-btn ac-btn-ghost" style="white-space:nowrap;" onclick="adminBulkReset('F')">Reset Ladies</button>
+            </div>
+            <div id="resetMsg" class="ac-msg"></div>
+          </div>
+
           <!-- EDIT CLUB NAME (onboarding: OPR Gen 1 -> real club name) -->
           <div class="ac-card">
             <h4>Club name</h4>
@@ -861,8 +876,8 @@ function showScreen(id) {
 // ---------------- ADMIN PANEL ----------------
 let ADMIN_PIN = "";
 function openAdmin(){ document.getElementById('adminGate').style.display='block'; document.getElementById('adminPanel').style.display='none'; document.getElementById('adminPin').value=''; document.getElementById('adminGateErr').style.display='none'; showScreen('adminScreen'); }
-async function adminCall(action, args){
-  const body=Object.assign({ master_pin:ADMIN_PIN, action }, args||{});
+async function adminCall(action, args, pinOverride){
+  const body=Object.assign({ master_pin:(pinOverride||ADMIN_PIN), action }, args||{});
   const resp=await fetch(SB_URL+"/functions/v1/admin",{ method:"POST", headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON, "Content-Type":"application/json" }, body:JSON.stringify(body) });
   return await resp.json();
 }
@@ -1234,7 +1249,29 @@ async function adminAddMember(){
   adminLoadMembers();
 }
 
-// Bulk add: parse pasted rows (Name, Gender, PIN) — tab OR comma separated — and add each.
+// Bulk reset all Men's or Ladies' initial ratings, then recompute. Double-guarded.
+async function adminBulkReset(gender){
+  const cid=document.getElementById('adminClubSelect').value;
+  const who = gender==='M' ? 'Men' : 'Ladies';
+  const val = Number(document.getElementById(gender==='M'?'resetMenVal':'resetLadiesVal').value);
+  const msg=document.getElementById('resetMsg');
+  if(!val || isNaN(val)){ msg.innerHTML='<span style="color:#c0392b;">Enter a rating for '+who+' first.</span>'; return; }
+  // Guard 0: remind about backup before any destructive step
+  if(!confirm('Before resetting, have you taken a Full club backup?\n\n(Admin → Matches → Full club backup)\n\nThis reset overwrites every '+who.toLowerCase()+'\u2019s starting rating and recomputes the club — it cannot be undone from the app.\n\nOK to continue, or Cancel to back up first.')) return;
+  // Guard 1: typed confirmation
+  const typed=prompt('This will set the starting rating of EVERY '+who.toLowerCase()+' to '+val+' and recompute the whole club.\n\nType RESET to confirm:');
+  if(typed===null) return;
+  if(typed.trim().toUpperCase()!=='RESET'){ msg.innerHTML='<span style="color:#c0392b;">Not confirmed — you must type RESET.</span>'; return; }
+  // Guard 2: re-enter admin PIN
+  const pin=prompt('Re-enter your admin PIN to authorise this reset:');
+  if(pin===null) return;
+  msg.innerHTML='Resetting '+who+' and recomputing…';
+  const r=await adminCall('bulk_reset_ratings',{ club_id:Number(cid), gender:gender, rating:val }, pin.trim());
+  if(!r.ok){ msg.innerHTML='<span style="color:#c0392b;">'+(r.error||'Reset failed. Check the PIN.')+'</span>'; return; }
+  msg.innerHTML='<span style="color:#1e8449;">Reset '+(r.updated||0)+' '+who.toLowerCase()+' to '+val+'. Ratings are recomputing — refresh in a few seconds.</span>';
+  document.getElementById(gender==='M'?'resetMenVal':'resetLadiesVal').value='';
+  adminLoadMembers();
+}
 async function adminBulkAdd(){
   const cid=document.getElementById('adminClubSelect').value;
   const raw=document.getElementById('bulkText').value;
@@ -1380,7 +1417,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.10-04";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.10-06";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
