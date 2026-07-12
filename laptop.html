@@ -965,13 +965,23 @@ async function adminLoadMembers(){
   const r=await adminCall('list_members',{ club_id:Number(cid) });
   if(!r.ok){ box.innerHTML='<span style="color:#c0392b;">'+r.error+'</span>'; return; }
   if(r.members.length===0){ box.innerHTML='<div style="color:#888;padding:6px 0;">No members yet.</div>'; return; }
-  let html='<table class="ladder-table"><thead><tr><th>Name</th><th>G</th><th>Rating</th><th>PIN</th><th></th></tr></thead><tbody>';
+  // Pull sets-played per member (from player_results) so an admin can spot under-12-set players after a bulk reset.
+  const setsByName={};
+  try{
+    const pr=await sbGet('player_results?select=name,sets_played&club_id=eq.'+Number(cid))||[];
+    pr.forEach(p=>{ setsByName[p.name]=p.sets_played||0; });
+  }catch(e){}
+  let html='<table class="ladder-table"><thead><tr><th>Name</th><th>G</th><th>Rating</th><th>Sets</th><th>PIN</th><th></th></tr></thead><tbody>';
   r.members.forEach(m=>{
-    html+='<tr><td>'+m.name+'</td><td>'+m.gender+'</td><td>'+Math.round(m.initial_rating)+'</td><td>'+(m.pin||'—')+'</td>'
+    const sets = setsByName[m.name]||0;
+    const lowFlag = sets<12 ? ' style="color:#c0392b;font-weight:700;" title="Under 12 sets — not yet proven; consider adjusting initial rating"' : '';
+    html+='<tr><td>'+m.name+'</td><td>'+m.gender+'</td><td>'+Math.round(m.initial_rating)+'</td>'
+      +'<td'+lowFlag+'>'+sets+(sets<12?' ⚠':'')+'</td><td>'+(m.pin||'—')+'</td>'
       +'<td style="white-space:nowrap;"><button onclick="adminEditMember('+m.id+',\''+m.name.replace(/'/g,"\\'")+'\','+m.initial_rating+',\''+(m.pin||'')+'\')" style="background:none;border:none;color:#6C3483;cursor:pointer;">edit</button> '
       +'<button onclick="adminDeleteMember('+m.id+',\''+m.name.replace(/'/g,"\\'")+'\')" style="background:none;border:none;color:#c0392b;cursor:pointer;">del</button></td></tr>';
   });
   html+='</tbody></table>';
+  html+='<div style="font-size:11px;color:#7a6688;margin-top:6px;">⚠ = under 12 sets played (not yet proven — a good candidate for a manual initial-rating check after a bulk reset).</div>';
   box.innerHTML=html;
   adminLoadTournaments();
 }
@@ -1417,7 +1427,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.10-06";  // laptop track version
+const OPR_VERSION = "OPR-LAPTOP v2026.07.10-07";  // laptop track version
 
 // ---- Excel/CSV export (laptop) ----------------------------------------
 // Generic: reads any rendered <table> and downloads it as a clean CSV that
