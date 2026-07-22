@@ -66,6 +66,14 @@
 .ladder-table tr.pair-row:hover td { background: #f3eef8; }
   .ladder-table tr.division-row td { background: #6C3483; color: #fff; font-weight: 700; font-size: 12px; text-align: left; padding: 9px 10px; }
   .ladder-table tr.heading-row td { background: #EBD9F2; color: #4A235A; font-weight: 700; text-align: left; }
+  /* Two-box grouped header: drivers vs record ("For info") */
+  .ladder-table tr.grp-row th { position: static; padding: 6px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; text-align: left; }
+  .ladder-table tr.grp-row th.grp-drivers { background: #4A235A; color: #fff; border-right: 3px solid #fff; }
+  .ladder-table tr.grp-row th.grp-info { background: #A98BB5; color: #2E1638; text-align: left; }
+  .ladder-table th.col-divider, .ladder-table td.col-divider { border-right: 3px solid #fff; }
+  .ladder-table th.info-col { background: #5E3A6E; }
+  .ladder-table td.info-col { background: rgba(108,52,131,.05); }
+  .ladder-table tr:nth-child(even) td.info-col { background: rgba(108,52,131,.14); }
   .rank-badge { background: #6C3483; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
   .rank-1 { background: #F1C40F; color: #1a1a1a; }
   .rank-2 { background: #BDC3C7; color: #1a1a1a; }
@@ -1165,7 +1173,9 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 3;
 const CLUB_NAME = "Eswatini";  // shown in the logo and browser tab
-const OPR_VERSION = "OPR v2026.07.10-02";  // bump on every deploy (date + revision)
+const OPR_VERSION = "OPR v2026.07.20-01";  // Two-box ratings ladder: win% grouped as record ("For info — not used for rank"), separate from rating drivers
+// Plain-English line shown above the ratings ladders — explains win% is a record, not a rank driver.
+const RANK_DRIVERS_NOTE = '<div style="padding:10px 14px;background:#F5EEF8;border:1px solid #D7BDE2;border-radius:10px;margin:14px 12px 12px;font-size:12px;color:#4A235A;line-height:1.5;">Your rating is driven by who you beat and how convincingly — <strong>not by win\u00a0%</strong>. The stats on the right are your record, for interest.</div>';
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1247,11 +1257,14 @@ async function loadLadder(type, title) {
       // SINGLES ladder — unified headings: Rank, Name, Rating, Level, Sets Played, Sets Won, % Won
       const g = (type==='mens') ? 'M' : 'F';
       const data = await sbGet(`player_results?select=name,current_rating,sets_played,sets_won,set_win_pct&gender=eq.${g}&order=current_rating.desc&club_id=eq.${CLUB_ID}`);
-      html = '<table class="ladder-table"><thead><tr><th>Rank</th><th>Name</th><th>Rating</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>';
+      html = RANK_DRIVERS_NOTE
+        + '<table class="ladder-table"><thead>'
+        + '<tr class="grp-row"><th class="grp-drivers" colspan="6">What determines your rating &amp; rank</th><th class="grp-info" colspan="1">For info — not used for rank</th></tr>'
+        + '<tr><th>Rank</th><th>Name</th><th>Rating</th><th>Level</th><th>Sets</th><th class="col-divider">Won</th><th class="info-col">% Won</th></tr></thead><tbody>';
       data.forEach((p,i)=>{
         const lvl = (p.current_rating/200).toFixed(1);
         const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-        html += `<tr><td>${rankBadge(i+1)}</td><td>${p.name}</td><td>${Math.round(p.current_rating)}</td><td>${lvl}</td><td>${p.sets_played==null?'—':Math.round(p.sets_played)}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+        html += `<tr><td>${rankBadge(i+1)}</td><td>${p.name}</td><td>${Math.round(p.current_rating)}</td><td>${lvl}</td><td>${p.sets_played==null?'—':Math.round(p.sets_played)}</td><td class="col-divider">${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td class="info-col">${swp}</td></tr>`;
       });
       html += '</tbody></table>';
     } else {
@@ -1263,11 +1276,14 @@ async function loadLadder(type, title) {
       window._doublesRows = data;
       window._doublesCat = cat;
       const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
-      html = `<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
+      html = RANK_DRIVERS_NOTE
+        + `<table class="ladder-table"><thead>`
+        + `<tr class="grp-row"><th class="grp-drivers" colspan="6">What determines your rating &amp; rank</th><th class="grp-info" colspan="1">For info — not used for rank</th></tr>`
+        + `<tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th class="col-divider">Won</th><th class="info-col">% Won</th></tr></thead><tbody>`;
       data.forEach((p,i)=>{
         const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
         const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-        html += `<tr class="pair-row" style="cursor:pointer;" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+        html += `<tr class="pair-row" style="cursor:pointer;" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td class="col-divider">${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td class="info-col">${swp}</td></tr>`;
         html += `<tr id="pairdetail_${i}" style="display:none;"><td colspan="7" style="background:#F5EEF8;padding:0;"><div id="pairdetailinner_${i}" style="padding:10px 14px;font-size:12px;"></div></td></tr>`;
       });
       html += '</tbody></table>';
