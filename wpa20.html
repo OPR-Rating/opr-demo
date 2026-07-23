@@ -87,7 +87,7 @@
   .profile-rating { font-size: 48px; font-weight: 800; margin: 6px 0; line-height: 1; }
   .profile-level { font-size: 18px; font-weight: 600; opacity: 0.95; margin-bottom: 4px; }
   .profile-rank { font-size: 13px; opacity: 0.8; }
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
   .stat-card { background: #F5EEF8; border-radius: 10px; padding: 10px 6px; text-align: center; }
   .stat-value { font-size: 20px; font-weight: 700; color: #6C3483; }
   .stat-label { font-size: 10px; color: #888; margin-top: 2px; }
@@ -1165,7 +1165,40 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 20;
 const CLUB_NAME = "WPA No. 20";  // shown in the logo and browser tab
-const OPR_VERSION = "OPR v2026.07.10-02";  // bump on every deploy (date + revision)
+const OPR_VERSION = "OPR v2026.07.22-03";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
+// Explanation shown above the individual ladder. Open on load so it's read; collapsible
+// (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
+// members aren't nudged away from playing stronger opponents. Every clause maps to a real
+// engine term: sets played = `total`; opponent strength = N via M; expected vs actual =
+// `surprise`; margin of win or loss = `margin` (set + game margin, NOT a win/loss ratio).
+function ladderNoteHTML(){
+  const open = (window._ladderNoteOpen !== false);
+  return '<div id="ladderNoteBox" style="margin:14px 12px 14px;border-left:4px solid #7D3C98;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);">'
+    + '<div onclick="toggleLadderNote()" style="cursor:pointer;display:flex;align-items:center;gap:8px;'
+      + 'padding:11px 16px;background:#E8D9F0;border:1px solid #C9A9DC;border-left:none;'
+      + 'font-size:14px;font-weight:800;letter-spacing:.2px;color:#3B1A4A;">'
+      + '<span>How a Rating is Calculated</span>'
+      + '<span id="ladderNoteChevron" style="margin-left:auto;font-size:11px;">' + (open?'&#9650;':'&#9660;') + '</span>'
+    + '</div>'
+    + '<div id="ladderNoteBody" style="display:' + (open?'block':'none') + ';padding:12px 16px 13px;'
+      + 'background:#F5EEF8;border:1px solid #C9A9DC;border-top:none;border-left:none;'
+      + 'font-size:13px;font-weight:500;color:#4A235A;line-height:1.6;">'
+      + 'A rating is <strong>not only</strong> based on who won — it is a combination of '
+      + '<strong>sets played</strong>, the <strong>opponent\'s strength</strong>, the '
+      + '<strong>expected vs actual result</strong>, and the <strong>margin of win or loss</strong>.'
+      + '<div style="margin-top:8px;font-weight:600;color:#7D3C98;">Tap any player for their story.</div>'
+    + '</div></div>';
+}
+function toggleLadderNote(){
+  const body=document.getElementById('ladderNoteBody');
+  const chev=document.getElementById('ladderNoteChevron');
+  if(!body) return;
+  const nowOpen = (body.style.display==='none');
+  body.style.display = nowOpen ? 'block' : 'none';
+  if(chev) chev.innerHTML = nowOpen ? '&#9650;' : '&#9660;';
+  window._ladderNoteOpen = nowOpen;   // remembered for this session
+}
+function ladProfile(i){ const p=(window._singlesRows||[])[i]; if(p) loadProfile(p.name, window._singlesGender||'M'); }
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1190,6 +1223,19 @@ async function togglePairMatches(i){
     // For category sheets (not Universal), show only that match type
     const rows = (cat==='Universal') ? data : data.filter(m=>m.match_type===cat);
     if(rows.length===0){ inner.innerHTML='<span style="color:#888;">No matches found for this pair'+(cat==='Universal'?'':' in '+cat)+'.</span>'; return; }
+    if(!window._rmapCache){
+      const allPR = await sbGet(`player_results?select=name,current_rating&club_id=eq.${CLUB_ID}`);
+      const rm={}; (allPR||[]).forEach(r=>{ if(r.name!=null && r.current_rating!=null) rm[r.name]=r.current_rating; });
+      window._rmapCache=rm;
+    }
+    const rmap=window._rmapCache;
+    const oppTag=(o1,o2)=>{
+      let r=null;
+      if(o2==null){ r=(o1 in rmap)?rmap[o1]:null; }
+      else if((o1 in rmap)&&(o2 in rmap)){ r=(rmap[o1]+rmap[o2])/2; }
+      if(r==null) return '';
+      return ' <span style="color:#7D3C98;font-weight:700;">('+Math.round(r)+' · L '+(r/200).toFixed(1)+')</span>';
+    };
     let h='<div style="font-weight:700;color:#5b3a6e;margin-bottom:6px;">'+a+' & '+b+' — match history</div>';
     rows.forEach(m=>{
       const pairOnT1=( (m.t1p1===a&&m.t1p2===b)||(m.t1p1===b&&m.t1p2===a) );
@@ -1198,6 +1244,8 @@ async function togglePairMatches(i){
       const mysets = pairOnT1 ? (m.t1_sets||0) : (m.t2_sets||0);
       const oppsets = pairOnT1 ? (m.t2_sets||0) : (m.t1_sets||0);
       const won = mysets>oppsets;
+      const oppNames = opp2!=null ? (opp1+' & '+opp2) : (opp1||'');
+      const olTag = oppTag(opp1, opp2);
       // per-set chips from set_scores (T1-T2 perspective -> flip if pair was T2)
       let chips='';
       const ss=(m.set_scores||'').trim();
@@ -1208,7 +1256,7 @@ async function togglePairMatches(i){
       }).join(''); }
       h+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid #e5d9ef;">'
         +'<span style="font-weight:700;min-width:14px;color:'+(won?'#1e8449':'#c0392b')+';">'+(won?'W':'L')+'</span>'
-        +'<div><div>vs '+opp1+' & '+opp2+' &nbsp;<strong>'+mysets+'-'+oppsets+'</strong> &nbsp;'+chips+'</div>'
+        +'<div><div>vs '+oppNames+olTag+' &nbsp;<strong>'+mysets+'-'+oppsets+'</strong> &nbsp;'+chips+'</div>'
         +'<div style="color:#888;font-size:11px;">'+(m.match_date||'')+' · '+(m.match_type||'')+(m.event&&m.event.toLowerCase()!=='social'?' · '+m.event:'')+'</div></div>'
         +'</div>';
     });
@@ -1246,12 +1294,13 @@ async function loadLadder(type, title) {
     if(type==='mens' || type==='ladies'){
       // SINGLES ladder — unified headings: Rank, Name, Rating, Level, Sets Played, Sets Won, % Won
       const g = (type==='mens') ? 'M' : 'F';
-      const data = await sbGet(`player_results?select=name,current_rating,sets_played,sets_won,set_win_pct&gender=eq.${g}&order=current_rating.desc&club_id=eq.${CLUB_ID}`);
-      html = '<table class="ladder-table"><thead><tr><th>Rank</th><th>Name</th><th>Rating</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>';
+      const data = await sbGet(`player_results?select=name,current_rating&gender=eq.${g}&order=current_rating.desc&club_id=eq.${CLUB_ID}`);
+      window._singlesRows = data; window._singlesGender = g;
+      html = ladderNoteHTML();
+      html += '<table class="ladder-table"><thead><tr><th>Rank</th><th>Name</th><th>Rating</th><th>Level</th></tr></thead><tbody>';
       data.forEach((p,i)=>{
         const lvl = (p.current_rating/200).toFixed(1);
-        const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-        html += `<tr><td>${rankBadge(i+1)}</td><td>${p.name}</td><td>${Math.round(p.current_rating)}</td><td>${lvl}</td><td>${p.sets_played==null?'—':Math.round(p.sets_played)}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+        html += `<tr style="cursor:pointer;" onclick="ladProfile(${i})"><td>${rankBadge(i+1)}</td><td>${p.name}</td><td>${Math.round(p.current_rating)}</td><td>${lvl}</td></tr>`;
       });
       html += '</tbody></table>';
     } else {
@@ -1508,14 +1557,28 @@ async function loadProfileIndividual(name, gender) {
     window._profileMatches = playerMatches;
 
     // Compute sets played / won / win% from the player's matches
-    let setsPlayed=0, setsWon=0;
+    let setsPlayed=0, setsWon=0, gamesFor=0, gamesAgainst=0;
     playerMatches.forEach(m=>{
       const onT1 = (m.t1p1===name||m.t1p2===name);
       const ts=(m.t1_sets||0)+(m.t2_sets||0);
       setsPlayed+=ts;
       setsWon += onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
+      gamesFor     += onT1 ? (m.t1_games||0) : (m.t2_games||0);
+      gamesAgainst += onT1 ? (m.t2_games||0) : (m.t1_games||0);
     });
     const setWinPct = setsPlayed>0 ? Math.round(setsWon/setsPlayed*100*10)/10 : '-';
+    const gdps = setsPlayed>0 ? Math.round((gamesFor-gamesAgainst)/setsPlayed*100)/100 : null;
+    const gdpsTxt = gdps==null ? '-' : gdps.toFixed(2);
+
+    const allPR = await sbGet(`player_results?select=name,current_rating&club_id=eq.${CLUB_ID}`);
+    const rmap={}; (allPR||[]).forEach(r=>{ if(r.name!=null && r.current_rating!=null) rmap[r.name]=r.current_rating; });
+    const oppTag=(o1,o2)=>{
+      let r=null;
+      if(o2==null){ r=(o1 in rmap)?rmap[o1]:null; }
+      else if((o1 in rmap)&&(o2 in rmap)){ r=(rmap[o1]+rmap[o2])/2; }
+      if(r==null) return '';
+      return ` <span style="color:#7D3C98;font-weight:700;">(${Math.round(r)} · L ${(r/200).toFixed(1)})</span>`;
+    };
 
     let matchHTML='';
     if(playerMatches.length>0){
@@ -1529,11 +1592,13 @@ async function loadProfileIndividual(name, gender) {
         const mysets = onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
         const oppsets = onT1 ? (m.t2_sets||0) : (m.t1_sets||0);
         const won = mysets>oppsets;
+        const oppNames = opp2!=null ? `${opp1} & ${opp2}` : `${opp1}`;
+        const olTag = oppTag(opp1, opp2);
         matchHTML+=`<div class="match-row" onclick="toggleProfileMatch(${midx})" style="cursor:pointer;" id="pmatch_${midx}">
             <span class="${won?'win-badge':'loss-badge'}">${won?'W':'L'}</span>
             <div class="match-info">
-              <div class="partners">With ${partner||'-'}</div>
-              <div class="opponents">vs ${opp1} & ${opp2}</div>
+              <div class="partners">${partner!=null?('With '+partner):'Singles'}</div>
+              <div class="opponents">vs ${oppNames}${olTag}</div>
             </div>
             <div class="match-meta">
               <div class="score">${mysets}-${oppsets}</div>
@@ -1557,6 +1622,7 @@ async function loadProfileIndividual(name, gender) {
         <div class="stat-card"><div class="stat-value">${setsPlayed}</div><div class="stat-label">Sets Played</div></div>
         <div class="stat-card"><div class="stat-value">${setsWon}</div><div class="stat-label">Sets Won</div></div>
         <div class="stat-card"><div class="stat-value">${setWinPct}%</div><div class="stat-label">Win %</div></div>
+        <div class="stat-card"><div class="stat-value">${gdpsTxt}</div><div class="stat-label">Game Diff/Set</div></div>
       </div>
       ${matchHTML}`;
   } catch(e){
@@ -1621,13 +1687,17 @@ async function profileShowPartner(partner){
     const together = await sbGet(q);
     window._profilePartnerMatches = together;
 
-    let setsPlayed=0, setsWon=0;
+    let setsPlayed=0, setsWon=0, gamesFor=0, gamesAgainst=0;
     together.forEach(m=>{
       const onT1=((m.t1p1===name||m.t1p2===name));
       setsPlayed += (m.t1_sets||0)+(m.t2_sets||0);
       setsWon += onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
+      gamesFor     += onT1 ? (m.t1_games||0) : (m.t2_games||0);
+      gamesAgainst += onT1 ? (m.t2_games||0) : (m.t1_games||0);
     });
     const winPct = setsPlayed>0 ? Math.round(setsWon/setsPlayed*100*10)/10 : '-';
+    const gdpsP = setsPlayed>0 ? Math.round((gamesFor-gamesAgainst)/setsPlayed*100)/100 : null;
+    const gdpsPTxt = gdpsP==null ? '-' : gdpsP.toFixed(2);
 
     let matchHTML='';
     if(together.length>0){
@@ -1667,6 +1737,7 @@ async function profileShowPartner(partner){
         <div class="stat-card"><div class="stat-value">${setsPlayed}</div><div class="stat-label">Sets Played</div></div>
         <div class="stat-card"><div class="stat-value">${setsWon}</div><div class="stat-label">Sets Won</div></div>
         <div class="stat-card"><div class="stat-value">${winPct}${winPct==='-'?'':'%'}</div><div class="stat-label">Win %</div></div>
+        <div class="stat-card"><div class="stat-value">${gdpsPTxt}</div><div class="stat-label">Game Diff/Set</div></div>
       </div>
       ${matchHTML}`;
   } catch(e){
