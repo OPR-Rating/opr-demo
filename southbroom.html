@@ -102,6 +102,12 @@
   .match-info .partners { font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .match-info .opponents { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .match-meta { text-align: right; flex-shrink: 0; }
+  /* Rating movement for the match, shown inline right after the opponent's rating so the
+     row reads as one causal chain: who you played, how strong they were, what it was worth.
+     Styled to MATCH the opponent tag beside it so the two read as one unit. ONE colour for
+     gains and losses — the sign carries the direction. */
+  .rating-move { font-weight: 700; color: #7D3C98;
+    font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 5px; }
   .match-meta .score { font-weight: 700; color: #6C3483; }
   .match-meta .date { font-size: 10px; color: #aaa; }
 
@@ -1165,7 +1171,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 4;
 const CLUB_NAME = "Southbroom";  // shown in the logo and browser tab
-const OPR_VERSION = "OPR v2026.07.22-03";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
+const OPR_VERSION = "OPR v2026.07.23-01";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -1219,7 +1225,7 @@ async function togglePairMatches(i){
     // Matches where this pair played together (same side, either order, either team)
     const ea=encodeURIComponent(a), eb=encodeURIComponent(b);
     // fetch matches involving player a, then filter client-side for the pair (simpler + reliable)
-    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&or=(and(t1p1.eq.${ea},t1p2.eq.${eb}),and(t1p1.eq.${eb},t1p2.eq.${ea}),and(t2p1.eq.${ea},t2p2.eq.${eb}),and(t2p1.eq.${eb},t2p2.eq.${ea}))&order=match_date.desc,id.desc&club_id=eq.${CLUB_ID}`);
+    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores,rating_delta,t1_rating_at,t2_rating_at&or=(and(t1p1.eq.${ea},t1p2.eq.${eb}),and(t1p1.eq.${eb},t1p2.eq.${ea}),and(t2p1.eq.${ea},t2p2.eq.${eb}),and(t2p1.eq.${eb},t2p2.eq.${ea}))&order=match_date.desc,id.desc&club_id=eq.${CLUB_ID}`);
     // For category sheets (not Universal), show only that match type
     const rows = (cat==='Universal') ? data : data.filter(m=>m.match_type===cat);
     if(rows.length===0){ inner.innerHTML='<span style="color:#888;">No matches found for this pair'+(cat==='Universal'?'':' in '+cat)+'.</span>'; return; }
@@ -1229,10 +1235,12 @@ async function togglePairMatches(i){
       window._rmapCache=rm;
     }
     const rmap=window._rmapCache;
-    const oppTag=(o1,o2)=>{
-      let r=null;
-      if(o2==null){ r=(o1 in rmap)?rmap[o1]:null; }
-      else if((o1 in rmap)&&(o2 in rmap)){ r=(rmap[o1]+rmap[o2])/2; }
+    const oppTag=(o1,o2,storedAt)=>{
+      let r = (storedAt!=null) ? Number(storedAt) : null;
+      if(r==null){
+        if(o2==null){ r=(o1 in rmap)?rmap[o1]:null; }
+        else if((o1 in rmap)&&(o2 in rmap)){ r=(rmap[o1]+rmap[o2])/2; }
+      }
       if(r==null) return '';
       return ' <span style="color:#7D3C98;font-weight:700;">('+Math.round(r)+' · L '+(r/200).toFixed(1)+')</span>';
     };
@@ -1245,7 +1253,12 @@ async function togglePairMatches(i){
       const oppsets = pairOnT1 ? (m.t2_sets||0) : (m.t1_sets||0);
       const won = mysets>oppsets;
       const oppNames = opp2!=null ? (opp1+' & '+opp2) : (opp1||'');
-      const olTag = oppTag(opp1, opp2);
+      const olTag = oppTag(opp1, opp2, pairOnT1 ? m.t2_rating_at : m.t1_rating_at);
+      let mvTag='';
+      if(m.rating_delta!=null){
+        const dv = pairOnT1 ? Number(m.rating_delta) : -Number(m.rating_delta);
+        mvTag = '<span style="font-weight:700;color:#7D3C98;font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:5px;">('+((dv>0?'+':'')+dv.toFixed(1))+')</span>';
+      }
       // per-set chips from set_scores (T1-T2 perspective -> flip if pair was T2)
       let chips='';
       const ss=(m.set_scores||'').trim();
@@ -1256,7 +1269,7 @@ async function togglePairMatches(i){
       }).join(''); }
       h+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid #e5d9ef;">'
         +'<span style="font-weight:700;min-width:14px;color:'+(won?'#1e8449':'#c0392b')+';">'+(won?'W':'L')+'</span>'
-        +'<div><div>vs '+oppNames+olTag+' &nbsp;<strong>'+mysets+'-'+oppsets+'</strong> &nbsp;'+chips+'</div>'
+        +'<div><div>vs '+oppNames+olTag+mvTag+' &nbsp;<strong>'+mysets+'-'+oppsets+'</strong> &nbsp;'+chips+'</div>'
         +'<div style="color:#888;font-size:11px;">'+(m.match_date||'')+' · '+(m.match_type||'')+(m.event&&m.event.toLowerCase()!=='social'?' · '+m.event:'')+'</div></div>'
         +'</div>';
     });
@@ -1552,7 +1565,7 @@ async function loadProfileIndividual(name, gender) {
 
     // Match history from matches (player on any of the 4 slots)
     const enc=encodeURIComponent(name);
-    const q=`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&or=(t1p1.eq.${enc},t1p2.eq.${enc},t2p1.eq.${enc},t2p2.eq.${enc})&order=match_date.desc,id.desc&club_id=eq.${CLUB_ID}`;
+    const q=`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores,rating_delta,t1_rating_at,t2_rating_at&or=(t1p1.eq.${enc},t1p2.eq.${enc},t2p1.eq.${enc},t2p2.eq.${enc})&order=match_date.desc,id.desc&club_id=eq.${CLUB_ID}`;
     const playerMatches = await sbGet(q);
     window._profileMatches = playerMatches;
 
@@ -1572,12 +1585,20 @@ async function loadProfileIndividual(name, gender) {
 
     const allPR = await sbGet(`player_results?select=name,current_rating&club_id=eq.${CLUB_ID}`);
     const rmap={}; (allPR||[]).forEach(r=>{ if(r.name!=null && r.current_rating!=null) rmap[r.name]=r.current_rating; });
-    const oppTag=(o1,o2)=>{
-      let r=null;
-      if(o2==null){ r=(o1 in rmap)?rmap[o1]:null; }
-      else if((o1 in rmap)&&(o2 in rmap)){ r=(rmap[o1]+rmap[o2])/2; }
+    const oppTag=(o1,o2,storedAt)=>{
+      let r = (storedAt!=null) ? Number(storedAt) : null;   // rating for that side, that day
+      if(r==null){
+        if(o2==null){ r=(o1 in rmap)?rmap[o1]:null; }
+        else if((o1 in rmap)&&(o2 in rmap)){ r=(rmap[o1]+rmap[o2])/2; }
+      }
       if(r==null) return '';
       return ` <span style="color:#7D3C98;font-weight:700;">(${Math.round(r)} · L ${(r/200).toFixed(1)})</span>`;
+    };
+    // Rating movement. rating_delta is stored from team 1's perspective, so flip for team 2.
+    const moveTag=(delta,onT1)=>{
+      if(delta==null) return '';
+      const d = onT1 ? Number(delta) : -Number(delta);
+      return `<span class="rating-move">(${(d>0?'+':'')+d.toFixed(1)})</span>`;
     };
 
     let matchHTML='';
@@ -1593,12 +1614,13 @@ async function loadProfileIndividual(name, gender) {
         const oppsets = onT1 ? (m.t2_sets||0) : (m.t1_sets||0);
         const won = mysets>oppsets;
         const oppNames = opp2!=null ? `${opp1} & ${opp2}` : `${opp1}`;
-        const olTag = oppTag(opp1, opp2);
+        const olTag = oppTag(opp1, opp2, onT1 ? m.t2_rating_at : m.t1_rating_at);
+        const mvTag = moveTag(m.rating_delta, onT1);
         matchHTML+=`<div class="match-row" onclick="toggleProfileMatch(${midx})" style="cursor:pointer;" id="pmatch_${midx}">
             <span class="${won?'win-badge':'loss-badge'}">${won?'W':'L'}</span>
             <div class="match-info">
               <div class="partners">${partner!=null?('With '+partner):'Singles'}</div>
-              <div class="opponents">vs ${oppNames}${olTag}</div>
+              <div class="opponents">vs ${oppNames}${olTag}${mvTag}</div>
             </div>
             <div class="match-meta">
               <div class="score">${mysets}-${oppsets}</div>
