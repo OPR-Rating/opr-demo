@@ -100,7 +100,8 @@
   .loss-badge { background: #c0392b; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 700; flex-shrink: 0; }
   .match-info { flex: 1; min-width: 0; }
   .match-info .partners { font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .match-info .opponents { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .match-info .opponents { color: #666; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+  .match-info .opponents .rating-move { white-space: nowrap; }
   .match-meta { text-align: right; flex-shrink: 0; }
   /* Rating movement for the match, shown inline right after the opponent's rating so the
      row reads as one causal chain: who you played, how strong they were, what it was worth.
@@ -1171,7 +1172,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 3;
 const CLUB_NAME = "Eswatini";  // shown in the logo and browser tab
-const OPR_VERSION = "OPR v2026.07.23-01";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
+const OPR_VERSION = "OPR v2026.07.23-04";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -1624,7 +1625,7 @@ async function loadProfileIndividual(name, gender) {
             </div>
             <div class="match-meta">
               <div class="score">${mysets}-${oppsets}</div>
-              <div class="date">${date} · ${type} ▼</div>
+              <div class="date">${type} ▼</div>
             </div>
           </div>
           <div id="pmatchdetail_${midx}" style="display:none;background:#F5EEF8;padding:8px 12px;border-radius:8px;margin:-4px 0 4px;font-size:12px;text-align:center;"></div>`;
@@ -1739,7 +1740,7 @@ async function profileShowPartner(partner){
             </div>
             <div class="match-meta">
               <div class="score">${mysets}-${oppsets}</div>
-              <div class="date">${date} · ${type} ▼</div>
+              <div class="date">${type} ▼</div>
             </div>
           </div>
           <div id="ppmatchdetail_${midx}" style="display:none;background:#F5EEF8;padding:8px 12px;border-radius:8px;margin:-4px 0 4px;font-size:12px;text-align:center;"></div>`;
