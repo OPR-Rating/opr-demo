@@ -1434,7 +1434,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.23-04";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
+const OPR_VERSION = "OPR-LAPTOP v2026.07.23-05";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -1657,12 +1657,22 @@ async function loadLadder(type, title) {
       window._doublesCat = cat;
       const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
       html = `<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>${ratingHdr}</th><th>Level</th><th>Sets</th><th>Won</th><th>% Won</th></tr></thead><tbody>`;
-      data.forEach((p,i)=>{
+      const MIN_SETS = 12;
+      const qualified = [], unqualified = [];
+      data.forEach((p,i)=>{ (((p.sets||0) >= MIN_SETS) ? qualified : unqualified).push({p,i}); });
+      const pairRow = (p,i,rankCell,rowStyle)=>{
         const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
         const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-        html += `<tr class="pair-row" style="cursor:pointer;" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankBadge(p.rank)}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
-        html += `<tr id="pairdetail_${i}" style="display:none;"><td colspan="7" style="background:#F5EEF8;padding:0;"><div id="pairdetailinner_${i}" style="padding:10px 14px;font-size:12px;"></div></td></tr>`;
-      });
+        let h = `<tr class="pair-row" style="cursor:pointer;${rowStyle}" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankCell}</td><td>${p.p1} & ${p.p2} <span style="color:#7D3C98;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+        h += `<tr id="pairdetail_${i}" style="display:none;"><td colspan="7" style="background:#F5EEF8;padding:0;"><div id="pairdetailinner_${i}" style="padding:10px 14px;font-size:12px;"></div></td></tr>`;
+        return h;
+      };
+      let displayRank = 0;
+      qualified.forEach(({p,i})=>{ displayRank++; html += pairRow(p,i,rankBadge(displayRank),''); });
+      if(unqualified.length){
+        html += `<tr><td colspan="7" style="background:#EFE7F5;color:#7a6688;font-size:11px;font-style:italic;padding:7px 12px;">Not yet qualified — fewer than ${MIN_SETS} sets played together (shown for reference; not ranked)</td></tr>`;
+        unqualified.forEach(({p,i})=>{ html += pairRow(p,i,'—','opacity:0.55;'); });
+      }
       html += '</tbody></table>';
     }
     document.getElementById('ladderContent').className='';
