@@ -376,16 +376,16 @@
   .amr-l1{ display:flex; align-items:baseline; gap:8px; }
   .amr-wl{ font-weight:700; flex:none; min-width:14px; }
   .amr-nm{ flex:1; min-width:0; }
-  .amr-cols{ display:grid; align-items:baseline; column-gap:10px;
-    grid-template-columns:auto 56px 40px repeat(3,30px); }
+  .amr-cols{ display:grid; align-items:baseline; column-gap:6px;
+    grid-template-columns:76px 56px 40px repeat(3,30px); }
   .amr-rl{ justify-self:start; white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:700; }
   .amr-mv{ justify-self:start; white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:700; }
   .amr-sc{ justify-self:start; white-space:nowrap; font-variant-numeric:tabular-nums; font-weight:700; }
   .amr-chip{ text-align:center; color:#fff; border-radius:3px; padding:1px 6px; font-size:11px; font-weight:700; }
   .amr-date{ color:#888; font-size:11px; }
   /* profile row (no chips): just two bracket columns; score/▼ stay in .match-meta */
-  .opponents.amr-prof{ display:grid; align-items:baseline; column-gap:10px;
-    grid-template-columns:minmax(0,1fr) auto 56px; }
+  .opponents.amr-prof{ display:grid; align-items:baseline; column-gap:6px;
+    grid-template-columns:minmax(0,1fr) 76px 56px; }
   .opponents.amr-prof .amr-pnm{ min-width:0; }
   .opponents.amr-prof .amr-rl{ justify-self:start; }
   .opponents.amr-prof .amr-mv{ justify-self:start; }
@@ -401,11 +401,13 @@
   }
   /* PHONE (narrow): name on line 1 (wraps, never truncates), columns on line 2 left-aligned */
   @media (max-width:560px){
-    .amr-nm{ white-space:normal; overflow-wrap:anywhere; }
+    .amr-nm{ white-space:normal; overflow-wrap:normal; word-break:normal; }
     .amr-cols{ margin:3px 0 0 0; justify-content:start; }
     .amr-date{ margin:2px 0 0 0; }
-    .opponents.amr-prof{ grid-template-columns:auto 56px; justify-content:start; }
-    .opponents.amr-prof .amr-pnm{ grid-column:1 / -1; white-space:normal; overflow-wrap:anywhere; }
+    .opponents.amr-prof{ display:block; }
+    .opponents.amr-prof .amr-pnm{ display:block; width:100%; white-space:normal; overflow-wrap:normal; word-break:normal; }
+    .opponents.amr-prof .amr-rl{ display:inline-block; width:76px; margin-top:3px; }
+    .opponents.amr-prof .amr-mv{ display:inline-block; margin-left:6px; }
   }
 </style>
 </head>
