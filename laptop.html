@@ -1411,32 +1411,50 @@ async function loadFormWall(type, title) {
 
     if(type==='individual'){
       // Individual Form — full Form Guide columns
-      const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&form_npi=not.is.null&order=form_npi.desc&club_id=eq.${CLUB_ID}`);
-      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
-      if(data&&data.sort) data.sort((a,b)=>(b.form_npi-a.form_npi)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
+      const data = await sbGet(`player_results?select=name,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&club_id=eq.${CLUB_ID}`);
+      const FORM_MIN = 12;
+      const qf = (data||[]).filter(p=>p.form_npi!=null && (p.sets_played||0)>=FORM_MIN);
+      const uf = (data||[]).filter(p=>!(p.form_npi!=null && (p.sets_played||0)>=FORM_MIN));
+      qf.sort((a,b)=>(b.form_npi-a.form_npi)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
+      uf.sort((a,b)=>((b.set_win_pct||0)-(a.set_win_pct||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Player</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
-      data.forEach(p=>{
+      const frow=(p,style)=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
         const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
-        html += `<tr><td>${p.name}</td><td>${p.sets_played==null?'—':Math.round(p.sets_played)}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${Number(p.form_npi).toFixed(3)}</strong></td></tr>`;
-      });
+        const fv = p.form_npi==null?'—':Number(p.form_npi).toFixed(3);
+        return `<tr style="${style}"><td>${p.name}</td><td>${p.sets_played==null?'—':Math.round(p.sets_played)}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
+      };
+      qf.forEach(p=>{ html+=frow(p,''); });
+      if(uf.length){
+        html += `<tr><td colspan="6" style="background:#EFE7F5;color:#7a6688;font-size:11px;font-style:italic;padding:7px 12px;">Fewer than ${FORM_MIN} sets played — shown for reference, not ranked</td></tr>`;
+        uf.forEach(p=>{ html+=frow(p,'opacity:0.55;'); });
+      }
       html += '</tbody></table>';
     } else {
       // Doubles TEAM form — full columns matching Individual Form
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixed':'Mixed','allsorts':'All Sorts','universal':'Universal'};
       const cat = catMap[type];
-      const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
-      // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
-      if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
+      const data = await sbGet(`doubles_results?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&category=eq.${encodeURIComponent(cat)}&club_id=eq.${CLUB_ID}`);
+      const FORM_MIN = 12;
+      const qf = (data||[]).filter(p=>p.team_form!=null && (p.sets||0)>=FORM_MIN);
+      const uf = (data||[]).filter(p=>!(p.team_form!=null && (p.sets||0)>=FORM_MIN));
+      qf.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
+      uf.sort((a,b)=>((b.set_win_pct||0)-(a.set_win_pct||0))||((b.sets_won||0)-(a.sets_won||0)));
       html += '<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
-      data.forEach(p=>{
+      const frow=(p,style)=>{
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
         const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
-        html += `<tr><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${Number(p.team_form).toFixed(3)}</strong></td></tr>`;
-      });
+        const fv = p.team_form==null?'—':Number(p.team_form).toFixed(3);
+        return `<tr style="${style}"><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
+      };
+      qf.forEach(p=>{ html+=frow(p,''); });
+      if(uf.length){
+        html += `<tr><td colspan="6" style="background:#EFE7F5;color:#7a6688;font-size:11px;font-style:italic;padding:7px 12px;">Fewer than ${FORM_MIN} team sets played — shown for reference, not ranked</td></tr>`;
+        uf.forEach(p=>{ html+=frow(p,'opacity:0.55;'); });
+      }
       html += '</tbody></table>';
-      if(data.length===0){
-        html += '<div class="empty-state" style="padding:16px 0;"><p>No pairs have reached 12 team sets in this category yet.</p></div>';
+      if(qf.length===0 && uf.length===0){
+        html += '<div class="empty-state" style="padding:16px 0;"><p>No pairs in this category yet.</p></div>';
       }
     }
     document.getElementById('ladderContent').className='';
@@ -1475,7 +1493,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-LAPTOP v2026.07.23-07";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
+const OPR_VERSION = "OPR-LAPTOP v2026.07.23-08";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -1854,21 +1872,31 @@ async function loadTournament(category, title) {
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
     const usesCombined = (category==="Men's" || category==='Ladies');
-    // Tournament STATISTICS table: rank by PERFORMANCE, not rating.
-    // Tournament merit order: sets WON (volume — you earn rank by winning) → win % (efficiency) → sets played.
-    // A 1-match 100% pair no longer outranks a 20-set 95% pair.
-    // (This ordering applies ONLY to this tournament-stats table — not ladders or rating sheets.)
-    const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&order=sets_won.desc.nullslast,set_win_pct.desc.nullslast,sets.desc&club_id=eq.${CLUB_ID}`);
+    // Tournament STATISTICS table: performance during the event, NOT the final placing.
+    // Sort by WIN % (self-explaining for casual players) → sets won → game diff/set.
+    // Qualifier: 6 sets played together; sub-6 pairs shown greyed for reference, not ranked.
+    // (Applies ONLY to this tournament-stats table — not ladders or rating sheets.)
+    const data = await sbGet(`${tourTable()}?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct,game_diff_per_set&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&club_id=eq.${CLUB_ID}`);
     if(data.length===0){document.getElementById('tournamentSheetContent').innerHTML='<div class="empty-state"><div class="icon">🎾</div><p>No tournament matches in this category yet.</p></div>';return;}
     const ratingHdr = usesCombined ? 'Rating (Comb)' : 'Rating (Wtd)';
-    let html=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>Sets</th><th>Won</th><th>% Won</th><th>${ratingHdr}</th><th>Level</th></tr></thead><tbody>`;
-    let pos=0;
-    data.forEach(p=>{
-      pos++;
+    const STATS_MIN = 6;
+    const byPerf = (a,b)=>((b.set_win_pct||0)-(a.set_win_pct||0))||((b.sets_won||0)-(a.sets_won||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0));
+    const q=[], u=[];
+    data.forEach(p=>{ (((p.sets||0)>=STATS_MIN && p.set_win_pct!=null) ? q : u).push(p); });
+    q.sort(byPerf); u.sort(byPerf);
+    let html='<div style="padding:10px 14px;background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;margin:0 0 12px;font-size:12px;color:#5b3a6e;line-height:1.5;"><strong>Tournament Performance Stats</strong> — how each pairing performed during the event. This is not the final placing; the winner is decided by the final.</div>';
+    html+=`<table class="ladder-table"><thead><tr><th>Rank</th><th>Pair</th><th>% Won</th><th>Sets</th><th>Won</th><th>${ratingHdr}</th><th>Level</th></tr></thead><tbody>`;
+    const rowFor=(p,rankCell,rowStyle)=>{
       const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
       const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-      html += `<tr><td>${rankBadge(pos)}</td><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td></tr>`;
-    });
+      return `<tr style="${rowStyle}"><td>${rankCell}</td><td>${p.p1} & ${p.p2}</td><td>${swp}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td></tr>`;
+    };
+    let pos=0;
+    q.forEach(p=>{ pos++; html+=rowFor(p,rankBadge(pos),''); });
+    if(u.length){
+      html+=`<tr><td colspan="7" style="background:#EFE7F5;color:#7a6688;font-size:11px;font-style:italic;padding:7px 12px;">Fewer than ${STATS_MIN} sets played together — shown for reference, not ranked</td></tr>`;
+      u.forEach(p=>{ html+=rowFor(p,'—','opacity:0.55;'); });
+    }
     html+='</tbody></table>';
     document.getElementById('tournamentSheetContent').className='';
     document.getElementById('tournamentSheetContent').innerHTML=html;
@@ -1884,17 +1912,26 @@ async function loadTournamentForm(category, title) {
   showScreen('tournamentSheetScreen');
   document.getElementById('tournamentSheetTitle').textContent = title;
   try {
-    const data = await sbGet(`${tourTable()}?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&team_form=not.is.null&order=team_form.desc&club_id=eq.${CLUB_ID}`);
-    // Tie-break merit order: 1. Form  2. Win %  3. Game diff/set  4. Sets won
-    if(data&&data.sort) data.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
+    const data = await sbGet(`${tourTable()}?select=p1,p2,sets,sets_won,set_win_pct,game_diff_per_set,team_form&event=eq.${encodeURIComponent(TOURNAMENT_EVENT)}&category=eq.${encodeURIComponent(category)}&club_id=eq.${CLUB_ID}`);
+    const TFORM_MIN = 6;
+    const qf = (data||[]).filter(p=>p.team_form!=null && (p.sets||0)>=TFORM_MIN);
+    const uf = (data||[]).filter(p=>!(p.team_form!=null && (p.sets||0)>=TFORM_MIN));
+    qf.sort((a,b)=>(b.team_form-a.team_form)||((b.set_win_pct||0)-(a.set_win_pct||0))||((b.game_diff_per_set||0)-(a.game_diff_per_set||0))||((b.sets_won||0)-(a.sets_won||0)));
+    uf.sort((a,b)=>((b.set_win_pct||0)-(a.set_win_pct||0))||((b.sets_won||0)-(a.sets_won||0)));
     let html='<table class="ladder-table"><thead><tr><th>Pair</th><th>Sets</th><th>Sets Won</th><th>Win %</th><th>Game Diff/Set</th><th>Form</th></tr></thead><tbody>';
-    data.forEach(p=>{
+    const frow=(p,style)=>{
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
       const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
-      html += `<tr><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${Number(p.team_form).toFixed(3)}</strong></td></tr>`;
-    });
+      const fv = p.team_form==null?'—':Number(p.team_form).toFixed(3);
+      return `<tr style="${style}"><td>${p.p1} & ${p.p2}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
+    };
+    qf.forEach(p=>{ html+=frow(p,''); });
+    if(uf.length){
+      html += `<tr><td colspan="6" style="background:#EFE7F5;color:#7a6688;font-size:11px;font-style:italic;padding:7px 12px;">Fewer than ${TFORM_MIN} tournament sets played — shown for reference, not ranked</td></tr>`;
+      uf.forEach(p=>{ html+=frow(p,'opacity:0.55;'); });
+    }
     html+='</tbody></table>';
-    if(data.length===0){ html='<div class="empty-state" style="padding:16px 0;"><p>No pairs have reached 12 tournament sets in this category yet.</p></div>'; }
+    if(qf.length===0 && uf.length===0){ html='<div class="empty-state" style="padding:16px 0;"><p>No tournament pairs in this category yet.</p></div>'; }
     document.getElementById('tournamentSheetContent').className='';
     document.getElementById('tournamentSheetContent').innerHTML=html;
     addExportBar('tournamentSheetContent','Tournament_Form','Tournament Form Sheet');
