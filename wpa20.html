@@ -457,7 +457,7 @@
   <!-- PLAYER PROFILE -->
   <div class="screen hidden" id="profileScreen">
     <div class="header">
-      <button class="back-btn" onclick="showScreen('profileSearchScreen')">&#8592;</button>
+      <button class="back-btn" onclick="profileBack()">&#8592;</button>
       <h1 id="profileTitle">Profile</h1>
     </div>
     <div class="screen-content"><div style="background:#f3eef8;border:1px solid #d7bde2;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#5b3a6e;line-height:1.5;text-align:center;">Includes All your Matches Recorded on the system</div><div id="profileContent"></div></div>
@@ -1213,7 +1213,7 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // This is the ONE value that makes this app belong to a specific club.
 const CLUB_ID = 20;
 const CLUB_NAME = "WPA No. 20";  // shown in the logo and browser tab
-const OPR_VERSION = "OPR v2026.07.23-06";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
+const OPR_VERSION = "OPR v2026.07.23-07";  // Minimal individual ladder (Rank/Name/Rating/Level, tap -> profile); match rows show opponent rating + level
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -1246,7 +1246,7 @@ function toggleLadderNote(){
   if(chev) chev.innerHTML = nowOpen ? '&#9650;' : '&#9660;';
   window._ladderNoteOpen = nowOpen;   // remembered for this session
 }
-function ladProfile(i){ const p=(window._singlesRows||[])[i]; if(p) loadProfile(p.name, window._singlesGender||'M'); }
+function ladProfile(i){ const p=(window._singlesRows||[])[i]; if(p){ window._profileFrom='ladder'; loadProfile(p.name, window._singlesGender||'M'); } }
 async function sbGet(pathq){
   const r = await fetch(SB_URL + "/rest/v1/" + pathq, { headers:{ apikey:SB_ANON, Authorization:"Bearer "+SB_ANON } });
   if(!r.ok) throw new Error("HTTP "+r.status);
@@ -1347,6 +1347,7 @@ function toggleTFormGuide(){
 }
 
 async function loadLadder(type, title) {
+  window._lastLadder = { type: type, title: title };
   document.getElementById('ladderTitle').textContent = title;
   document.getElementById('ladderContent').innerHTML = '<div class="loading"><span class="loading-spinner">⏳</span>Loading...</div>';
   showScreen('ladderScreen');
@@ -1571,7 +1572,7 @@ async function loadTournamentForm(category, title) {
 
 function renderPlayerList(players) {
   document.getElementById('playerList').innerHTML = players.map(p=>`
-    <li class="player-item" onclick="loadProfile('${p.name.replace(/'/g,"\\'")}','${p.gender}')">
+    <li class="player-item" onclick="window._profileFrom='search';loadProfile('${p.name.replace(/'/g,"\\'")}','${p.gender}')">
       <div class="player-avatar">${p.name[0]}</div>
       <div><div class="player-name">${p.name}</div><div class="player-gender">${p.gender==='M'?"Men's":"Ladies"}</div></div>
     </li>`).join('');
@@ -1581,6 +1582,18 @@ function filterPlayers() {
   const q=document.getElementById('playerSearch').value.toLowerCase();
   const all=[...MEN.map(n=>({name:n,gender:'M'})),...LADIES.map(n=>({name:n,gender:'F'}))].sort((a,b)=>a.name.localeCompare(b.name));
   renderPlayerList(q?all.filter(p=>p.name.toLowerCase().split(' ')[0].startsWith(q)):all);
+}
+
+function profileBack(){
+  // If this profile was opened from a rating table, go back to that exact table.
+  // Otherwise (opened from the Member Profile search list) keep the original behaviour.
+  if(window._profileFrom==='ladder' && window._lastLadder){
+    window._profileFrom=null;
+    loadLadder(window._lastLadder.type, window._lastLadder.title);
+  } else {
+    window._profileFrom=null;
+    showScreen('profileSearchScreen');
+  }
 }
 
 async function loadProfile(name, gender) {
