@@ -2061,9 +2061,19 @@ async function adminUnlock(){
   const r=await adminCall('list_clubs');
   if(!r.ok){ document.getElementById('adminGateErr').textContent=r.error||'Access denied.'; document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return; }
   window._adminRole = r.role || 'club';
+  // PER-CLUB LOCK: this app is pinned to CLUB_ID. Only the master PIN, or a PIN that
+  // grants access to THIS club, may unlock it. A different club's PIN is rejected here
+  // so e.g. the Eswatini app cannot open Southbroom's admin.
+  const isMaster = (window._adminRole === 'master');
+  const allowed = isMaster || (Array.isArray(r.clubs) && r.clubs.some(c=>Number(c.id)===Number(CLUB_ID)));
+  if(!allowed){
+    document.getElementById('adminGateErr').textContent='That PIN is not valid for this club.';
+    document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return;
+  }
   document.getElementById('adminGate').style.display='none';
   document.getElementById('adminPanel').style.display='block';
-  fillClubs(r.clubs);
+  // Lock the club selector to THIS club only (non-master); master keeps full list.
+  fillClubs(isMaster ? r.clubs : r.clubs.filter(c=>Number(c.id)===Number(CLUB_ID)));
 }
 // ---- Admin Control Room: tabs + context ----
 function adminExit(){
@@ -2875,8 +2885,8 @@ async function loadFormWall(type, title) {
 }
 
 // === SUPABASE config (test build) ===
-const SB_URL = "https://farlrjnaeojmypzbplmz.supabase.co";
-const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmxyam5hZW9qbXlwemJwbG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDkyNjYsImV4cCI6MjA5NjkyNTI2Nn0.SL18KYq6F97vsmcazWMsLcwTJm82nttrvXLpJSKiOsA";
+const SB_URL = "https://naeknoowzjkmtzvfwnrz.supabase.co";
+const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5hZWtub293emprbXR6dmZ3bnJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NDA1MDgsImV4cCI6MjEwMTMxNjUwOH0.np-aS8LIYtoqFt6pW83ErhCghG0wsu3WE_4iQupSbBY";
 // CLUB IDENTITY — each club's copy of the app sets its own. Demo = 1, Eswatini = 3, etc.
 // This is the ONE value that makes this app belong to a specific club.
 // UNIVERSAL LAPTOP APP — the club is chosen by the URL, e.g. laptop.html?club=3
@@ -3547,7 +3557,7 @@ async function loadTournament(category, title) {
     const rowFor=(p,rankCell,rowStyle)=>{
       const rating = isSingles ? Math.round(p.combined) : (usesCombined ? Math.round(p.combined) : Math.round(p.weighted));
       const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-      const nameCell = isSingles ? p.p1 : (p.p1+' & '+p.p2);
+      const nameCell = isSingles ? p.p1 : (p.p2 ? (p.p1+' & '+p.p2) : p.p1);
       return `<tr style="${rowStyle}"><td>${rankCell}</td><td>${nameCell}</td><td>${swp}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td></tr>`;
     };
     let pos=0;
@@ -3584,7 +3594,7 @@ async function loadTournamentForm(category, title) {
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
       const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
       const fv = p.team_form==null?'—':Number(p.team_form).toFixed(3);
-      const nameCell = isSingles ? p.p1 : (p.p1+' & '+p.p2);
+      const nameCell = isSingles ? p.p1 : (p.p2 ? (p.p1+' & '+p.p2) : p.p1);
       return `<tr style="${style}"><td>${nameCell}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
     };
     qf.forEach(p=>{ html+=frow(p,''); });
