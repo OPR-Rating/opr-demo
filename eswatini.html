@@ -105,7 +105,7 @@
   .profile-level { font-size: 18px; font-weight: 600; opacity: 0.95; margin-bottom: 4px; }
   .profile-rank { font-size: 13px; opacity: 0.8; }
   .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-  @media (max-width: 420px){ .stat-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; } .stat-grid .stat-card { padding: 8px 3px; } .stat-grid .stat-label{ font-size:9px; } .stat-grid .stat-value{ font-size:15px; } }
+  @media (max-width: 480px){ .stat-grid { grid-template-columns: repeat(5, 1fr); gap: 3px; } .stat-grid .stat-card { padding: 7px 2px; } .stat-grid .stat-label{ font-size:8px; } .stat-grid .stat-value{ font-size:13px; } .stat-grid .stat-card:nth-child(4) .stat-value{ font-size:13px; } }
   .stat-card { background: rgba(108,52,131,.12); border-radius: 10px; padding: 10px 6px; text-align: center; }
   .stat-value { font-size: 20px; font-weight: 700; color: #6c3483; white-space: nowrap; }
   .stat-grid .stat-card:nth-child(4) .stat-value { font-size: 18px; }
@@ -594,7 +594,7 @@
   .profile-rating { font-size: 48px; font-weight: 800; margin: 6px 0; line-height: 1; }
   .profile-level { font-size: 18px; font-weight: 600; opacity: 0.95; margin-bottom: 4px; }
   .profile-rank { font-size: 13px; opacity: 0.8; }
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
   .stat-card { background: rgba(15,110,86,.12); border-radius: 10px; padding: 10px 6px; text-align: center; }
   .stat-value { font-size: 20px; font-weight: 700; color: #6C3483; white-space: nowrap; }
   .stat-label { font-size: 10px; color: #888; margin-top: 2px; }
@@ -3057,7 +3057,7 @@ const OPR = {
   pairByName(pairName){ const mm=this._members[pairName]; if(mm) return this.pair(mm[0],mm[1]); return null; }
 };
 // Singles-aware side name: "A & B" for doubles, just "A" when the partner slot is null.
-function sideName(p1,p2,sep){ sep=sep||" & "; return p2?((p1||"")+sep+p2):(p1||""); }
+function sideName(p1,p2,sep){ sep=sep||" & "; var ok=p2&&String(p2).trim()&&String(p2).trim().toLowerCase()!=="null"; return ok?((p1||"")+sep+p2):(p1||""); }
 function rankBadge(n){ const cls=n===1?'rank-1':n===2?'rank-2':n===3?'rank-3':''; return `<span class="rank-badge ${cls}">${n}</span>`; }
 
 async function togglePairMatches(i){
@@ -3243,7 +3243,7 @@ async function loadLadder(type, title) {
       const pairRow = (p,i,rankCell,rowStyle)=>{
         const rating = usesCombined ? Math.round(p.combined) : Math.round(p.weighted);
         const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-        let h = `<tr class="pair-row" style="cursor:pointer;${rowStyle}" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankCell}</td><td>${p.p1} & ${p.p2} <span style="color:#3a1d6e;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.matches==null?'—':p.matches}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
+        let h = `<tr class="pair-row" style="cursor:pointer;${rowStyle}" onclick="togglePairMatches(${i})" id="pairrow_${i}"><td>${rankCell}</td><td>${(p.p2 && String(p.p2).trim() && String(p.p2).trim().toLowerCase()!=='null') ? (p.p1+' & '+p.p2) : p.p1} <span style="color:#3a1d6e;font-size:10px;">▼</span></td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td><td>${p.matches==null?'—':p.matches}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${swp}</td></tr>`;
         h += `<tr id="pairdetail_${i}" style="display:none;"><td colspan="8" style="background:rgba(108,52,131,.12);padding:0;"><div id="pairdetailinner_${i}" style="padding:10px 14px;font-size:12px;"></div></td></tr>`;
         return h;
       };
@@ -3752,7 +3752,7 @@ async function loadProfileIndividual(name, gender) {
         const mysets = onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
         const oppsets = onT1 ? (m.t2_sets||0) : (m.t1_sets||0);
         const won = mysets>oppsets;
-        const oppNames = opp2!=null ? `${opp1} & ${opp2}` : `${opp1}`;
+        const oppNames = (opp2 && String(opp2).trim() && String(opp2).trim().toLowerCase()!=="null") ? `${opp1} & ${opp2}` : `${opp1}`;
         const oppStoredAt = onT1 ? m.t2_rating_at : m.t1_rating_at;
         const olTag = oppTag(opp1, opp2, oppStoredAt);
         const mvTag = moveTag(m.rating_delta, onT1);
@@ -3819,7 +3819,7 @@ function profilePickPartner(){
     });
   };
   if(players.length) go(players);
-  else sbGet(`players?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`).then(l=>{ window._clPlayers=l||[]; go(window._clPlayers); });
+  else sbGet(`individuals?select=full_name,gender&order=full_name.asc&club_id=eq.${CLUB_ID}`).then(l=>{ window._clPlayers=(l||[]).map(x=>({name:x.full_name,gender:x.gender})); go(window._clPlayers); });
 }
 
 async function profileShowPartner(partner){
@@ -3886,7 +3886,7 @@ async function profileShowPartner(partner){
         const mysets = onT1 ? (m.t1_sets||0) : (m.t2_sets||0);
         const oppsets = onT1 ? (m.t2_sets||0) : (m.t1_sets||0);
         const won = mysets>oppsets;
-        const oppNames2 = opp2!=null ? `${opp1} & ${opp2}` : `${opp1}`;
+        const oppNames2 = (opp2 && String(opp2).trim() && String(opp2).trim().toLowerCase()!=="null") ? `${opp1} & ${opp2}` : `${opp1}`;
         const olTag2 = oppTag2(opp1, opp2, onT1 ? m.t2_rating_at : m.t1_rating_at);
         let mvTag2='';
         if(m.rating_delta!=null){
@@ -8077,7 +8077,7 @@ async function loadClubLadder(){
   body.innerHTML = '<div class="loading">Loading ladder…</div>';
   // players for join pickers
   if(!window._clPlayers){
-    window._clPlayers = await sbGet(`players?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
+    window._clPlayers = ((await sbGet(`individuals?select=full_name,gender&order=full_name.asc&club_id=eq.${CLUB_ID}`)) || []).map(x=>({name:x.full_name,gender:x.gender}));
   }
   renderClubLadder();
 }
@@ -8098,14 +8098,12 @@ async function renderClubLadder(){
   const singles = clIsSingles(cat);
   const sel = 'width:100%;padding:11px;border:1.5px solid rgba(108,52,131,.22);border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  // TOP-LEVEL format toggle: Singles Ladder / Doubles Ladder
-  let fmtBar = '<div class="tm-divbar cl-divbar" style="margin-bottom:8px;">'
-    + '<button class="'+(CL_FORMAT==='singles'?'active':'')+'" onclick="clSetFormat(\'singles\')">🎾 Singles Ladder</button>'
-    + '<button class="'+(CL_FORMAT==='doubles'?'active':'')+'" onclick="clSetFormat(\'doubles\')">👥 Doubles Ladder</button>'
-    + '</div>';
+  // OPR is doubles-only — no singles ladder. Force doubles, hide the format toggle.
+  CL_FORMAT = 'doubles';
+  let fmtBar = '';
 
-  // division pills — depend on the selected format
-  const divs = (CL_FORMAT==='singles') ? CL_CATS_SINGLES : CL_CATS_DOUBLES;
+  // division pills — doubles categories only
+  const divs = CL_CATS_DOUBLES;
   let divBar = '<div class="tm-divbar cl-divbar">';
   divs.forEach(d=>{ divBar += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+clDivLabel(d)+'</button>'; });
   divBar += '</div>';
