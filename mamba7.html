@@ -2863,7 +2863,7 @@ async function loadFormWall(type, title) {
         const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
         const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
         const fv = p.team_form==null?'—':Number(p.team_form).toFixed(3);
-        return `<tr style="${style}"><td>${p.p2 ? (p.p1+' & '+p.p2) : p.p1}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
+        return `<tr style="${style}"><td>${(p.p2 && String(p.p2).trim() && String(p.p2).trim().toLowerCase()!=='null') ? (p.p1+' & '+p.p2) : p.p1}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
       };
       qf.forEach(p=>{ html+=frow(p,''); });
       if(uf.length){
@@ -3556,7 +3556,7 @@ async function loadTournament(category, title) {
     const rowFor=(p,rankCell,rowStyle)=>{
       const rating = isSingles ? Math.round(p.combined) : (usesCombined ? Math.round(p.combined) : Math.round(p.weighted));
       const swp = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
-      const nameCell = isSingles ? p.p1 : (p.p2 ? (p.p1+' & '+p.p2) : p.p1);
+      const nameCell = isSingles ? p.p1 : ((p.p2 && String(p.p2).trim() && String(p.p2).trim().toLowerCase()!=='null') ? (p.p1+' & '+p.p2) : p.p1);
       return `<tr style="${rowStyle}"><td>${rankCell}</td><td>${nameCell}</td><td>${swp}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${rating}</td><td>${Number(p.level).toFixed(1)}</td></tr>`;
     };
     let pos=0;
@@ -3593,7 +3593,7 @@ async function loadTournamentForm(category, title) {
       const winpct = p.set_win_pct==null?'—':Number(p.set_win_pct).toFixed(1);
       const gdps = p.game_diff_per_set==null?'—':Number(p.game_diff_per_set).toFixed(2);
       const fv = p.team_form==null?'—':Number(p.team_form).toFixed(3);
-      const nameCell = isSingles ? p.p1 : (p.p2 ? (p.p1+' & '+p.p2) : p.p1);
+      const nameCell = isSingles ? p.p1 : ((p.p2 && String(p.p2).trim() && String(p.p2).trim().toLowerCase()!=='null') ? (p.p1+' & '+p.p2) : p.p1);
       return `<tr style="${style}"><td>${nameCell}</td><td>${p.sets}</td><td>${p.sets_won==null?'—':Math.round(p.sets_won)}</td><td>${winpct}</td><td>${gdps}</td><td><strong>${fv}</strong></td></tr>`;
     };
     qf.forEach(p=>{ html+=frow(p,''); });
