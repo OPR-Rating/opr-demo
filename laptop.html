@@ -3376,7 +3376,7 @@ async function showPartnerships(indivId){
   }catch(e){ box.innerHTML='<div style="padding:16px;color:#c0392b;">'+(e.message||e)+'</div>'; }
 }
 
-let TOURNAMENT_EVENT = 'Open Challenge 2026';
+let TOURNAMENT_EVENT = '';
 let TOURNAMENT_ARCHIVED = false;  // true when viewing a frozen (closed) tournament
 function tourTable(){ return TOURNAMENT_ARCHIVED ? 'tournament_archive' : 'tournament_results'; }
 
@@ -3402,8 +3402,10 @@ async function loadTournamentPicker(){
   // stay selectable and viewable read-only. Only fall back to a default when the currently
   // viewed event exists in NEITHER list (e.g. first load, or it was deleted).
   const all = active.concat(archived);
-  if(!all.find(t=>t.name===TOURNAMENT_EVENT)){
-    TOURNAMENT_EVENT = (active.length ? active[0].name : archived[0].name);
+  // Do NOT auto-select archived. Only keep a current selection if it still exists;
+  // otherwise leave blank so the dropdown shows the "Select tournament" placeholder.
+  if(TOURNAMENT_EVENT && !all.find(t=>t.name===TOURNAMENT_EVENT)){
+    TOURNAMENT_EVENT = '';
   }
   // is the currently-viewed event an archived one?
   TOURNAMENT_ARCHIVED = !!archived.find(t=>t.name===TOURNAMENT_EVENT) && !active.find(t=>t.name===TOURNAMENT_EVENT);
@@ -3413,6 +3415,7 @@ async function loadTournamentPicker(){
   let html='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
     +'<span style="font-size:12px;color:#4a235a;">Viewing:</span>'
     +'<select id="tournamentSelect" onchange="onTournamentPick()" style="flex:1;min-width:160px;padding:8px;border:1.5px solid #3a1d6e;border-radius:8px;font-size:14px;font-weight:700;color:#4a235a;">';
+  html+=`<option value="" ${!TOURNAMENT_EVENT?'selected':''}>Select tournament</option>`;
   active.forEach(t=>{ html+=`<option value="${t.name}" ${t.name===TOURNAMENT_EVENT?'selected':''}>${t.name}</option>`; });
   if(archived.length){
     html+='<optgroup label="Past (archived)">';
@@ -3420,8 +3423,11 @@ async function loadTournamentPicker(){
     html+='</optgroup>';
   }
   html+='</select></div>';
-  html+='<div style="text-align:center;font-size:18px;font-weight:800;color:#6c3483;margin:12px 0 4px;">'+TOURNAMENT_EVENT+'</div>';
+  if(TOURNAMENT_EVENT){
+    html+='<div style="text-align:center;font-size:18px;font-weight:800;color:#6c3483;margin:12px 0 4px;">'+TOURNAMENT_EVENT+'</div>';
+  }
   picker.innerHTML=html;
+  if(!TOURNAMENT_EVENT){ if(body) body.style.display='none'; return; }
   // Toggle between the external standings buttons (tournamentBody) and an
   // internal "view draw" entry point (tournamentInternal) based on type.
   let internalDiv = document.getElementById('tournamentInternal');
