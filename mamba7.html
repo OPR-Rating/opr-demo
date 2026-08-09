@@ -107,6 +107,7 @@
   .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
   @media (max-width: 480px){ .stat-grid { grid-template-columns: repeat(5, 1fr); gap: 3px; } .stat-grid .stat-card { padding: 7px 2px; } .stat-grid .stat-label{ font-size:8px; } .stat-grid .stat-value{ font-size:13px; } .stat-grid .stat-card:nth-child(4) .stat-value{ font-size:13px; } }
   .stat-card { background: rgba(108,52,131,.12); border-radius: 10px; padding: 10px 6px; text-align: center; }
+  @media (max-width: 480px){ .stat-grid { gap: 3px; } .stat-card { padding: 7px 2px; } .stat-label{ font-size:8px; } .stat-value{ font-size:13px; } }
   .stat-value { font-size: 20px; font-weight: 700; color: #6c3483; white-space: nowrap; }
   .stat-grid .stat-card:nth-child(4) .stat-value { font-size: 18px; }
   .stat-label { font-size: 10px; color: #888; margin-top: 2px; }
@@ -595,7 +596,7 @@
   .profile-level { font-size: 18px; font-weight: 600; opacity: 0.95; margin-bottom: 4px; }
   .profile-rank { font-size: 13px; opacity: 0.8; }
   .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-  .stat-card { background: rgba(15,110,86,.12); border-radius: 10px; padding: 10px 6px; text-align: center; }
+  .stat-card { background: rgba(108,52,131,.12); border-radius: 10px; padding: 10px 6px; text-align: center; }
   .stat-value { font-size: 20px; font-weight: 700; color: #6C3483; white-space: nowrap; }
   .stat-label { font-size: 10px; color: #888; margin-top: 2px; }
 
@@ -3104,7 +3105,8 @@ async function togglePairMatches(i){
       let mvTag='';
       if(m.rating_delta!=null){
         const dv = pairOnT1 ? Number(m.rating_delta) : -Number(m.rating_delta);
-        mvTag = '<span style="font-weight:700;color:#3a1d6e;font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:5px;">('+((dv>0?'+':'')+dv.toFixed(1))+')</span>';
+        const dvCol = dv<0 ? '#c0392b' : '#1e8449';
+        mvTag = '<span style="font-weight:700;color:'+dvCol+';font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:5px;">('+((dv>0?'+':'')+dv.toFixed(1))+')</span>';
       }
       // per-set chips from set_scores (T1-T2 perspective -> flip if pair was T2)
       let chipCells='';
@@ -3742,7 +3744,8 @@ async function loadProfileIndividual(name, gender) {
       if(delta==null) return '';
       const d = onT1 ? Number(delta) : -Number(delta);
       const txt = (d>0?'+':'') + d.toFixed(1);
-      return `<span class="rating-move">(${txt})</span>`;
+      const col = d<0 ? '#c0392b' : '#1e8449';
+      return `<span class="rating-move" style="color:${col};">(${txt})</span>`;
     };
 
     let matchHTML='';
