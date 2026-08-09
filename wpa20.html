@@ -2904,7 +2904,7 @@ const _club = {id:20, name:'WPA No. 20'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-18 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background).";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-19 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background).";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3899,7 +3899,7 @@ async function profileShowPartner(partner){
         let mvTag2='';
         if(m.rating_delta!=null){
           const d2 = onT1 ? Number(m.rating_delta) : -Number(m.rating_delta);
-          mvTag2 = `<span class="rating-move">(${(d2>0?'+':'')+d2.toFixed(1)})</span>`;
+          mvTag2 = `<span class="rating-move" style="color:${d2<0?'#c0392b':'#1e8449'};">(${(d2>0?'+':'')+d2.toFixed(1)})</span>`;
         }
         matchHTML+=`<div class="match-row" onclick="togglePartnerMatch(${midx})" style="cursor:pointer;" id="ppmatch_${midx}">
             <span class="${won?'win-badge':'loss-badge'}">${won?'W':'L'}</span>
@@ -4642,8 +4642,10 @@ async function odrEnsurePair(nameA, nameB){
   const aid=a.id, bid=b.id;
   const lo=aid<bid?aid:bid, hi=aid<bid?bid:aid;
   const canonName=[nameA,nameB].sort((x,y)=>x.localeCompare(y)).join(' & ');
-  // already exists?
-  const existing = await sbGet(`players?select=name&club_id=eq.${CLUB_ID}&member_a_id=eq.${lo}&member_b_id=eq.${hi}&limit=1`);
+  // already exists? Match the pair whichever ORDER its members are stored — a row created by an
+  // earlier version may have member_a_id/member_b_id swapped vs our lo/hi. Checking only lo,hi
+  // would miss it and birth a DUPLICATE pair row. This or() matches both orders.
+  const existing = await sbGet(`players?select=name&club_id=eq.${CLUB_ID}&or=(and(member_a_id.eq.${lo},member_b_id.eq.${hi}),and(member_a_id.eq.${hi},member_b_id.eq.${lo}))&limit=1`);
   if(existing && existing.length) return existing[0].name;
   // birth it: 60/40, category from genders
   const rhu=x=>Math.floor(x+0.5);
