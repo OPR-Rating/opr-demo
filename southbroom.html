@@ -2904,7 +2904,7 @@ const _club = {id:4, name:'Southbroom'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-19 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background).";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-20 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background).";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3786,7 +3786,7 @@ async function loadProfileIndividual(name, gender) {
         <div class="profile-name">${name}</div>
         <div class="profile-rating">${rating}</div>
         <div class="profile-level">Level ${level}</div>
-        <div class="profile-rank">${catLabel}${moveStr?` · <span style="color:${moveCol};font-weight:800;">${moveStr}</span> since inception`:''}</div>
+        <div class="profile-rank">${catLabel}${moveStr?` · <span style="color:${moveCol};font-weight:800;">${moveStr}</span> Move`:''}</div>
       </div>
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-value">${matchesPlayed}</div><div class="stat-label">Matches</div></div>
