@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Welcome to OPR — OPR-GEN1</title>
+
+<!-- ============================================================
+     PER-CLUB EDIT POINTS (only these change per club):
+       1. <title>            -> "Welcome to OPR — <OPR-GEN1>"
+       2. og:title / og:url  -> club name + this file's URL
+       3. .manifest data      -> name / short_name / start_url (= the APP file, so install gives the app icon)
+       4. HERO .club          -> <OPR-GEN1>
+       5. Link hrefs          -> OPR-GEN1.html (app) + laptop.html?club=<ID>
+       6. footer [CLUB NAME]
+     Icons (icon-192.png / icon-512.png / header_bg2.png) already live on GitHub.
+     ============================================================ -->
+
+<!-- WhatsApp / social link preview (Open Graph) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OPR — Open Player Rating">
+<meta property="og:title" content="OPR-GEN1 on OPR — your club, your ratings">
+<meta property="og:description" content="Your rating, your form, the ladders and tournaments — the whole storybook of your padel life at the club. Tap to open and add it to your phone.">
+<meta property="og:image" content="https://opr-rating.github.io/opr-demo/icon-512.png">
+<meta property="og:url" content="https://opr-rating.github.io/opr-demo/OPR-GEN1_Members_Pack.html">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#5B2BD6">
+
+<!-- Installable: front door -> installing drops the APP on the home screen -->
+<link rel="manifest" href='data:application/manifest+json,{"name":"OPR · OPR-GEN1","short_name":"OPR [CLUBSHORT]","start_url":"./[APPFILE].html","scope":"./","display":"standalone","background_color":"%235B2BD6","theme_color":"%235B2BD6","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
+
+<style>
+  :root{
+    --ink:#0D0A1F;--ink-soft:#1A1535;--violet:#5B2BD6;--violet-bright:#7B4DFF;
+    --azure:#1A9FFF;--cyan:#39D0FF;--paper:#F7F6FB;--paper-dim:#E9E6F4;
+    --muted:#6B6585;--body:#2A2540;--line:#E1DCEF;--ball:#BCE400;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--paper);color:var(--body);line-height:1.6;padding-bottom:46px;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:720px;margin:0 auto;padding:0 22px;}
+
+  /* ---------- HERO ---------- */
+  header.hero{position:relative;overflow:hidden;color:#fff;text-align:center;
+    padding:46px 0 42px;
+    background:linear-gradient(160deg,#0D0A1F 0%,#1A1535 45%,#3A1D8F 85%,#5B2BD6 125%);}
+  header.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+    background:linear-gradient(90deg,var(--violet),var(--azure),var(--cyan),var(--ball));}
+  .hero-logo{display:inline-flex;align-items:center;gap:9px;margin-bottom:14px;
+    opacity:0;animation:rise .6s ease .05s forwards;}
+  .hero-logo .balls{display:flex;gap:5px;}
+  .hero-logo .balls i{width:9px;height:9px;border-radius:50%;display:block;
+    background:var(--ball);box-shadow:0 0 10px rgba(188,228,0,.6);}
+  .hero-logo .balls i:nth-child(2){background:var(--cyan);box-shadow:0 0 10px rgba(57,208,255,.6);}
+  .hero-logo .balls i:nth-child(3){background:var(--azure);box-shadow:0 0 10px rgba(26,159,255,.6);}
+  .hero-logo .word{font-size:15px;font-weight:800;letter-spacing:5px;color:#fff;}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+    color:var(--cyan);margin-bottom:10px;opacity:0;animation:rise .6s ease .12s forwards;}
+  header.hero h1{font-size:33px;font-weight:800;letter-spacing:0.2px;line-height:1.15;
+    opacity:0;animation:rise .6s ease .2s forwards;}
+  header.hero .club{display:inline-block;margin-top:14px;font-size:15px;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;color:#fff;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+    padding:6px 16px;border-radius:999px;backdrop-filter:blur(4px);
+    opacity:0;animation:rise .6s ease .28s forwards;}
+  @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ---------- INTRO CARD ---------- */
+  .welcome-intro{background:#fff;border:1px solid var(--line);border-radius:16px;
+    padding:22px 24px;margin-top:-24px;position:relative;z-index:2;
+    box-shadow:0 10px 34px rgba(13,10,31,0.10);}
+  .welcome-intro p{font-size:15px;margin-bottom:9px;}
+  .welcome-intro p:last-child{margin-bottom:0;}
+  .welcome-intro b{color:var(--ink);}
+  .storyline{display:block;margin-top:4px;font-style:italic;color:var(--violet);font-weight:600;}
+
+  /* ---------- INSTALL BANNER (the app-like hook) ---------- */
+  .install{margin-top:22px;border-radius:16px;padding:18px 20px;color:#fff;
+    background:linear-gradient(135deg,var(--violet),var(--azure));
+    box-shadow:0 8px 26px rgba(91,43,214,.28);
+    display:flex;align-items:center;gap:16px;}
+  .install .glyph{flex-shrink:0;width:46px;height:46px;border-radius:12px;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .install .txt{flex:1;min-width:0;}
+  .install .txt b{display:block;font-size:15px;font-weight:800;letter-spacing:.2px;}
+  .install .txt span{display:block;font-size:12.5px;color:rgba(255,255,255,.85);margin-top:2px;}
+  .install .cta{flex-shrink:0;background:#fff;color:var(--violet);font-weight:800;
+    font-size:13px;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;
+    box-shadow:0 3px 10px rgba(0,0,0,.14);transition:transform .12s ease;}
+  .install .cta:active{transform:scale(.96);}
+
+  /* ---------- SECTIONS ---------- */
+  section{margin-top:30px;}
+  h2{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.4px;
+    color:var(--violet);margin-bottom:12px;padding-bottom:8px;
+    border-bottom:2px solid var(--paper-dim);}
+
+  /* ---------- LINK CARDS ---------- */
+  .linkbox{background:#fff;border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;box-shadow:0 2px 12px rgba(13,10,31,0.05);}
+  .linkrow{display:flex;align-items:center;gap:14px;padding:15px 18px;
+    border-bottom:1px solid var(--paper-dim);text-decoration:none;color:inherit;
+    transition:background .14s ease;}
+  .linkrow:last-child{border-bottom:none;}
+  .linkrow:hover{background:var(--paper);}
+  .linkrow:active{background:var(--paper-dim);}
+  .linkrow .ic{flex-shrink:0;width:42px;height:42px;border-radius:11px;
+    background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;
+    font-size:19px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 9px rgba(91,43,214,.22);}
+  .linkrow .ic.dark{background:linear-gradient(135deg,#1A1535,#3A1D8F);
+    box-shadow:0 3px 9px rgba(26,21,53,.25);}
+  .linkrow .ic.go-app{background:linear-gradient(135deg,var(--violet-bright),var(--cyan));}
+  .linkrow .m{flex:1;min-width:0;}
+  .linkrow .m .t{display:block;font-weight:700;font-size:15px;color:var(--ink);}
+  .linkrow .m .s{display:block;font-size:12.5px;color:var(--muted);margin-top:1px;}
+  .linkrow .go{flex-shrink:0;color:var(--violet);font-weight:800;font-size:13px;}
+  .linkrow.primary{background:linear-gradient(135deg,rgba(91,43,214,.05),rgba(26,159,255,.05));}
+  .linkrow.primary .m .t{color:var(--violet);}
+
+  /* ---------- TIP / EXPANDERS ---------- */
+  details.card{background:#fff;border:1px solid var(--line);border-radius:14px;
+    margin-bottom:12px;overflow:hidden;box-shadow:0 2px 12px rgba(13,10,31,0.05);}
+  details.card summary{list-style:none;cursor:pointer;padding:15px 18px;
+    display:flex;align-items:center;gap:12px;font-weight:700;font-size:14.5px;color:var(--ink);}
+  details.card summary::-webkit-details-marker{display:none;}
+  details.card summary .chev{margin-left:auto;color:var(--violet);font-weight:800;
+    transition:transform .2s ease;}
+  details.card[open] summary .chev{transform:rotate(90deg);}
+  details.card summary .badge{flex-shrink:0;width:34px;height:34px;border-radius:9px;
+    background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:16px;}
+  details.card .inner{padding:0 18px 16px 18px;font-size:13.5px;color:var(--body);}
+  details.card .inner b{color:var(--ink);}
+  .os{margin:10px 0;padding:11px 14px;background:var(--paper);border-radius:9px;
+    border-left:3px solid var(--cyan);font-size:13px;}
+  .os b{color:var(--violet);}
+
+  .doline{display:flex;gap:10px;align-items:flex-start;margin-bottom:9px;}
+  .doline:last-child{margin-bottom:0;}
+  .doline .dot{flex-shrink:0;width:20px;height:20px;border-radius:50%;margin-top:2px;
+    background:linear-gradient(135deg,var(--violet),var(--azure));color:#fff;
+    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:36px;
+    padding-top:18px;border-top:2px solid var(--paper-dim);}
+  footer b{color:var(--violet);}
+  footer .balls{display:inline-flex;gap:4px;vertical-align:middle;margin-right:6px;}
+  footer .balls i{width:7px;height:7px;border-radius:50%;display:block;background:var(--ball);}
+  footer .balls i:nth-child(2){background:var(--cyan);}
+  footer .balls i:nth-child(3){background:var(--azure);}
+
+  @media(max-width:560px){
+    header.hero h1{font-size:27px;}
+    .install{flex-wrap:wrap;}
+    .install .cta{width:100%;padding:11px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-logo">
+      <span class="balls"><i></i><i></i><i></i></span>
+      <span class="word">O P R</span>
+    </div>
+    <div class="eyebrow">Welcome to your club</div>
+    <h1>Your club, your ratings.</h1>
+    <div class="club">OPR-GEN1</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="welcome-intro">
+    <p><b>Welcome — this is your club, in one package.</b> Everything <b>OPR-GEN1</b> runs on OPR is right here: your rating, your form, the ladders, the tournaments.</p>
+    <span class="storyline">The whole storybook of your padel life at the club.</span>
+    <p style="margin-top:9px;">Add it to your phone, enter your scores after each match, and watch your rating tell its story. Your admin handles the rest — all you do is <b>play, have fun, and enjoy the padel.</b></p>
+  </div>
+
+  <!-- INSTALL HOOK -->
+  <div class="install">
+    <span class="glyph">📲</span>
+    <span class="txt">
+      <b>Add OPR-GEN1 to your phone</b>
+      <span>Installs like an app, with its own icon — one tap to your club.</span>
+    </span>
+    <button class="cta" onclick="document.getElementById('installhow').open=true;document.getElementById('installhow').scrollIntoView({behavior:'smooth'});">How ›</button>
+  </div>
+
+  <!-- LINKS -->
+  <section>
+    <h2>Everything in one place</h2>
+    <div class="linkbox">
+      <a class="linkrow primary" href="https://opr-rating.github.io/opr-demo/opr-gen1.html" target="_blank" rel="noopener">
+        <span class="ic go-app">📱</span>
+        <span class="m"><span class="t">Open Your Club App</span><span class="s">Ratings, form, ladders, score entry — this is the one to add to your phone</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="linkrow" href="https://opr-rating.github.io/opr-demo/laptop.html?club=11" target="_blank" rel="noopener">
+        <span class="ic dark">💻</span>
+        <span class="m"><span class="t">Desktop Version</span><span class="s">The same club on a big screen — great for browsing the tables</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="linkrow" href="https://opr-rating.github.io/opr-demo/opr-initial-ratings.html" target="_blank" rel="noopener">
+        <span class="ic dark">🎯</span>
+        <span class="m"><span class="t">Ratings &amp; Levels</span><span class="s">What your number means — and how it compares to Playtomic</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="linkrow" href="https://opr-rating.github.io/opr-demo/opr-admin-handbook.html" target="_blank" rel="noopener">
+        <span class="ic dark">📘</span>
+        <span class="m"><span class="t">What Your Club Can Run</span><span class="s">The admin handbook — see what's possible, then nudge your admin!</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="linkrow" href="https://www.opr-online.com" target="_blank" rel="noopener">
+        <span class="ic dark">🌐</span>
+        <span class="m"><span class="t">OPR Website</span><span class="s">opr-online.com</span></span>
+        <span class="go">Open ›</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ADD TO PHONE (expander) -->
+  <section>
+    <h2>Add the app to your phone</h2>
+    <details class="card" id="installhow">
+      <summary><span class="badge">📲</span> Show me how to install it <span class="chev">›</span></summary>
+      <div class="inner">
+        <div class="os"><b>On iPhone (Safari):</b> open <b>Your Club App</b> → tap the Share icon <span style="font-size:15px;">⬆️</span> → <b>“Add to Home Screen”</b>.</div>
+        <div class="os"><b>On Android (Chrome):</b> open <b>Your Club App</b> → tap the <b>⋮</b> menu → <b>“Add to Home screen”</b> (or “Install app”).</div>
+        It then works just like an app, with its own OPR icon — one tap and you're on your club, no browser bar, no fuss.
+      </div>
+    </details>
+  </section>
+
+  <!-- WHAT YOU CAN DO (expander) -->
+  <section>
+    <h2>What you can do</h2>
+    <details class="card" open>
+      <summary><span class="badge">🎾</span> Inside the app <span class="chev">›</span></summary>
+      <div class="inner">
+        <div class="doline"><span class="dot">1</span><span><b>Enter your match scores</b> with your personal PIN (ask your admin if you don't have it yet).</span></div>
+        <div class="doline"><span class="dot">2</span><span><b>Follow your rating and form</b> match by match as your story builds.</span></div>
+        <div class="doline"><span class="dot">3</span><span><b>See how you play with each partner</b> — every pairing rated on its own.</span></div>
+        <div class="doline"><span class="dot">4</span><span><b>Climb the club ladder</b> and issue your challenges.</span></div>
+        <div class="doline"><span class="dot">5</span><span><b>Enter the tournaments</b> and follow the draws and standings live.</span></div>
+        <div style="margin-top:11px;padding-top:11px;border-top:1px solid var(--paper-dim);color:var(--muted);">Your scores count the moment they're entered — the ratings update automatically.</div>
+      </div>
+    </details>
+  </section>
+
+  <footer>
+    <span class="balls"><i></i><i></i><i></i></span><b>OPR</b> — Open Player Rating · Your club, your ratings.<br>
+    OPR-GEN1 · Powered by OPR · opr-online.com
+  </footer>
+
+</div>
+</body>
+</html>
