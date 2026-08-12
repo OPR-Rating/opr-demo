@@ -2988,7 +2988,7 @@ const _club = {id:7, name:'Mamba No.7'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-21 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background). · New-player profile fix: brand-new players (no matches yet) now show the full banner (name, seed rating, level, category, since-inception) and stat grid (Matches/Sets/Sets Won 0, Win% 0.0%, Game Diff/Set 0.00); 'No partnerships yet' shows only in the partnerships list.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-21 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background). · New-player profile fix: brand-new players (no matches yet) now show the full banner (name, seed rating, level, category, since-inception) and stat grid (Matches/Sets/Sets Won 0, Win% 0.0%, Game Diff/Set 0.00); 'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged.";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3373,18 +3373,19 @@ async function showPartnerships(indivId){
   showScreen('partnershipsScreen');
   document.getElementById('partnershipsTitle').textContent = who;
   const box=document.getElementById('partnershipsList'); box.innerHTML='Loading…';
+  { const _cb=document.getElementById('partnershipsCard'); if(_cb) _cb.innerHTML='<div style="padding:24px;text-align:center;color:#9a8578;">Loading…</div>'; }
   try{
-    const teams = await sbGet(`players?select=id,name,gender,initial_rating,member_a_id,member_b_id&club_id=eq.${CLUB_ID}&or=(member_a_id.eq.${indivId},member_b_id.eq.${indivId})`) || [];
-    // NEW PLAYER (no partnerships yet): do NOT early-return — still render the banner and the
-    // stat grid (seed rating + zeros) below, and show the "no partnerships" note only in the
-    // partnerships list itself. Keeps a brand-new profile looking complete and professional.
+    const [teams, pr, myMatches] = await Promise.all([
+      sbGet(`players?select=id,name,gender,initial_rating,member_a_id,member_b_id&club_id=eq.${CLUB_ID}&or=(member_a_id.eq.${indivId},member_b_id.eq.${indivId})`).then(r=>r||[]),
+      sbGet(`player_results?select=name,current_rating,initial_rating&club_id=eq.${CLUB_ID}`).then(r=>r||[]),
+      sbGet(`matches?select=t1p1,t2p1,t1_sets,t2_sets,t1_games,t2_games,rating_delta&club_id=eq.${CLUB_ID}`).then(r=>r||[]),
+      OPR.load()
+    ]);
     const _noTeams = !teams.length;
-    const pr = await sbGet(`player_results?select=name,current_rating,initial_rating&club_id=eq.${CLUB_ID}`) || [];
     const curBy={}; pr.forEach(r=>{ curBy[r.name]={cur:r.current_rating, init:r.initial_rating}; });
     const catLabel=c=>c==='M'?"Men's":c==='L'?'Ladies':c==='X'?'Mixed':'';
     const catCls=c=>c==='M'?'odr-cat-M':c==='L'?'odr-cat-L':'odr-cat-X';
     const teamNames = teams.map(t=>t.name);
-    const myMatches = await sbGet(`matches?select=t1p1,t2p1,t1_sets,t2_sets,t1_games,t2_games,rating_delta&club_id=eq.${CLUB_ID}`) || [];
     const mcount={}; myMatches.forEach(m=>{ if(m.t1p1) mcount[m.t1p1]=(mcount[m.t1p1]||0)+1; if(m.t2p1) mcount[m.t2p1]=(mcount[m.t2p1]||0)+1; });
     // ----- INDIVIDUAL DERIVED CARD (seed + sum of this person's pair moves) -----
     const seed = ind && ind.seed_rating!=null ? ind.seed_rating : 1500;
@@ -3397,7 +3398,6 @@ async function showPartnerships(indivId){
       setsFor+=sf; setsAgainst+=sa; gamesFor+=gf; gamesAgainst+=ga; setsPlayed+=sf+sa; setsWon+=sf;
     });
     // SINGLE SOURCE: individual current rating from the global engine (seed + own deltas).
-    await OPR.load();
     const nmForRating = ind ? ind.full_name : null;
     const curRating = (nmForRating && OPR.indiv(nmForRating)!=null) ? OPR.indiv(nmForRating) : Math.round(seed);
     const totalMove = curRating - Math.round(seed);
@@ -3421,7 +3421,6 @@ async function showPartnerships(indivId){
         <div style="flex:1;background:#f5eef8;border-radius:10px;padding:10px;text-align:center;"><div style="font-weight:800;color:#6c3483;">${gdps}</div><div style="font-size:11px;color:#7a6688;">Game Diff/Set</div></div>
       </div>
       <div style="font-weight:700;color:#5b3a6e;margin-bottom:8px;font-size:14px;">Partnerships</div>`;
-    await OPR.load();
     const rows = teams.map(t=>{
       // SINGLE SOURCE: pair rating = live 60/40 of the two members' current ratings.
       const cur=(OPR.pairByName(t.name)!=null?OPR.pairByName(t.name):Math.round(t.initial_rating));
