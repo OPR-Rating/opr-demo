@@ -484,7 +484,15 @@
   .mk-start { width:100%; padding:17px; background:linear-gradient(180deg,#c4e000,#9B59B6); color:#2a1338; border:none; border-radius:14px; font-size:17px; font-weight:800; cursor:pointer; margin-top:6px; box-shadow:0 8px 22px rgba(15,110,86,.4), inset 0 1px 0 rgba(255,255,255,.55); }
   .mk-start:disabled { opacity:.4; box-shadow:none; }
 
-  .mk-live { flex:1; display:none; flex-direction:column; background:#fff; } .mk-live.on{ display:flex; }
+  .mk-live { flex:1; display:none; flex-direction:column; background:#fff; position:relative; } .mk-live.on{ display:flex; }
+  .mk-banner { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    background:linear-gradient(135deg,#4A235A,#6C3483); color:#fff; text-align:center; animation:mkBannerIn .18s ease-out; }
+  @keyframes mkBannerIn { from{ opacity:0; transform:scale(.96);} to{ opacity:1; transform:scale(1);} }
+  .mk-banner-inner { padding:24px; }
+  .mk-banner-kind { font-size:64px; font-weight:900; letter-spacing:2px; line-height:1; margin-bottom:8px; }
+  .mk-banner-who { font-size:22px; font-weight:700; opacity:.95; margin-bottom:6px; }
+  .mk-banner-sub { font-size:18px; font-weight:700; color:#FFD966; margin-bottom:18px; min-height:22px; }
+  .mk-banner-tap { font-size:15px; font-weight:600; opacity:.8; letter-spacing:.5px; }
   .mk-top { padding:10px 14px 8px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; }
   .mk-top .mk-fmt { font-size:15px; color:#4b4b56; font-weight:600; }
   .mk-top .mk-setnum { font-size:15px; color:#6C3483; font-weight:800; text-transform:uppercase; letter-spacing:1px; }
@@ -1284,6 +1292,14 @@
 
   <!-- LIVE -->
   <div class="mk-live" id="mkLive">
+    <div class="mk-banner" id="mkBanner" onclick="mkBannerTap()" style="display:none;">
+      <div class="mk-banner-inner">
+        <div class="mk-banner-kind" id="mkBannerKind">GAME</div>
+        <div class="mk-banner-who" id="mkBannerWho"></div>
+        <div class="mk-banner-sub" id="mkBannerSub"></div>
+        <div class="mk-banner-tap">tap to continue ▸</div>
+      </div>
+    </div>
     <div class="mk-top">
       <div class="mk-fmt" id="mkTopFmt">Best of 3</div>
       <div class="mk-setnum" id="mkSetNum">Set 1</div>
@@ -1742,13 +1758,31 @@ async function mkComputeHandicap(){
   const favIsT1 = rA>rB;
   const hc = TM.computeHandicap(Math.max(rA,rB), Math.min(rA,rB));
   // build court shorthand: underdog RECEIVES (+, starts ahead), favourite OWES (−, starts behind)
-  const recVal = (n, alt) => alt ? (((n?(n===1?'15':'30')+'/'+(n===1?'30':'40'):'15/30'))+' alt.') : (n===1?'15':'30');
-  const oweVal = (n, alt) => alt ? (((n?(n===1?'15':n===2?'30':'40')+'/'+(n===1?'30':'40'):'15/30'))+' alt.') : (n===1?'15':n===2?'30':'40');
+  const _altEvery = (f)=> f===0.5?'every 2nd game': f===0.25?'every 4th game': f===0.75?'3 of every 4 games':'alternating';
+  const recVal = (n, alt) => alt ? ((n===1?'15':'30')+' ('+(n===1?'30':'40')+' '+_altEvery(hc.frac)+')') : (n===1?'15':'30');
+  const oweVal = (n, alt) => alt ? ((n===1?'15':n===2?'30':'40')+' ('+(n===1?'30':'40')+' '+_altEvery(hc.frac)+')') : (n===1?'15':n===2?'30':'40');
   const undLabel = (hc.receive||hc.altReceive) ? ('+'+recVal(hc.receive, hc.altReceive)) : null;
   const favLabel = (hc.owe||hc.altOwe) ? ('−'+oweVal(hc.owe, hc.altOwe)) : null;
   MK.hc = { scratch: hc.steps===0, favIsT1, undLabel, favLabel,
             t1Label: favIsT1?favLabel:undLabel, t2Label: favIsT1?undLabel:favLabel };
-  mkRenderHandicap();
+  // Feed the per-game alternation engine (mkNewGamePts) the SAME base/alt/frac the draw uses,
+  // so a "+15/+30 alt." handicap actually alternates each game in the LIVE/direct umpire path
+  // (previously only the tournament-fixture path set MK.hcTeam, so direct matches showed the
+  // base value every game). Mapping mirrors the draw's numBySeed exactly.
+  if(!MK.hc.scratch){
+    const undBase = Math.min(2, hc.receive||0);
+    const undAlt  = (hc.altReceive? Math.min(2, hc.altReceive) : undBase);
+    const favBase = -Math.min(3, hc.owe||0);
+    const favAlt  = (hc.altOwe? -Math.min(3, hc.altOwe) : favBase);
+    const undT = { base:undBase, alt:undAlt, frac:(undAlt!==undBase?(hc.frac||0.5):0) };
+    const favT = { base:favBase, alt:favAlt, frac:(favAlt!==favBase?(hc.frac||0.5):0) };
+    // team1 card = T1, team2 card = T2 (favourite side depends on favIsT1)
+    MK.hcTeam = favIsT1 ? [favT, undT] : [undT, favT];
+    // NB: do NOT reset MK.hcGameNo here — mkComputeHandicap can fire mid-setup/play (via
+    // mkPicked), and zeroing the counter here made the per-game alternation lag by one game
+    // (base, base, alt…). The counter is reset ONLY in mkStart, at the true start of the match.
+    if(undBase!==0 || favBase!==0 || undAlt!==0 || favAlt!==0) MK.hcStart = true;
+  } else { MK.hcTeam=null; MK.hcStart=null; }
 }
 function mkRenderHandicap(){
   const h1=document.getElementById('mkH1'), h2=document.getElementById('mkH2');
@@ -1799,7 +1833,8 @@ function mkStart(){
   MK.setsCap = selSets||3;   // never play more sets than were selected
   MK.hcGameNo=0;   // reset per-game handicap counter
   MK.pts=mkNewGamePts(); MK.games=[0,0]; MK.setsWon=[0,0]; MK.setScores=[];
-  MK.server=MK.firstServe; MK.serve=1; MK.inTB=false; MK.tb=[0,0]; MK.hist=[]; MK.live=true;
+  MK.server=MK.firstServe; MK.serve=1; MK.inTB=false; MK.tb=[0,0]; MK.hist=[]; MK.live=true; MK._pending=null;
+  { const bn=document.getElementById('mkBanner'); if(bn) bn.style.display='none'; }
   document.getElementById('mkSetup').style.display='none';
   document.getElementById('mkLive').classList.add('on');
   const hdr=document.getElementById('mkHeaderTitle'); if(hdr) hdr.textContent='Match in progress';
@@ -1811,7 +1846,11 @@ function mkStart(){
 }
 
 function mkSnap(){ MK.hist.push(JSON.stringify({pts:MK.pts,games:MK.games,setsWon:MK.setsWon,setScores:MK.setScores,server:MK.server,serve:MK.serve,inTB:MK.inTB,tb:MK.tb})); if(MK.hist.length>300)MK.hist.shift(); }
-function mkUndo(){ if(!MK.hist.length)return; const s=JSON.parse(MK.hist.pop()); Object.assign(MK,s); mkRender(); }
+function mkUndo(){
+  // If a game/set banner is showing (advance pending), undo cancels it and reverts the point.
+  if(MK._pending){ MK._pending=null; const bn=document.getElementById('mkBanner'); if(bn) bn.style.display='none'; }
+  if(!MK.hist.length)return; const s=JSON.parse(MK.hist.pop()); Object.assign(MK,s); mkRender();
+}
 
 // award a point to team (1|2)
 function mkPoint(team){
@@ -1820,7 +1859,7 @@ function mkPoint(team){
   if(MK.inTB){
     MK.tb[i]++;
     // tiebreak: first to 7, win by 2. Serve rotates every 2 points (we don't track box in TB).
-    if(MK.tb[i]>=7 && MK.tb[i]-MK.tb[j]>=2){ mkWinSet(team, true); }
+    if(MK.tb[i]>=7 && MK.tb[i]-MK.tb[j]>=2){ MK._pending={type:'set',team,viaTB:true}; mkShowBanner('set',team); }
     else { MK.serve=1; mkRender(); }
     return;
   }
@@ -1866,25 +1905,69 @@ function mkNewGamePts(){
   return [ startFor(MK.hcTeam[0]), startFor(MK.hcTeam[1]) ];
 }
 function mkWinGame(team){
+  // Do NOT advance yet. Freeze the completed game and show the GAME banner; the actual
+  // advance (increment games, compute the NEXT game's handicap start, swap server) happens
+  // in mkBannerTap when the umpire taps to continue. This gives ONE clean moment to compute
+  // each new game's head-start, which is what makes the per-game handicap alternate correctly
+  // (the old inline auto-roll computed it at an awkward moment and lagged a game).
   const i=team-1;
-  MK.games[i]++; MK.pts=mkNewGamePts(); MK.deuceCount=0; MK._sudden=false;   // reset deuce/sudden-death for the new game
+  const g=[MK.games[0],MK.games[1]]; g[i]++;   // provisional — what the tally WILL be
+  // will this game close the set?
+  let setDone=false, viaTB=false;
+  if(MK.hcTeam){ setDone = (g[i]>=6); }
+  else if(MK.setFmt==='long'){ setDone = (g[i]>=6 && g[i]-g[1-i]>=2); }
+  else { setDone = (g[i]>=6 && g[i]-g[1-i]>=2); }
+  MK._pending = { type: setDone?'set':'game', team };
+  mkShowBanner(setDone?'set':'game', team);
+}
+function mkShowBanner(kind, team){
+  const bn=document.getElementById('mkBanner'); if(!bn) return;
+  const who = (team? mkTeamShort(team) : '');
+  document.getElementById('mkBannerKind').textContent = (kind==='set'?'SET':'GAME');
+  document.getElementById('mkBannerWho').textContent = who;
+  // For handicap matches, preview the NEXT game's starting score on the banner.
+  let sub='';
+  if(kind==='game' && MK.hcTeam){
+    const peek = mkPeekNextGamePts();
+    if(peek){ sub = 'Next game starts  '+mkPtDisp(peek[0])+'  /  '+mkPtDisp(peek[1]); }
+  }
+  document.getElementById('mkBannerSub').textContent = sub;
+  bn.style.display='flex';
+}
+// Peek the next game's start points WITHOUT changing the counter (banner preview only).
+function mkPeekNextGamePts(){
+  if(!MK.hcTeam) return null;
+  const g = (MK.hcGameNo||0) + 1;   // the game we're ABOUT to start
+  const startFor = (t)=>{
+    if(!t) return 0;
+    if(!t.frac || t.alt===t.base) return t.base;
+    let useAlt=false;
+    if(t.frac===0.5) useAlt=(g%2===0);
+    else if(t.frac===0.25) useAlt=(g%4===0);
+    else if(t.frac===0.75) useAlt=(g%4!==0);
+    else useAlt=(g%2===0);
+    return useAlt ? t.alt : t.base;
+  };
+  return [ startFor(MK.hcTeam[0]), startFor(MK.hcTeam[1]) ];
+}
+function mkPtDisp(v){ return v<0 ? ('−'+([15,30,40][Math.min(2,-v-1)])) : (v>=4?'Ad':(['0','15','30','40'][Math.min(3,v)])); }
+function mkTeamShort(team){
+  try{ return mkSideName(team) || ('Team '+team); }catch(e){ return 'Team '+team; }
+}
+// The tap that actually advances the match after a game/set banner.
+function mkBannerTap(){
+  const bn=document.getElementById('mkBanner'); if(bn) bn.style.display='none';
+  const p=MK._pending; MK._pending=null;
+  if(!p) return;
+  if(p.type==='set'){ mkWinSet(p.team, !!p.viaTB); }
+  else { mkAdvanceGame(p.team); }
+}
+function mkAdvanceGame(team){
+  const i=team-1;
+  MK.games[i]++; MK.pts=mkNewGamePts(); MK.deuceCount=0; MK._sudden=false;
   const g=MK.games, other=1-i;
-  // HANDICAP matches: first team to 6 games wins the set — NO tiebreak, no win-by-2.
-  if(MK.hcTeam){
-    if(g[i]>=6){ mkWinSet(team,false); return; }
-    MK.server = MK.server===1?2:1; MK.serve=1;
-    mkRender(); return;
-  }
-  // LONG SETS (setFmt==='long'): no tiebreak — must win the set by 2 games (7-5, 8-6, …).
-  if(MK.setFmt==='long'){
-    if(g[i]>=6 && g[i]-g[other]>=2){ mkWinSet(team,false); return; }
-    MK.server = MK.server===1?2:1; MK.serve=1;
-    mkRender(); return;
-  }
-  // TIE-BREAKER SETS (default): 6 games win by 2, tiebreak at 6-6.
-  if(g[i]>=6 && g[i]-g[other]>=2){ mkWinSet(team,false); return; }
-  if(g[i]===6 && g[other]===6){ MK.inTB=true; MK.tb=[0,0]; MK.pts=[0,0]; }
-  // swap server each game
+  // tiebreak trigger (non-handicap, tiebreak sets only)
+  if(!MK.hcTeam && MK.setFmt!=='long' && g[i]===6 && g[other]===6){ MK.inTB=true; MK.tb=[0,0]; MK.pts=[0,0]; }
   MK.server = MK.server===1?2:1; MK.serve=1;
   mkRender();
 }
@@ -1923,7 +2006,8 @@ function mkScoreCall(){
     }
     if(a===4) return 'Adv '+shortSide(1); if(b===4) return 'Adv '+shortSide(2);
   }
-  return MK_PTLABEL[Math.min(3,a)]+'–'+MK_PTLABEL[Math.min(3,b)];
+  const call=(v)=> v<0 ? ('−'+([15,30,40][Math.min(2,-v-1)])) : (v>=4?'Ad':MK_PTLABEL[Math.min(3,v)]);
+  return call(a)+'–'+call(b);
 }
 function shortSide(t){ const p1=MK.players['t'+t+'p1']||('Team '+t); return p1.split(' ')[0]; }
 
@@ -2905,7 +2989,7 @@ const _club = {id:3, name:'Eswatini'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-20 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background).";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-21 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background).";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -6023,12 +6107,20 @@ async function loadTournamentSheet(tournament, division) {
     // A team whose base is 0 but alternates to a step shows e.g. "−15 alt." (0 most games,
     // −15 on the alternating ones), NOT "−15/30" which wrongly implies it starts at −15.
     const idxToPts = (idx)=>({1:'15',2:'30',3:'40'})[Math.abs(idx)] || '0';
+    const altEvery = (frac)=>{
+      if(frac===0.5)  return 'every 2nd game';
+      if(frac===0.25) return 'every 4th game';
+      if(frac===0.75) return '3 of every 4 games';
+      return 'alternating';
+    };
     const teamLabel = (base, alt, frac, isFav)=>{
       const sign = isFav ? '−' : '+';
       if(base===0 && alt===0) return null;
       if(!frac || alt===base){ return base===0 ? null : (sign + idxToPts(base)); }
-      if(base===0) return sign + idxToPts(alt) + ' alt.';
-      return sign + idxToPts(base) + '/' + idxToPts(alt) + ' alt.';
+      // base value most games; alt value on the periodic game — SPELL OUT the frequency so
+      // the umpire knows exactly what "alt" means (was an ambiguous "−40/30 alt.").
+      if(base===0) return sign + idxToPts(alt) + ' (' + altEvery(frac) + ')';
+      return sign + idxToPts(base) + ' (' + sign + idxToPts(alt) + ' ' + altEvery(frac) + ')';
     };
     const undLabel = teamLabel(undBase, undAlt, (undAlt!==undBase?(hc.frac||0.5):0), false);
     const favLabel = teamLabel(favBase, favAlt, (favAlt!==favBase?(hc.frac||0.5):0), true);
@@ -6166,7 +6258,7 @@ async function loadTournamentSheet(tournament, division) {
       h += '<div style="margin:0 0 10px;padding:8px 12px;border:1.5px solid #8fb500;border-radius:9px;background:#fffdf5;font-size:12px;color:#8a6d1a;line-height:1.5;">'
         + '🎯 <b>Handicap event — just for fun (no rating effect).</b> Each match shows the head start to play on court: '
         + '<b>(+)</b> = that pair <b>receives</b> (starts the game ahead), <b>(−)</b> = that pair <b>owes</b> (starts behind). '
-        + '<b>“alt.”</b> = the value alternates each game (e.g. −30/40 alt. = owe 30 one game, 40 the next). Enter the final score as played.'
+        + '<b>Handicaps may alternate:</b> e.g. “−40 (−30 every 4th game)” means the favourite starts owing 40 in most games, dropping to 30 every fourth game. Enter the final score as played.'
         + '</div>';
     }
 
@@ -6317,11 +6409,26 @@ async function loadTournamentSheet(tournament, division) {
       const aWin = w===f.seed_a, bWin = w===f.seed_b;
       const bye = f.seed_b===0;
       const score = played ? (f.sets_a+'–'+f.sets_b) : '';
+      // Handicap (handicap events only): a small tag under each team's own name — same
+      // lookup the rounds table uses, so the Bracket tab shows head-starts for KO/plate too.
+      let hcA='', hcB='';
+      if(window._tmIsHandicap && !bye){
+        try{
+          const hc = tmFixtureHandicap(f.seed_a, f.seed_b);
+          if(hc && !hc.scratch){
+            const tag = v => '<div class="bkt-hc" style="font-size:10px;font-weight:700;color:#8fb500;">'+v+(hc.capped?' <span style="color:#c0392b;">(max)</span>':'')+'</div>';
+            if(hc.bySeed[f.seed_a]) hcA = tag(hc.bySeed[f.seed_a]);
+            if(hc.bySeed[f.seed_b]) hcB = tag(hc.bySeed[f.seed_b]);
+          } else if(hc && hc.scratch){
+            hcA = '<div class="bkt-hc" style="font-size:10px;color:#9b80b3;">scratch</div>';
+          }
+        }catch(e){}
+      }
       h += '<div class="bkt-match'+(bye?' bkt-bye':'')+'" '+(bye?'':'onclick="tmEnterFixtureResult('+f.id+')" title="Tap to enter/edit score"')+'>'
-        + '<div class="bkt-team'+(aWin?' bkt-win':'')+'"><span class="bkt-sd">'+f.seed_a+'</span>'+tName(f.seed_a)+'<span class="bkt-sc">'+(played?f.sets_a:'')+'</span></div>'
+        + '<div class="bkt-team'+(aWin?' bkt-win':'')+'"><span class="bkt-sd">'+f.seed_a+'</span>'+tName(f.seed_a)+hcA+'<span class="bkt-sc">'+(played?f.sets_a:'')+'</span></div>'
         + (bye
             ? '<div class="bkt-team bkt-byerow"><span class="bkt-sd">–</span>BYE<span class="bkt-sc"></span></div>'
-            : '<div class="bkt-team'+(bWin?' bkt-win':'')+'"><span class="bkt-sd">'+f.seed_b+'</span>'+tName(f.seed_b)+'<span class="bkt-sc">'+(played?f.sets_b:'')+'</span></div>')
+            : '<div class="bkt-team'+(bWin?' bkt-win':'')+'"><span class="bkt-sd">'+f.seed_b+'</span>'+tName(f.seed_b)+hcB+'<span class="bkt-sc">'+(played?f.sets_b:'')+'</span></div>')
         + '</div>';
     });
     h += '</div>';
@@ -6510,14 +6617,30 @@ async function loadTournamentSheet(tournament, division) {
     const emptyA = (m.a==null), emptyB=(m.b==null && m.b!==0);
     const scoreA = played? m.fx.sets_a : '';
     const scoreB = played? m.fx.sets_b : '';
+    // Handicap (handicap events only): a small tag under each team's own name, so the
+    // Knockout Draw shows head-starts too — same lookup the rounds table uses. Only when
+    // BOTH seeds are known and real (not a bye, not an unfilled slot).
+    let hcA='', hcB='';
+    if(window._tmIsHandicap && m.a!=null && m.b!=null && m.b!==0){
+      try{
+        const hc = tmFixtureHandicap(m.a, m.b);
+        if(hc && !hc.scratch && hc.bySeed){
+          const tag = v => '<div class="bkt-hc" style="font-size:10px;font-weight:700;color:#8fb500;">'+v+(hc.capped?' <span style="color:#c0392b;">(max)</span>':'')+'</div>';
+          if(hc.bySeed[m.a]) hcA = tag(hc.bySeed[m.a]);
+          if(hc.bySeed[m.b]) hcB = tag(hc.bySeed[m.b]);
+        } else if(hc && hc.scratch){
+          hcA = '<div class="bkt-hc" style="font-size:10px;color:#9b80b3;">scratch</div>';
+        }
+      }catch(e){}
+    }
     const click = ready ? (' onclick="tmEnterFixtureResult('+m.fx.id+')" title="Tap to enter score" style="cursor:pointer;"') : '';
     return '<div class="bkt-match'+(bye?' bkt-bye':'')+(ready?' bkt-ready':'')+'"'+click+'>'
       + '<div class="bkt-team'+(aWin?' bkt-win':'')+(emptyA?' bkt-empty':'')+'">'
         + (m.a!=null?'<span class="bkt-sd">'+m.a+'</span>':'<span class="bkt-sd bkt-sd-e"></span>')
-        + '<span class="bkt-nm">'+(aName||'&nbsp;')+'</span><span class="bkt-sc">'+scoreA+'</span></div>'
+        + '<span class="bkt-nm">'+(aName||'&nbsp;')+hcA+'</span><span class="bkt-sc">'+scoreA+'</span></div>'
       + '<div class="bkt-team'+(bWin?' bkt-win':'')+((emptyB)?' bkt-empty':'')+'">'
         + (m.b===0?'<span class="bkt-sd">–</span>':(m.b!=null?'<span class="bkt-sd">'+m.b+'</span>':'<span class="bkt-sd bkt-sd-e"></span>'))
-        + '<span class="bkt-nm">'+(bName||'&nbsp;')+'</span><span class="bkt-sc">'+scoreB+'</span></div>'
+        + '<span class="bkt-nm">'+(bName||'&nbsp;')+hcB+'</span><span class="bkt-sc">'+scoreB+'</span></div>'
       + '</div>';
   }
   function koTreeHTML(rounds, title, isPlate){
