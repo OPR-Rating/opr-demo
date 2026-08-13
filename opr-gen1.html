@@ -2988,7 +2988,7 @@ const _club = {id:11, name:'OPR Gen 1'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-21 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background). · New-player profile fix: brand-new players (no matches yet) now show the full banner (name, seed rating, level, category, since-inception) and stat grid (Matches/Sets/Sets Won 0, Win% 0.0%, Game Diff/Set 0.00); 'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-22 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background). · New-player profile fix: brand-new players (no matches yet) now show the full banner (name, seed rating, level, category, since-inception) and stat grid (Matches/Sets/Sets Won 0, Win% 0.0%, Game Diff/Set 0.00); 'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop.";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -8234,14 +8234,12 @@ async function renderClubLadder(){
   const singles = clIsSingles(cat);
   const sel = 'width:100%;padding:11px;border:1.5px solid rgba(108,52,131,.22);border-radius:9px;font-size:15px;box-sizing:border-box;margin-bottom:10px;';
 
-  // TOP-LEVEL format toggle: Singles Ladder / Doubles Ladder
-  let fmtBar = '<div class="tm-divbar cl-divbar" style="margin-bottom:8px;">'
-    + '<button class="'+(CL_FORMAT==='singles'?'active':'')+'" onclick="clSetFormat(\'singles\')">🎾 Singles Ladder</button>'
-    + '<button class="'+(CL_FORMAT==='doubles'?'active':'')+'" onclick="clSetFormat(\'doubles\')">👥 Doubles Ladder</button>'
-    + '</div>';
+  // OPR is doubles-only — no singles ladder. Force doubles, hide the format toggle.
+  CL_FORMAT = 'doubles';
+  let fmtBar = '';
 
-  // division pills — depend on the selected format
-  const divs = (CL_FORMAT==='singles') ? CL_CATS_SINGLES : CL_CATS_DOUBLES;
+  // division pills — doubles categories only
+  const divs = CL_CATS_DOUBLES;
   let divBar = '<div class="tm-divbar cl-divbar">';
   divs.forEach(d=>{ divBar += '<button class="'+(d===cat?'active':'')+'" onclick="clPick(\''+d.replace(/'/g,"\\'")+'\')">'+clDivLabel(d)+'</button>'; });
   divBar += '</div>';
