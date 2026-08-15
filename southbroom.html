@@ -1346,8 +1346,8 @@
       <h3>Confirm &amp; submit</h3>
       <div style="font-size:11px;color:#8fd6bd;margin-bottom:5px;">Who is submitting?</div>
       <select id="mkSubmitter" class="mk-pick" style="display:block;margin-bottom:10px;"></select>
-      <div style="font-size:11px;color:#8fd6bd;margin-bottom:5px;">Your PIN</div>
-      <input id="mkPin" type="tel" inputmode="numeric" class="mk-pick" style="display:block;" placeholder="PIN">
+      <!-- Player PIN hidden (not required to submit) -->
+      <input id="mkPin" type="hidden" value="">
     </div>
     <div id="mkSubErr" style="display:none;color:#ff9b9b;font-size:13px;margin:2px 0 6px;font-weight:600;"></div>
     <div class="mk-fbtns">
@@ -2094,7 +2094,7 @@ async function mkSubmit(){
   const submitter=document.getElementById('mkSubmitter').value;
   const pin=(document.getElementById('mkPin').value||'').trim();
   if(!submitter){ if(errEl){errEl.textContent='Please select your name.'; errEl.style.display='block';} return; }
-  if(!pin || pin.length<4){ if(errEl){errEl.textContent='Please enter your 4-digit PIN.'; errEl.style.display='block';} return; }
+  // Player PIN no longer required — only the submitter name is needed.
   const sc={};
   MK.setScores.forEach((s,idx)=>{ const [a,b]=s.split('-').map(Number); sc['set'+(idx+1)+'t1']=a; sc['set'+(idx+1)+'t2']=b; });
   let t1g=0,t2g=0; MK.setScores.forEach(s=>{ const [a,b]=s.split('-').map(Number); t1g+=a; t2g+=b; });
@@ -2988,7 +2988,7 @@ const _club = {id:4, name:'Southbroom'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-22 · Umpire live board: player names no longer overlap the serve indicator (right padding); game-score tally made prominent (bigger, bold, chip background). · New-player profile fix: brand-new players (no matches yet) now show the full banner (name, seed rating, level, category, since-inception) and stat grid (Matches/Sets/Sets Won 0, Win% 0.0%, Game Diff/Set 0.00); 'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-23 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop.";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -4702,9 +4702,8 @@ function renderStep4(){
         </select>
       </div>
       <div class="field" style="margin-bottom:0;">
-        <label>Your PIN</label>
-        <input type="password" id="submitterPin" maxlength="4" placeholder="4-digit PIN"
-          style="width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;font-size:18px;font-weight:700;letter-spacing:6px;text-align:center;">
+        <!-- Player PIN hidden (not required to submit) -->
+        <input type="hidden" id="submitterPin" value="">
         <div style="font-size:11px;color:#9b80b3;margin-top:6px;">Players use their own PIN. A club admin can use the club admin code to enter on anyone's behalf.</div>
       </div>
     </div>
@@ -4757,7 +4756,7 @@ async function submitMatch(){
   const err=document.getElementById('err4');
 
   if(!submitter){err.textContent='Please select your name.';err.style.display='block';return;}
-  if(!pin||pin.length<4){err.textContent='Please enter your 4-digit PIN.';err.style.display='block';return;}
+  // Player PIN no longer required — only the submitter name is needed.
 
   err.style.display='none';
   // TOURNAMENT ENTRY GUARD (division-aware). A tournament runs a set of live divisions
