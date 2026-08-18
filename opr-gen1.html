@@ -844,8 +844,10 @@
       <h1>Team Profile</h1>
     </div>
     <div class="screen-content">
-      <div style="text-align:center;font-size:12px;color:#7a6688;padding:8px 12px 4px;">Tap a name to open the profile.</div>
-      <input type="text" class="search-box" id="playerSearch" placeholder="Search your name..." oninput="filterPlayers()" style="position:sticky;top:0;z-index:30;background:#fff;">
+      <div style="position:sticky;top:0;z-index:30;background:#fff;">
+        <div style="text-align:center;font-size:12px;color:#7a6688;padding:8px 12px 4px;">Tap a name to open the profile.</div>
+        <input type="text" class="search-box" id="playerSearch" placeholder="Search your name..." oninput="filterPlayers()" style="background:#fff;">
+      </div>
       <ul class="player-list" id="playerList"></ul>
     </div>
   </div>
