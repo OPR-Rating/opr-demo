@@ -2989,7 +2989,7 @@ const _club = {id:3, name:'Eswatini'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-24 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-25 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned. · v25: profile name list now shows Rating/Level/Move pills per person (quick feel of standing; no divisions in OPR so 3rd pill is Move).";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3361,11 +3361,28 @@ async function showProfileSearch() {
   }
 }
 function renderIndivList(inds){
-  document.getElementById('playerList').innerHTML = inds.map(p=>`
+  // 3 pills per name — Rating / Level / Move. Fixed widths so they align vertically from the
+  // Rating pill. Rating coloured by gender (Ladies pink, Men blue). No divisions in OPR → Move.
+  const _pill=(txt,bg,fg,w)=>`<span style="display:inline-block;width:${w}px;text-align:center;padding:2px 0;border-radius:99px;font-size:10px;font-weight:800;background:${bg};color:${fg};margin-left:4px;">${txt}</span>`;
+  document.getElementById('playerList').innerHTML = inds.map(p=>{
+    const cur = (p.current_rating!=null) ? Math.round(p.current_rating) : (p.seed_rating!=null?Math.round(p.seed_rating):null);
+    const lvl = (cur!=null) ? (cur/200).toFixed(1) : null;
+    const init = (p.seed_rating!=null) ? Math.round(p.seed_rating) : null;
+    const mv = (cur!=null && init!=null) ? (cur-init) : null;
+    const mvStr = (mv==null)?'—':((mv>0?'+':'')+mv);
+    const mvFg = (mv==null||mv>=0)?'#1e8449':'#c0392b';
+    const rateBg=(p.gender==='F')?'#ffe6f0':'#e3edff';
+    const rateFg=(p.gender==='F')?'#a02166':'#2148a0';
+    const pills = _pill(cur!=null?cur:'',rateBg,rateFg,46)
+      + _pill(lvl!=null?lvl:'','#efe9e3','#6b4a2f',34)
+      + _pill(mvStr,'#f0f0f0',mvFg,40);
+    return `
     <li class="player-item" onclick="showPartnerships(${p.id})">
       <div class="player-avatar">${(p.full_name||'?')[0]}</div>
-      <div><div class="player-name">${p.full_name}</div><div class="player-gender">${p.gender==='M'?'Male':p.gender==='F'?'Female':''}</div></div>
-    </li>`).join('') || '<li style="padding:12px;color:#9a8578;">No individuals registered yet.</li>';
+      <div style="flex:1;min-width:0;"><div class="player-name">${p.full_name}</div><div class="player-gender">${p.gender==='M'?'Male':p.gender==='F'?'Female':''}</div></div>
+      <div style="white-space:nowrap;flex-shrink:0;">${pills}</div>
+    </li>`;
+  }).join('') || '<li style="padding:12px;color:#9a8578;">No individuals registered yet.</li>';
 }
 async function showPartnerships(indivId){
   const ind=(window._profileIndivs||[]).find(x=>x.id===indivId);
