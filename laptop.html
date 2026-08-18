@@ -3367,6 +3367,9 @@ async function showProfileSearch() {
   try{
     const inds = await sbGet(`individuals?select=id,full_name,gender,seed_rating,current_rating&club_id=eq.${CLUB_ID}&order=full_name.asc`) || [];
     window._profileIndivs = inds;
+    // Warm the engine BEFORE rendering so the list pills (rating/move/rank) read live OPR.indiv
+    // values, not the seed fallback (fixes Move showing 0 when current_rating column is empty).
+    try{ if(typeof OPR!=='undefined' && OPR.load) await OPR.load(); }catch(e){}
     renderIndivList(inds);
   }catch(e){
     document.getElementById('playerList').innerHTML='<li style="padding:12px;color:#c0392b;">Could not load individuals.</li>';
@@ -3375,14 +3378,17 @@ async function showProfileSearch() {
 function renderIndivList(inds){
   const _pill=(txt,bg,fg,w)=>`<span style="display:inline-block;width:${w}px;text-align:center;padding:2px 0;border-radius:99px;font-size:10px;font-weight:800;background:${bg};color:${fg};margin-left:4px;">${txt}</span>`;
   document.getElementById('playerList').innerHTML = inds.map(p=>{
+  const _lrk=(nm,sd,cr)=>{ let v=null; try{ if(typeof OPR!=='undefined'&&OPR.indiv) v=OPR.indiv(nm); }catch(e){} return (v!=null)?v:(cr!=null?cr:(sd!=null?sd:null)); };
   const _rk={}; window._oprRankById=_rk;
   ['M','F'].forEach(g=>{
-    const grp=(window._profileIndivs||inds).filter(x=>x.gender===g && (x.current_rating!=null||x.seed_rating!=null))
-      .slice().sort((a,b)=>((b.current_rating!=null?b.current_rating:b.seed_rating)) - ((a.current_rating!=null?a.current_rating:a.seed_rating)));
-    grp.forEach((x,i)=>{ _rk[x.id]=i+1; });
+    (window._profileIndivs||inds).filter(x=>x.gender===g)
+      .map(x=>({id:x.id,r:_lrk(x.full_name,x.seed_rating,x.current_rating)})).filter(x=>x.r!=null)
+      .sort((a,b)=>b.r-a.r).forEach((x,i)=>{ _rk[x.id]=i+1; });
   });
   
-    const cur = (p.current_rating!=null) ? Math.round(p.current_rating) : (p.seed_rating!=null?Math.round(p.seed_rating):null);
+    let _lv=null; try{ if(typeof OPR!=='undefined'&&OPR.indiv) _lv=OPR.indiv(p.full_name); }catch(e){}
+    if(_lv==null) _lv=(p.current_rating!=null?p.current_rating:(p.seed_rating!=null?p.seed_rating:null));
+    const cur = (_lv!=null)?Math.round(_lv):null;
     const lvl = (cur!=null) ? (cur/200).toFixed(1) : null;
     const init = (p.seed_rating!=null) ? Math.round(p.seed_rating) : null;
     const mv = (cur!=null && init!=null) ? (cur-init) : null;
