@@ -844,6 +844,7 @@
       <h1>Team Profile</h1>
     </div>
     <div class="screen-content">
+      <div style="text-align:center;font-size:12px;color:#7a6688;padding:8px 12px 4px;">Tap a name to open the profile.</div>
       <input type="text" class="search-box" id="playerSearch" placeholder="Search your name..." oninput="filterPlayers()" style="position:sticky;top:0;z-index:30;background:#fff;">
       <ul class="player-list" id="playerList"></ul>
     </div>
@@ -2988,7 +2989,7 @@ const _club = {id:2, name:'Kloof'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-25 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned. · v25: profile name list now shows Rating/Level/Move pills per person (quick feel of standing; no divisions in OPR so 3rd pill is Move).";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-26 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned. · v25: profile name list now shows Rating/Level/Move pills per person (quick feel of standing; no divisions in OPR so 3rd pill is Move). · v26: individual Rank pill added to the profile name list (position within gender by rating; list stays alphabetic) + '(Rank N)' on the profile card + 'Tap a name' hint above search.";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3362,6 +3363,13 @@ async function showProfileSearch() {
 function renderIndivList(inds){
   const _pill=(txt,bg,fg,w)=>`<span style="display:inline-block;width:${w}px;text-align:center;padding:2px 0;border-radius:99px;font-size:10px;font-weight:800;background:${bg};color:${fg};margin-left:4px;">${txt}</span>`;
   document.getElementById('playerList').innerHTML = inds.map(p=>{
+  const _rk={}; window._oprRankById=_rk;
+  ['M','F'].forEach(g=>{
+    const grp=(window._profileIndivs||inds).filter(x=>x.gender===g && (x.current_rating!=null||x.seed_rating!=null))
+      .slice().sort((a,b)=>((b.current_rating!=null?b.current_rating:b.seed_rating)) - ((a.current_rating!=null?a.current_rating:a.seed_rating)));
+    grp.forEach((x,i)=>{ _rk[x.id]=i+1; });
+  });
+  
     const cur = (p.current_rating!=null) ? Math.round(p.current_rating) : (p.seed_rating!=null?Math.round(p.seed_rating):null);
     const lvl = (cur!=null) ? (cur/200).toFixed(1) : null;
     const init = (p.seed_rating!=null) ? Math.round(p.seed_rating) : null;
@@ -3370,9 +3378,11 @@ function renderIndivList(inds){
     const mvFg = (mv==null||mv>=0)?'#1e8449':'#c0392b';
     const rateBg=(p.gender==='F')?'#ffe6f0':'#e3edff';
     const rateFg=(p.gender==='F')?'#a02166':'#2148a0';
+    const rk=_rk[p.id]; const rkStr=(rk!=null)?('('+rk+')'):'\u2014';
     const pills = _pill(cur!=null?cur:'',rateBg,rateFg,46)
       + _pill(lvl!=null?lvl:'','#efe9e3','#6b4a2f',34)
-      + _pill(mvStr,'#f0f0f0',mvFg,40);
+      + _pill(mvStr,'#f0f0f0',mvFg,40)
+      + _pill(rkStr,rateBg,rateFg,34);
     return `
     <li class="player-item" onclick="showPartnerships(${p.id})">
       <div class="player-avatar">${(p.full_name||'?')[0]}</div>
@@ -3421,12 +3431,26 @@ async function showPartnerships(indivId){
     const winPct=setsPlayed>0?(setsWon/setsPlayed*100).toFixed(1):'0.0';
     const gdps=setsPlayed>0?((gamesFor-gamesAgainst)/setsPlayed).toFixed(2):'0.00';
     const mvColI=totalMove>=0?'#c4e000':'#ff9e80', mvStrI=(totalMove>0?'+':'')+Math.round(totalMove);
+    // Individual rank within own gender (by current rating). Reuse the list's map if present,
+    // else compute from the loaded individuals. Display only — the list stays alphabetical.
+    let _rankI=null;
+    try{
+      if(ind){
+        if(window._oprRankById && window._oprRankById[ind.id]!=null){ _rankI=window._oprRankById[ind.id]; }
+        else if(Array.isArray(window._profileIndivs)){
+          const _same=window._profileIndivs.filter(x=>x.gender===ind.gender && (x.current_rating!=null||x.seed_rating!=null))
+            .slice().sort((a,b)=>((b.current_rating!=null?b.current_rating:b.seed_rating))-((a.current_rating!=null?a.current_rating:a.seed_rating)));
+          const _pos=_same.findIndex(x=>x.id===ind.id); if(_pos>=0) _rankI=_pos+1;
+        }
+      }
+    }catch(e){ _rankI=null; }
+    const _rankStrI = (_rankI!=null) ? (' (Rank '+_rankI+')') : '';
     const indivCard=`
       <div style="background:linear-gradient(135deg,#6c3483,#3a1d6e);border-radius:16px;padding:20px;margin-bottom:18px;color:#fff;text-align:center;">
         <div style="font-size:20px;font-weight:800;">${who}</div>
         <div style="font-size:40px;font-weight:800;line-height:1.1;margin:6px 0;">${curRating}</div>
         <div style="font-size:14px;opacity:.95;">Level ${level}</div>
-        <div style="font-size:15px;margin-top:8px;">${cat}${cat?' · ':''}<span style="color:${mvColI};font-weight:800;">${mvStrI}</span> since inception</div>
+        <div style="font-size:15px;margin-top:8px;">${cat}${cat?' · ':''}<span style="color:${mvColI};font-weight:800;">${mvStrI}</span> since inception${_rankStrI}</div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;">
         <div style="flex:1;background:#f5eef8;border-radius:10px;padding:10px;text-align:center;"><div style="font-weight:800;color:#6c3483;">${matches}</div><div style="font-size:11px;color:#7a6688;">Matches</div></div>
