@@ -2988,7 +2988,7 @@ const _club = {id:20, name:'WPA No. 20'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-23 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-24 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned.";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3914,7 +3914,7 @@ function profilePickPartner(){
     });
   };
   if(players.length) go(players);
-  else sbGet(`players?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`).then(l=>{ window._clPlayers=l||[]; go(window._clPlayers); });
+  else sbGet(`individuals?select=full_name,gender&order=full_name.asc&club_id=eq.${CLUB_ID}`).then(l=>{ window._clPlayers=(l||[]).map(x=>({name:x.full_name,gender:x.gender})); go(window._clPlayers); });
 }
 
 async function profileShowPartner(partner){
@@ -8212,7 +8212,7 @@ async function loadClubLadder(){
   body.innerHTML = '<div class="loading">Loading ladder…</div>';
   // players for join pickers
   if(!window._clPlayers){
-    window._clPlayers = await sbGet(`players?select=name,gender&order=name.asc&club_id=eq.${CLUB_ID}`) || [];
+    window._clPlayers = ((await sbGet(`individuals?select=full_name,gender&order=full_name.asc&club_id=eq.${CLUB_ID}`)) || []).map(x=>({name:x.full_name,gender:x.gender}));
   }
   renderClubLadder();
 }

@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OPR · Southbroom</title>
+<title>OPR Doubles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="manifest" href='data:application/manifest+json,{"name":"OPR · Southbroom","short_name":"OPR Southbroom","start_url":"./southbroom.html","scope":"./","display":"standalone","background_color":"%236C3483","theme_color":"%236C3483","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
+<link rel="manifest" href='data:application/manifest+json,{"name":"OPR · Open Padel Ratings","short_name":"OPR","start_url":"./laptop.html","scope":"./","display":"standalone","background_color":"%231c110a","theme_color":"%231c110a","icons":[{"src":"./icon-192.png","sizes":"192x192","type":"image/png"},{"src":"./icon-512.png","sizes":"512x512","type":"image/png"}]}'>
 <meta name="theme-color" content="#6c3483">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="OPR Southbroom">
+<meta name="apple-mobile-web-app-title" content="OPR">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -735,7 +735,15 @@
         <button class="menu-btn" onclick="showScreen('aboutScreen')">About OPR</button>
       </div>
       <div class="home-lower">
-        
+        <div class="home-club-col">
+          <div class="club-panel">
+            <div class="club-panel-head">Club Overview</div>
+            <div id="clubStats" class="club-stats"><div style="color:#999;font-size:12px;">Loading…</div></div>
+            <div class="club-panel-foot">
+              <a href="https://www.opr-online.com" target="_blank" rel="noopener" class="club-panel-link">Powered by OPR · opr-online.com ›</a>
+            </div>
+          </div>
+        </div>
         <div class="home-recent-col">
           <div style="background:#c4e000;color:#2a3000;border:1.5px solid #C97E0A;border-radius:10px;padding:8px 12px;margin:22px 0 10px;font-size:13px;font-weight:800;letter-spacing:0.5px;text-align:center;">Recent Matches</div>
           <div id="homeRecentList" style="max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px;"><div style="color:#888;font-size:12px;">Loading...</div></div>
@@ -2146,18 +2154,9 @@ async function adminUnlock(){
   const r=await adminCall('list_clubs');
   if(!r.ok){ document.getElementById('adminGateErr').textContent=r.error||'Access denied.'; document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return; }
   window._adminRole = r.role || 'club';
-  // PER-CLUB LOCK: this app is pinned to CLUB_ID. Only the master PIN, or a PIN that
-  // grants access to THIS club, may unlock it. A different club's PIN is rejected here
-  // so e.g. the Eswatini app cannot open Southbroom's admin.
-  const isMaster = (window._adminRole === 'master');
-  const allowed = isMaster || (Array.isArray(r.clubs) && r.clubs.some(c=>Number(c.id)===Number(CLUB_ID)));
-  if(!allowed){
-    document.getElementById('adminGateErr').textContent='That PIN is not valid for this club.';
-    document.getElementById('adminGateErr').style.display='block'; ADMIN_PIN=''; return;
-  }
   document.getElementById('adminGate').style.display='none';
   document.getElementById('adminPanel').style.display='block';
-  fillClubs(isMaster ? r.clubs : r.clubs.filter(c=>Number(c.id)===Number(CLUB_ID)));
+  fillClubs(r.clubs);
 }
 // ---- Admin Control Room: tabs + context ----
 function adminExit(){
@@ -2978,17 +2977,28 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 // Map of club code -> {id, name}. Add clubs here as they onboard.
 const CLUBS = {
   '1':  {id:1,  name:'Demo'},
+  '2':  {id:2,  name:'Kloof'},
   '3':  {id:3,  name:'Eswatini'},
-  // Padel clubs are added here as they onboard. New numeric ids also work automatically.
+  '4':  {id:4,  name:'Southbroom'},
+  '7':  {id:7,  name:'Mamba No.7'},
+  '11': {id:11, name:'OPR Gen 1'},
+  '20': {id:20, name:'WPA No. 20'},
   'demo':{id:1,name:'Demo'},
-  'eswatini':{id:3,name:'Eswatini'}
+  'kloof':{id:2,name:'Kloof'},
+  'eswatini':{id:3,name:'Eswatini'},
+  'southbroom':{id:4,name:'Southbroom'},
+  'mamba7':{id:7,name:'Mamba No.7'},
+  'opr-gen1':{id:11,name:'OPR Gen 1'},
+  'wpa20':{id:20,name:'WPA No. 20'}
 };
-// PER-CLUB MOBILE — pinned to Southbroom (id 4), nae.
-const _club = {id:4, name:'Southbroom'};
+const _clubParam = (new URLSearchParams(window.location.search).get('club') || '1').toLowerCase();
+// Known clubs come from the map; any OTHER numeric id (new clubs 20+) is used directly —
+// the real name is fetched from the database on load. Non-numeric unknowns fall back to Demo.
+const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubParam), name:'OPR Club '+_clubParam} : CLUBS['1']);
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-24 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · Doubles-only ladder: removed the Singles/Doubles toggle (OPR is doubles-first), matching eswatini/laptop. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-24 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned.";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3375,12 +3385,16 @@ async function showPartnerships(indivId){
   const box=document.getElementById('partnershipsList'); box.innerHTML='Loading…';
   { const _cb=document.getElementById('partnershipsCard'); if(_cb) _cb.innerHTML='<div style="padding:24px;text-align:center;color:#9a8578;">Loading…</div>'; }
   try{
+    // Fetch the three independent datasets in PARALLEL (was 3 sequential round-trips → 1),
+    // and warm the engine at the same time. Pure speed; the data used is identical.
     const [teams, pr, myMatches] = await Promise.all([
       sbGet(`players?select=id,name,gender,initial_rating,member_a_id,member_b_id&club_id=eq.${CLUB_ID}&or=(member_a_id.eq.${indivId},member_b_id.eq.${indivId})`).then(r=>r||[]),
       sbGet(`player_results?select=name,current_rating,initial_rating&club_id=eq.${CLUB_ID}`).then(r=>r||[]),
       sbGet(`matches?select=t1p1,t2p1,t1_sets,t2_sets,t1_games,t2_games,rating_delta&club_id=eq.${CLUB_ID}`).then(r=>r||[]),
       OPR.load()
     ]);
+    // NEW PLAYER (no partnerships yet): do NOT early-return — still render the banner and the
+    // stat grid (seed rating + zeros) below; the "no partnerships" note shows only in the list.
     const _noTeams = !teams.length;
     const curBy={}; pr.forEach(r=>{ curBy[r.name]={cur:r.current_rating, init:r.initial_rating}; });
     const catLabel=c=>c==='M'?"Men's":c==='L'?'Ladies':c==='X'?'Mixed':'';
