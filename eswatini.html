@@ -2992,7 +2992,7 @@ const _club = {id:3, name:'Eswatini'};
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-28";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-29";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -5021,7 +5021,7 @@ async function submitMatch(){
           if(x && (x===p.p1 || x===p.p2)) n++;
           if(y && (y===p.p1 || y===p.p2)) n++;
           return n; };
-        const fixes = await sbGet(`tournament_fixtures?select=id,round,round_type,seed_a,seed_b,sets_a,sets_b&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(_mDiv)}&club_id=eq.${CLUB_ID}&order=round.asc`) || [];
+        const fixes = await sbGet(`tournament_fixtures?select=id,round,round_type,band,seed_a,seed_b,sets_a,sets_b&tournament=eq.${encodeURIComponent(ev)}&division=eq.${encodeURIComponent(_mDiv)}&club_id=eq.${CLUB_ID}&order=round.asc`) || [];
         // FIX B (#5): MAIN DRAW + PLATE run concurrently to the end. A team with a PLAYED, LOST
         // main-draw ko/final fixture is out of the main draw and can only continue in the plate.
         // So main-draw fixtures are INELIGIBLE for teams already eliminated there — this breaks
@@ -5034,6 +5034,8 @@ async function submitMatch(){
           }
         });
         const _eligible=(f)=>{
+          // A BYE is not a match — never let a result land on a bye fixture (seed 0 / band 'bye').
+          if(f.seed_a===0 || f.seed_b===0 || f.round_type==='bye' || f.band==='bye') return false;
           if(f.round_type==='plate') return true;
           if(_elimMain.has(f.seed_a) || _elimMain.has(f.seed_b)) return false;
           return true;
