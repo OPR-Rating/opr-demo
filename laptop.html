@@ -866,9 +866,9 @@
       <button class="back-btn" onclick="showProfileSearch()">&#8592;</button>
       <h1 id="partnershipsTitle">Partnerships</h1>
     </div>
-    <div class="screen-content" style="display:flex;flex-direction:column;overflow:hidden;">
+    <div class="screen-content" style="display:flex;flex-direction:column;overflow-y:auto;">
       <div id="partnershipsCard" style="flex:none;"></div>
-      <div id="partnershipsList" style="flex:1;overflow-y:auto;"></div>
+      <div id="partnershipsList" style="flex:none;"></div>
     </div>
   </div>
 
@@ -3001,7 +3001,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-26 · Player PIN removed from match entry (hidden, not required); who-entered name dropdown kept; admin + master PIN unchanged.'No partnerships yet' shows only in the partnerships list. · Profile speed + new-player fix: profiles load faster (parallel fetches, no redundant engine load), the previous player's card no longer lingers while loading, and brand-new players show the full banner + zeroed stats. Look unchanged. · v24: all OPR clubs re-aligned — ladder join picker reads individuals (names) not pairs across every club; grp column live (round-robin names); laptop is master build, per-club variants pinned. · v25: profile name list now shows Rating/Level/Move pills per person (quick feel of standing; no divisions in OPR so 3rd pill is Move). · v26: individual Rank pill added to the profile name list (position within gender by rating; list stays alphabetic) + '(Rank N)' on the profile card + 'Tap a name' hint above search.";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.05-28";
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3467,6 +3467,67 @@ async function showPartnerships(indivId){
       }
     }catch(e){ _rankI=null; }
     const _rankStrI = (_rankI!=null) ? (' (Rank '+_rankI+')') : '';
+    // ===== PROFILE CHARTS (radar + donut) — from myMatches already loaded, no fetch =====
+    let _cW=0,_ccW=0,_ccL=0,_cL=0,_oppSum=0,_oppN=0;
+    myMatches.filter(isMine).forEach(m=>{
+      const mineIsT1=teamNames.includes(m.t1p1);
+      const sf=mineIsT1?(m.t1_sets||0):(m.t2_sets||0), sa=mineIsT1?(m.t2_sets||0):(m.t1_sets||0);
+      const gf=mineIsT1?(m.t1_games||0):(m.t2_games||0), ga=mineIsT1?(m.t2_games||0):(m.t1_games||0);
+      const won=sf>sa, setMargin=Math.abs(sf-sa), gMargin=Math.abs(gf-ga);
+      const close=(setMargin<=1)||(gMargin>0&&gMargin<=3);
+      if(won){ if(close)_ccW++; else _cW++; } else { if(close)_ccL++; else _cL++; }
+      const oA=mineIsT1?m.t2p1:m.t1p1, oB=mineIsT1?m.t2p2:m.t1p2;
+      [oA,oB].forEach(n=>{ if(n){ let r=null; try{ if(OPR.indiv) r=OPR.indiv(n);}catch(e){} if(r!=null){_oppSum+=r;_oppN++;} } });
+    });
+    const _totM=_cW+_ccW+_ccL+_cL, _avgOpp=_oppN>0?Math.round(_oppSum/_oppN):null;
+    const _mcVals=Object.values(mcount).filter(v=>v>0);
+    const _clubAvgM=_mcVals.length?(_mcVals.reduce((a,b)=>a+b,0)/_mcVals.length):0;
+    const _clamp=v=>Math.max(0,Math.min(100,v));
+    const rWin=setsPlayed>0?_clamp(setsWon/setsPlayed*100):0;
+    const rScrap=_totM>0?_clamp(_ccW/_totM*100+(_cW/_totM*100)*0.4):0;
+    const rCompose=_totM>0?_clamp(100-(_ccL/_totM*100)):50;
+    const rOpp=_avgOpp!=null?_clamp((_avgOpp-1200)/8):50;
+    const rAct=_clubAvgM>0?_clamp(matches/_clubAvgM*50):_clamp(matches*8);
+    const rEff=_clamp(50+(parseFloat(gdps)||0)*12);
+    const _axes=[['Win %',rWin],['Scrap',rScrap],['Compose',rCompose],['Opp Str',rOpp],['Active',rAct],['Pt Eff',rEff]];
+    function _radarSVG(axes){
+      const cx=100,cy=95,R=70,N=axes.length;
+      const pt=(i,r)=>{ const a=-Math.PI/2+i*2*Math.PI/N; return [cx+Math.cos(a)*r,cy+Math.sin(a)*r]; };
+      let grid=''; [0.25,0.5,0.75,1].forEach(f=>{ let p=axes.map((_,i)=>pt(i,R*f).join(',')).join(' '); grid+=`<polygon points="${p}" fill="none" stroke="#e6ddec" stroke-width="1"/>`; });
+      let spokes='',labels='';
+      axes.forEach((ax,i)=>{ const [x,y]=pt(i,R); spokes+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#e6ddec" stroke-width="1"/>`;
+        const [lx,ly]=pt(i,R+14); labels+=`<text x="${lx}" y="${ly}" font-size="8" fill="#6b5a78" text-anchor="middle" dominant-baseline="middle">${ax[0]}</text>`; });
+      const poly=axes.map((ax,i)=>pt(i,R*ax[1]/100).join(',')).join(' ');
+      return `<svg viewBox="0 0 200 200" width="100%" style="max-width:230px;height:auto;display:block;margin:0 auto;">${grid}${spokes}<polygon points="${poly}" fill="rgba(108,52,131,.26)" stroke="#6c3483" stroke-width="2"/>${labels}</svg>`;
+    }
+    function _donutSVG(cW,ccW,ccL,cL){
+      const tot=cW+ccW+ccL+cL,cx=70,cy=70,r=52,sw=22,C=2*Math.PI*r;
+      if(tot===0) return `<svg viewBox="0 0 140 140" width="100%" style="max-width:150px;height:auto;display:block;margin:0 auto;"><circle cx="70" cy="70" r="52" fill="none" stroke="#eee" stroke-width="22"/></svg>`;
+      const segs=[['#1e8449',cW],['#7ed957',ccW],['#ffb84d',ccL],['#c0392b',cL]]; let off=0,arcs='';
+      segs.forEach(([col,v])=>{ if(v<=0)return; const len=v/tot*C; arcs+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 ${cx} ${cy})"/>`; off+=len; });
+      return `<svg viewBox="0 0 140 140" width="100%" style="max-width:150px;height:auto;display:block;margin:0 auto;">${arcs}<text x="70" y="66" font-size="20" font-weight="800" fill="#6c3483" text-anchor="middle">${tot}</text><text x="70" y="82" font-size="9" fill="#6b5a78" text-anchor="middle">matches</text></svg>`;
+    }
+    const _chartsHTML = matches>0 ? `
+      <button type="button" onclick="(function(b){var p=document.getElementById('chartSnap');var open=p.style.display!=='none';p.style.display=open?'none':'block';b.innerHTML=(open?'\u25B8':'\u25BE')+' Chart Snapshot';})(this)" style="width:100%;text-align:left;background:#f6f0fa;border:1.5px solid #e6ddec;border-radius:10px;padding:11px 14px;margin-bottom:10px;font-size:14px;font-weight:800;color:#6c3483;cursor:pointer;font-family:inherit;">\u25B8 Chart Snapshot</button>
+      <div id="chartSnap" style="display:none;background:#f6f0fa;border-radius:12px;padding:14px;margin-bottom:14px;">
+        <div style="font-weight:800;color:#6c3483;font-size:15px;text-align:center;margin-bottom:2px;">Overall Performance</div>
+        <div style="font-size:10px;color:#6b5a78;text-align:center;margin-bottom:10px;line-height:1.5;">
+          <b>Win %</b> games won · <b>Scrap</b> winning, esp. close · <b>Compose</b> few close losses · <b>Opp Str</b> strength of opponents · <b>Active</b> matches vs club average · <b>Pt Eff</b> point margin per set
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;">
+          <div style="flex:1 1 200px;min-width:180px;text-align:center;">${_radarSVG(_axes)}</div>
+          <div style="flex:1;min-width:150px;text-align:center;">
+            ${_donutSVG(_cW,_ccW,_ccL,_cL)}
+            <div style="display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;margin-top:6px;font-size:10px;color:#5a4636;">
+              <span><span style="display:inline-block;width:8px;height:8px;background:#1e8449;border-radius:2px;"></span> Clear win ${_cW}</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#7ed957;border-radius:2px;"></span> Close win ${_ccW}</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#ffb84d;border-radius:2px;"></span> Close loss ${_ccL}</span>
+              <span><span style="display:inline-block;width:8px;height:8px;background:#c0392b;border-radius:2px;"></span> Clear loss ${_cL}</span>
+            </div>
+            ${_avgOpp!=null?`<div style="font-size:10px;color:#6b5a78;margin-top:4px;">Avg opponent rating: <b>${_avgOpp}</b></div>`:''}
+          </div>
+        </div>
+      </div>` : '';
     const indivCard=`
       <div style="background:linear-gradient(135deg,#6c3483,#3a1d6e);border-radius:16px;padding:20px;margin-bottom:18px;color:#fff;text-align:center;">
         <div style="font-size:20px;font-weight:800;">${who}</div>
@@ -3481,6 +3542,7 @@ async function showPartnerships(indivId){
         <div style="flex:1;background:#f5eef8;border-radius:10px;padding:10px;text-align:center;"><div style="font-weight:800;color:#6c3483;">${winPct}%</div><div style="font-size:11px;color:#7a6688;">Win %</div></div>
         <div style="flex:1;background:#f5eef8;border-radius:10px;padding:10px;text-align:center;"><div style="font-weight:800;color:#6c3483;">${gdps}</div><div style="font-size:11px;color:#7a6688;">Game Diff/Set</div></div>
       </div>
+      ${_chartsHTML}
       <div style="font-weight:700;color:#5b3a6e;margin-bottom:8px;font-size:14px;">Partnerships</div>`;
     const rows = teams.map(t=>{
       // SINGLE SOURCE: pair rating = live 60/40 of the two members' current ratings.
