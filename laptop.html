@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.22-31";  // PAIR NAME AS ENTERED: a newly-born pair is now named in the order the two players were entered (was forced A→Z since the hybrid). Existing pairs keep their stored names. The Existing/New pairing label is now order-independent (was missing legacy as-entered names). Duplicate protection unchanged (by member IDs, not name).  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
+const OPR_VERSION = "OPR-DOUBLES v2026.08.22-32";  // RECENT MATCHES AS ENTERED: each match now carries display_t1/display_t2 (the sides exactly as typed into +Enter Score, player 1 first). Recent Matches shows those; falls back to the stored pair name for older matches. Purely cosmetic — the stored pair name (engine/stats join key) is unchanged. Needs: matches.display_t1/display_t2 columns (SQL) + submit_match v2026.08.22-D1.  // PAIR NAME AS ENTERED: a newly-born pair is now named in the order the two players were entered (was forced A→Z since the hybrid). Existing pairs keep their stored names. The Existing/New pairing label is now order-independent (was missing legacy as-entered names). Duplicate protection unchanged (by member IDs, not name).  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -4339,7 +4339,7 @@ let recentMatchesData = [];
 async function loadRecent(){
   try{
     // Read the latest 15 matches from Supabase, newest first
-    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores&order=match_date.desc,id.desc&limit=15&club_id=eq.${CLUB_ID}`);
+    const data = await sbGet(`matches?select=match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores,display_t1,display_t2&order=match_date.desc,id.desc&limit=15&club_id=eq.${CLUB_ID}`);
     recentMatchesData = data;
     if(data.length===0){document.getElementById('homeRecentList').innerHTML='<div style="color:#888;font-size:12px;">No matches yet</div>';return;}
     renderRecentList();
@@ -4429,7 +4429,7 @@ function renderRecentList(){
         <span class="match-type">${m.match_type||''}</span>${tag}
         <span style="color:#6c3483;font-size:11px;">▼</span>
       </div>
-      <div class="match-teams"><strong>${m.t1p2?((m.t1p1||'')+' & '+m.t1p2):(m.t1p1||'')}</strong> ${m.t1_sets||0}-${m.t2_sets||0} <strong>${m.t2p2?((m.t2p1||'')+' & '+m.t2p2):(m.t2p1||'')}</strong></div>
+      <div class="match-teams"><strong>${m.display_t1||(m.t1p2?((m.t1p1||'')+' & '+m.t1p2):(m.t1p1||''))}</strong> ${m.t1_sets||0}-${m.t2_sets||0} <strong>${m.display_t2||(m.t2p2?((m.t2p1||'')+' & '+m.t2p2):(m.t2p1||''))}</strong></div>
       <div class="match-detail" id="detail_${idx}" style="display:none;margin-top:6px;padding-top:6px;border-top:1px solid rgba(108,52,131,.30);"></div>
     </div>`;}).join('');
 }
@@ -5237,6 +5237,10 @@ async function doSubmit(btn){
     const match={
       match_date:entryData.date, match_type:entryData.type, event:entryData.event||'Social',
       t1p1:_pairName1, t1p2:null, t2p1:_pairName2, t2p2:null,   // pair-vs-pair (partners null)
+      // AS ENTERED (v32, cosmetic only): the sides exactly as typed — player 1 first.
+      // Stored separately so the pair name above stays the engine/stats join key.
+      display_t1:(entryData.t1p1+' & '+entryData.t1p2),
+      display_t2:(entryData.t2p1+' & '+entryData.t2p2),
       t1_sets:entryData.t1sets, t2_sets:entryData.t2sets,
       t1_games:entryData.t1games, t2_games:entryData.t2games,
       set_scores:setParts.join(','),
