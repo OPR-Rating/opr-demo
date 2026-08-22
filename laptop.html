@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.22-30";  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
+const OPR_VERSION = "OPR-DOUBLES v2026.08.22-31";  // PAIR NAME AS ENTERED: a newly-born pair is now named in the order the two players were entered (was forced A→Z since the hybrid). Existing pairs keep their stored names. The Existing/New pairing label is now order-independent (was missing legacy as-entered names). Duplicate protection unchanged (by member IDs, not name).  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -4851,7 +4851,11 @@ async function odrEnsurePair(nameA, nameB){
   if(!b) throw new Error('"'+nameB+'" is not a registered individual');
   const aid=a.id, bid=b.id;
   const lo=aid<bid?aid:bid, hi=aid<bid?bid:aid;
-  const canonName=[nameA,nameB].sort((x,y)=>x.localeCompare(y)).join(' & ');
+  // AS ENTERED (v31): the pair is named in the order the players were entered this first
+  // time — no forced A→Z. Naming is display identity only: duplicates are prevented by the
+  // member-ID lookup below (order-independent), recompute resolves members via
+  // member_a_id/member_b_id, and every matcher splits " & " order-independently.
+  const canonName=nameA+' & '+nameB;
   // already exists? Match the pair whichever ORDER its members are stored — a row created by an
   // earlier version may have member_a_id/member_b_id swapped vs our lo/hi. Checking only lo,hi
   // would miss it and birth a DUPLICATE pair row. This or() matches both orders.
@@ -5536,7 +5540,14 @@ async function odrBuildIndivRatings(){
     // keep a set of existing pair-names purely for the "Existing/New pairing" label.
     ODR_PAIR_RATING={};
     const pairs = await sbGet(`players?select=name,member_a_id,member_b_id&club_id=eq.${CLUB_ID}&or=(member_a_id.not.is.null)`) || [];
-    pairs.forEach(p=>{ ODR_PAIR_RATING[p.name]=OPR.pairByName(p.name); });
+    pairs.forEach(p=>{
+      const v=OPR.pairByName(p.name);
+      ODR_PAIR_RATING[p.name]=v;
+      // v31: ALSO key under the A→Z form of the name's members, so the Existing/New
+      // label (which probes with the sorted form) hits no matter how the pair is named.
+      const mm=String(p.name).split(' & ');
+      if(mm.length===2){ ODR_PAIR_RATING[mm.map(x=>x.trim()).sort((x,y)=>x.localeCompare(y)).join(' & ')]=v; }
+    });
   }catch(e){}
 }
 // Update the little rating line under each side. If the two people already have a pair,
