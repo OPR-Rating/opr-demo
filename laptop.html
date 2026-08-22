@@ -296,6 +296,7 @@
   .bkt-match{border:1px solid #d9cbe8;border-radius:9px;overflow:hidden;cursor:pointer;transition:box-shadow .15s;background:#fff;}
   .bkt-match:hover{box-shadow:0 2px 8px rgba(108,52,131,.18);}
   .bkt-bye{cursor:default;opacity:.75;}
+  .bkt-ghost{visibility:hidden;border:none;}  /* staggered col-1 bye slot: keeps geometry, shows nothing */
   .bkt-team{display:flex;align-items:center;gap:6px;padding:6px 9px;font-size:12.5px;border-bottom:1px solid #f0ecf4;}
   .bkt-team:last-child{border-bottom:none;}
   .bkt-win{background:#eafaf0;font-weight:700;color:#1e7a34;}
@@ -3001,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.05-29";
+const OPR_VERSION = "OPR-DOUBLES v2026.08.22-30";  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -6769,13 +6770,19 @@ async function loadTournamentSheet(tournament, division) {
         + '<span class="bkt-nm">'+(bName||'&nbsp;')+hcB+'</span><span class="bkt-sc">'+scoreB+'</span></div>'
       + '</div>';
   }
-  function koTreeHTML(rounds, title, isPlate){
+  function koTreeHTML(rounds, title, isPlate, staggerR1){
     if(!rounds || !rounds.length) return '';
     let cols='';
     rounds.forEach((rd,ri)=>{
       const label = koRoundName(rd.length, isPlate);
+      // BOX-CENTRIC (v30): staggered column 1 — a bye slot renders as an invisible
+      // spacer (same footprint, no "vs BYE" box). The bye seed appears seated in its
+      // column-2 box, which computeMainBracket already fills via winner propagation.
       cols += '<div class="bkt-colwrap"><div class="bkt-rlabel">'+label+'</div><div class="bkt-col">'
-        + rd.map(m=>koBox(m,isPlate)).join('') + '</div></div>';
+        + rd.map(m=>{
+            if(staggerR1 && ri===0 && m.b===0) return '<div class="bkt-match bkt-ghost"></div>';
+            return koBox(m,isPlate);
+          }).join('') + '</div></div>';
     });
     // champion banner
     const finalRd = rounds[rounds.length-1];
@@ -6818,7 +6825,7 @@ async function loadTournamentSheet(tournament, division) {
 
     const mainRounds = computeMainBracket();
     const plateRounds = computePlateBracket();
-    const main = koTreeHTML(mainRounds, _isPlayoff ? 'Knockout Playoff' : 'Main Draw', false);
+    const main = koTreeHTML(mainRounds, _isPlayoff ? 'Knockout Playoff' : 'Main Draw', false, !_isPlayoff);
     const plate = koTreeHTML(plateRounds, 'Plate (first-round losers)', true);
     let h = '<div class="card bkt-card" id="bktPrintArea">'
       + '<div class="bkt-head"><h2>'+(_isPlayoff?'Playoff':'Knockout Draw')+' <span class="tm-divtag">'+tmDivLabel(TM_DIVISION)+'</span></h2>'
@@ -8077,12 +8084,10 @@ async function tmGenerateKnockoutDraw(tournament, division){
     rows.push({ tournament, division, round:1, round_type:'ko',
       band: (r1.size>=32?'R'+r1.size:label), seed_a:a, seed_b:b });
   });
-  // Byes: record as a played fixture where the bye seed "wins" vs seed 0 (BYE marker),
-  // so the bracket shows the top seed advancing. seed_b=0 => BYE (rendered as such).
-  r1.byes.forEach(sd=>{
-    rows.push({ tournament, division, round:1, round_type:'ko',
-      band:'bye', seed_a:sd, seed_b:0 });
-  });
+  // BOX-CENTRIC (v30): byes are NOT written as fixtures. A bye seed starts pre-seeded
+  // in its column-2 box — both the display (computeMainBracket) and the edge fn's
+  // advanceKnockout compute bye positions from the seed list, so a bye needs no row.
+  // (Old draws with stored seed_b=0 bye rows still render/advance correctly.)
   if(!TM_ADMIN_PIN){ TM_ADMIN_PIN = prompt('Admin PIN to generate the knockout draw:')||''; }
   if(!TM_ADMIN_PIN) return;
   // CRITICAL: persist the seeds first. seedEntries() only numbers them in memory;
