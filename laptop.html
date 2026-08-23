@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.22-32";  // RECENT MATCHES AS ENTERED: each match now carries display_t1/display_t2 (the sides exactly as typed into +Enter Score, player 1 first). Recent Matches shows those; falls back to the stored pair name for older matches. Purely cosmetic — the stored pair name (engine/stats join key) is unchanged. Needs: matches.display_t1/display_t2 columns (SQL) + submit_match v2026.08.22-D1.  // PAIR NAME AS ENTERED: a newly-born pair is now named in the order the two players were entered (was forced A→Z since the hybrid). Existing pairs keep their stored names. The Existing/New pairing label is now order-independent (was missing legacy as-entered names). Duplicate protection unchanged (by member IDs, not name).  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
+const OPR_VERSION = "OPR-DOUBLES v2026.08.23-33";  // FASTER SUBMIT (aligned across pair-rail forks): both pairs resolved in parallel; cold-cache individual lookups in parallel; post-submit advance_bracket fire-and-forget (server already advances). Same logic, same results — only the waiting overlaps.  // RECENT MATCHES AS ENTERED: each match now carries display_t1/display_t2 (the sides exactly as typed into +Enter Score, player 1 first). Recent Matches shows those; falls back to the stored pair name for older matches. Purely cosmetic — the stored pair name (engine/stats join key) is unchanged. Needs: matches.display_t1/display_t2 columns (SQL) + submit_match v2026.08.22-D1.  // PAIR NAME AS ENTERED: a newly-born pair is now named in the order the two players were entered (was forced A→Z since the hybrid). Existing pairs keep their stored names. The Existing/New pairing label is now order-independent (was missing legacy as-entered names). Duplicate protection unchanged (by member IDs, not name).  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -4845,8 +4845,13 @@ async function odrEnsurePair(nameA, nameB){
   if(!nameA || !nameB) throw new Error('two players are required per side');
   if(nameA===nameB) throw new Error('a pair needs two different players');
   // resolve the two individuals (id, gender, seed)
-  const a = INDIV_BY_NAME[nameA] || (await sbGet(`individuals?select=id,full_name,gender,seed_rating&club_id=eq.${CLUB_ID}&full_name=eq.${encodeURIComponent(nameA)}&limit=1`))[0];
-  const b = INDIV_BY_NAME[nameB] || (await sbGet(`individuals?select=id,full_name,gender,seed_rating&club_id=eq.${CLUB_ID}&full_name=eq.${encodeURIComponent(nameB)}&limit=1`))[0];
+  // SPEED (aligned): when the cache is cold, fetch BOTH individuals in parallel.
+  const [_ra, _rb] = await Promise.all([
+    INDIV_BY_NAME[nameA] ? Promise.resolve([INDIV_BY_NAME[nameA]]) : sbGet(`individuals?select=id,full_name,gender,seed_rating&club_id=eq.${CLUB_ID}&full_name=eq.${encodeURIComponent(nameA)}&limit=1`),
+    INDIV_BY_NAME[nameB] ? Promise.resolve([INDIV_BY_NAME[nameB]]) : sbGet(`individuals?select=id,full_name,gender,seed_rating&club_id=eq.${CLUB_ID}&full_name=eq.${encodeURIComponent(nameB)}&limit=1`)
+  ]);
+  const a = _ra[0];
+  const b = _rb[0];
   if(!a) throw new Error('"'+nameA+'" is not a registered individual');
   if(!b) throw new Error('"'+nameB+'" is not a registered individual');
   const aid=a.id, bid=b.id;
@@ -5221,8 +5226,12 @@ async function doSubmit(btn){
     // the pair. New pairings thus appear automatically — no admin trip needed.
     let _pairName1, _pairName2;
     try{
-      _pairName1 = await odrEnsurePair(entryData.t1p1, entryData.t1p2);
-      _pairName2 = await odrEnsurePair(entryData.t2p1, entryData.t2p2);
+      // SPEED (aligned): resolve both pairs IN PARALLEL — halves pair-resolution time.
+      // Same logic, same results; only the waiting overlaps.
+      [_pairName1, _pairName2] = await Promise.all([
+        odrEnsurePair(entryData.t1p1, entryData.t1p2),
+        odrEnsurePair(entryData.t2p1, entryData.t2p2)
+      ]);
     }catch(e){
       err.innerHTML='<strong>⚠️ Not submitted.</strong><br>Could not form the pair: '+(e.message||e);
       err.style.display='block'; btn.disabled=false; btn.textContent='\u2713 Submit Match';
@@ -5288,9 +5297,12 @@ async function doSubmit(btn){
     if(_ev && _ev!=='Social' && _ev!=='Ladder Match' && result.fixture!=='nomatch'){
       try{
         const _div = entryData.type + (entryData.format==='singles' ? ' Singles' : '');
-        await fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
+        // SPEED (aligned): fire-and-forget — submit_match already fires the same advance
+        // server-side; this client copy stays as belt-and-braces but no longer blocks
+        // the success screen. Idempotent under the box-centric routine.
+        fetch(SB_URL+'/functions/v1/tournament',{ method:'POST',
           headers:{ apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, 'Content-Type':'application/json' },
-          body: JSON.stringify({ action:'advance_bracket', club_id:CLUB_ID, tournament:_ev, division:_div }) });
+          body: JSON.stringify({ action:'advance_bracket', club_id:CLUB_ID, tournament:_ev, division:_div }) }).catch(()=>{});
       }catch(e){ /* advancement is best-effort; the result itself is saved */ }
     }
 
