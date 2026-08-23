@@ -176,7 +176,7 @@
   .recent-item .match-header { display: flex; justify-content: center; gap: 10px; margin-bottom: 1px; }
   .recent-item .match-date { color: #888; font-size: 11px; }
   .recent-item .match-type { color: #6c3483; font-weight: 600; font-size: 11px; }
-  .recent-item .match-teams { color: #333; text-align: center; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-item .match-teams { color: #333; text-align: center; font-size: 11px; white-space: normal; overflow-wrap: break-word; line-height: 1.45; }  /* wrap-when-needed: one line where it fits, wraps instead of clipping where it doesn't */
 
   /* About */
   .about-section { margin-bottom: 20px; }
@@ -673,7 +673,7 @@
   .recent-item .match-header { display: flex; justify-content: center; gap: 10px; margin-bottom: 1px; }
   .recent-item .match-date { color: #888; font-size: 11px; }
   .recent-item .match-type { color: #6C3483; font-weight: 600; font-size: 11px; }
-  .recent-item .match-teams { color: #333; text-align: center; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-item .match-teams { color: #333; text-align: center; font-size: 11px; white-space: normal; overflow-wrap: break-word; line-height: 1.45; }  /* wrap-when-needed: one line where it fits, wraps instead of clipping where it doesn't */
 
   /* About */
   .about-section { margin-bottom: 20px; }
@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.23-34";  // GHOST-PAIR FILTER (from ODR v11): pair entities with zero recorded matches no longer appear on ratings listings; they appear the moment they play. 60/40 EVERYWHERE, FINAL PASS: doubles listings and tournament results now SHOW the weighted rating for every category (header Rating (Wtd)) so the displayed number matches the R1 rank order, and tournament banding/seeding strength is weighted for every category. Includes v33 speed + v32 as-entered + v31 naming.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.23-35";  // RECENT MATCHES WRAP-WHEN-NEEDED: team names wrap to a second line on narrow screens instead of clipping with an ellipsis; screens where the line fits still show one line. Includes v34 ghost filter + 60/40 display pass and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
