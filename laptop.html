@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.23-33";  // FASTER SUBMIT (aligned across pair-rail forks): both pairs resolved in parallel; cold-cache individual lookups in parallel; post-submit advance_bracket fire-and-forget (server already advances). Same logic, same results — only the waiting overlaps.  // RECENT MATCHES AS ENTERED: each match now carries display_t1/display_t2 (the sides exactly as typed into +Enter Score, player 1 first). Recent Matches shows those; falls back to the stored pair name for older matches. Purely cosmetic — the stored pair name (engine/stats join key) is unchanged. Needs: matches.display_t1/display_t2 columns (SQL) + submit_match v2026.08.22-D1.  // PAIR NAME AS ENTERED: a newly-born pair is now named in the order the two players were entered (was forced A→Z since the hybrid). Existing pairs keep their stored names. The Existing/New pairing label is now order-independent (was missing legacy as-entered names). Duplicate protection unchanged (by member IDs, not name).  // BOX-CENTRIC KNOCKOUT (ported from ODR, proven live): byes no longer written as round-1 fixtures — bye seed pre-seeded in its column-2 box; column 1 renders staggered. Pairs with tournament edge fn OPR-TOURNAMENT v2026.08.22-BC1 (box-centric advanceKnockout + handicap PIN bypass).
+const OPR_VERSION = "OPR-DOUBLES v2026.08.23-34";  // GHOST-PAIR FILTER (from ODR v11): pair entities with zero recorded matches no longer appear on ratings listings; they appear the moment they play. 60/40 EVERYWHERE, FINAL PASS: doubles listings and tournament results now SHOW the weighted rating for every category (header Rating (Wtd)) so the displayed number matches the R1 rank order, and tournament banding/seeding strength is weighted for every category. Includes v33 speed + v32 as-entered + v31 naming.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3300,14 +3300,18 @@ async function loadLadder(type, title) {
         const names = new Set();
         asMatches.forEach(m=>{ if(m.t1p1) names.add(m.t1p1); if(m.t2p1) names.add(m.t2p1); });
         if(names.size){
-          const all = await sbGet(`player_results?select=name,current_rating,gender,initial_rating&order=current_rating.desc&club_id=eq.${CLUB_ID}`) || [];
+          const all = await sbGet(`player_results?select=name,current_rating,gender,initial_rating,sets_played&order=current_rating.desc&club_id=eq.${CLUB_ID}`) || [];
           data = all.filter(p=>names.has(p.name));
         }
       } else {
         // Men's/Ladies/Mixed filter by the pair's fixed category code; Universal = every pair.
-        let q = `player_results?select=name,current_rating,gender,initial_rating&order=current_rating.desc&club_id=eq.${CLUB_ID}`;
+        let q = `player_results?select=name,current_rating,gender,initial_rating,sets_played&order=current_rating.desc&club_id=eq.${CLUB_ID}`;
         if(type!=='universal'){ q += `&gender=eq.${catCode[type]}`; }
         data = await sbGet(q) || [];
+        // GHOST-PAIR FILTER (ported from ODR v11): a pair ENTITY with no recorded matches
+        // (e.g. seeded at migration but never played on the system) does not belong on a
+        // ladder. It reappears automatically the moment it plays its first match.
+        data = data.filter(p=> (p.sets_played||0) > 0);
       }
       window._singlesRows = data; window._singlesGender = (catCode[type]||'M');
       html = ladderNoteHTML();
@@ -3330,7 +3334,7 @@ async function loadLadder(type, title) {
       // DOUBLES — unified headings: Rank, Pair, Rating, Level, Sets, Won, % Won (+ expandable match history)
       const catMap={'mensdoubles':"Men's",'ladiesdoubles':'Ladies','mixeddoubles':'Mixed','allsortsd':'All Sorts','universal':'Universal'};
       const cat = catMap[type] || "Men's";
-      const usesCombined = (cat==="Men's" || cat==='Ladies');
+      const usesCombined = false;  // 60/40 THROUGHOUT: rating shown = weighted, matching the R1 recompute rank order.
       const data = await sbGet(`doubles_results?select=rank,p1,p2,combined,weighted,level,sets,sets_won,set_win_pct,matches&category=eq.${encodeURIComponent(cat)}&order=rank.asc&club_id=eq.${CLUB_ID}`);
       window._doublesRows = data;
       window._doublesCat = cat;
@@ -3757,7 +3761,7 @@ async function loadTournament(category, title) {
   try {
     const isSingles = /singles/i.test(category);
     // Singles use the player's own rating; doubles Men's/Ladies use Combined, others Weighted.
-    const usesCombined = (category==="Men's" || category==='Ladies');
+    const usesCombined = false;  // 60/40 THROUGHOUT: rating shown = weighted.
     // Tournament STATISTICS table: performance during the event, NOT the final placing.
     // Sort by WIN % (self-explaining for casual players) → sets won → game diff/set.
     // Qualifier: 6 sets played together; sub-6 shown greyed for reference, not ranked.
@@ -6005,7 +6009,7 @@ const TM = (function () {
   }
   function pairRating(r1, r2, category) {
     const a = Number(r1) || 0, b = Number(r2) || 0;
-    if (usesCombined(category)) return (a + b) / 2;                 // Combined
+    if (false) return (a + b) / 2;  // 60/40 THROUGHOUT: banding/seeding strength = weighted for EVERY category.
     const hi = Math.max(a, b), lo = Math.min(a, b);
     return hi * 0.6 + lo * 0.4;                                     // Weighted
   }
