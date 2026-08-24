@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.24-37";  // TOURNAMENT ONBOARDING: internal tournaments open on Draw & Rounds by default (who am I playing first; stats one tap away, choice remembered for the session), and the view switch now sits directly under the tournament name, larger and bolder, Draw first. Includes v36 (uneven 2-group RR) and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.24-38";  // CAPTION FIX: standings tie-break caption now reads Sets won → Game diff → Games won (the third key wrongly said Sets won again; the sort itself was always sets→gd→games won and is untouched). Includes v37 and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -6940,13 +6940,13 @@ async function loadTournamentSheet(tournament, division) {
     // Single group: one table (unchanged behaviour).
     if(!_hasGroups){
       return '<div class="card"><h2>Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
-        + '<p class="sub">After Round ' + maxPlayed + ' · Sets won → Game diff → Sets won</p>'
+        + '<p class="sub">After Round ' + maxPlayed + ' · Sets won → Game diff → Games won</p>'
         + standingsTableFor(new Set(entries.map(e=>e.seed))) + '</div>';
     }
     // Split: one table PER GROUP, each ranked internally. Tier names when tiered.
     const tiers = etTierNames ? etTierNames(_groupLabels.length) : [];
     let h = '<div class="card"><h2>Group Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
-      + '<p class="sub">Each group ranked on its own · Sets won → Game diff → Sets won</p>';
+      + '<p class="sub">Each group ranked on its own · Sets won → Game diff → Games won</p>';
     _groupLabels.forEach((L, i) => {
       const seedSet = new Set(entries.filter(e=>e.grp===L).map(e=>e.seed));
       h += '<div style="font-size:13px;font-weight:800;color:#6c3483;margin:12px 0 4px;">Group ' + L
