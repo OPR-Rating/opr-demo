@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.24-36";  // UNEVEN 2-GROUP ROUND ROBIN: odd fields (9–17 teams) now offer a 2-group split (15→8+7, 17→9+8; 18→9+9 also enabled) — the smaller group carries a bye round via the existing circle-method BYE, tiers allocate size-aware, snake unchanged, and the cross-group playoff (2 per group → A1vB2, B1vA2 → final) works as built. Includes v35 and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.24-37";  // TOURNAMENT ONBOARDING: internal tournaments open on Draw & Rounds by default (who am I playing first; stats one tap away, choice remembered for the session), and the view switch now sits directly under the tournament name, larger and bolder, Draw first. Includes v36 (uneven 2-group RR) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3641,12 +3641,16 @@ async function loadTournamentPicker(){
   if(!internalDiv){
     internalDiv = document.createElement('div');
     internalDiv.id = 'tournamentInternal';
-    body.parentNode.insertBefore(internalDiv, body.nextSibling);
+    // v37: the view switch sits ABOVE the stats body — directly under the tournament
+    // name — instead of stuck at the bottom of the page.
+    body.parentNode.insertBefore(internalDiv, body);
   }
   if(isInternal){
     // Internal: TWO views — Tournament Stats (tagged-match standings) OR Draw & Rounds (the draw).
     // Plus Enter a team. Default to Stats; remember the choice.
-    if(!window._tourInternalView) window._tourInternalView = 'stats';
+    // v37 ONBOARDING: default to Draw & Rounds — new members want "who am I playing"
+    // first; the stats are one tap away and the choice is remembered for the session.
+    if(!window._tourInternalView) window._tourInternalView = 'draw';
     const v = window._tourInternalView;
     internalDiv.style.display='';
     // Is any division still open for entry? (a division is "closed" once its draw exists)
@@ -3666,9 +3670,9 @@ async function loadTournamentPicker(){
       } else { entryOpen = true; }
     }catch(e){ entryOpen = true; }
     internalDiv.innerHTML =
-        '<div class="tm-nav" style="margin:4px 0 12px;">'
-      + '<button class="'+(v==='stats'?'active':'')+'" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
-      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">Draw &amp; Rounds</button>'
+        '<div class="tm-nav" style="margin:8px 0 14px;padding:7px;border-radius:13px;">'
+      + '<button class="'+(v==='draw'?'active':'')+'" style="padding:11px 8px;font-size:14.5px;font-weight:800;" onclick="setTourView(\'draw\')">🎾 Draw &amp; Rounds</button>'
+      + '<button class="'+(v==='stats'?'active':'')+'" style="padding:11px 8px;font-size:14.5px;font-weight:800;" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
       + '</div>'
       + '<div class="ladders-grid one-col" style="margin-top:4px;">'
       + (v==='draw'
