@@ -343,6 +343,12 @@
   .name-pick-btn.selected { color:#2C2C34; font-weight:600; border-color:#3a1d6e; }
 
   #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:13px; line-height:1.4; color:#3a2f44; padding:11px 8px; }
+  #tournamentSheetContent table.fxtbl td.ta, #tournamentSheetContent table.fxtbl td.tb { line-height:1.4; }
+  @media(max-width:560px){
+    /* v40: on phones the Band pill (e.g. A·R3) is decoration — reclaim its width for names */
+    #tournamentSheetContent table.fxtbl th:nth-child(3), #tournamentSheetContent table.fxtbl td:nth-child(3){ display:none; }
+    #tournamentSheetContent table.fxtbl td.ta, #tournamentSheetContent table.fxtbl td.tb { font-size:12.5px; padding:10px 6px; }
+  }
   #tournamentSheetContent td.ta.winr, #tournamentSheetContent td.tb.winr { color:#1e7a34; font-weight:700; }
   #tournamentSheetContent td { padding:11px 6px; }
   #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:30%; }
@@ -1453,7 +1459,7 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if(id==='entryScreen') renderStep1();
-  if(id==='tournamentScreen'){ window._tourInternalView = 'stats'; loadTournamentPicker(); }
+  if(id==='tournamentScreen'){ window._tourInternalView = 'draw'; loadTournamentPicker(); }  // v39: arriving at Tournaments always lands on Draw & Rounds (this line used to force 'stats', overriding the v37 default)
   if(id==='clubLadderScreen') loadClubLadder();
 }
 
@@ -3002,7 +3008,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.24-38";  // CAPTION FIX: standings tie-break caption now reads Sets won → Game diff → Games won (the third key wrongly said Sets won again; the sort itself was always sets→gd→games won and is untouched). Includes v37 and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.24-41";  // PRE-GENERATION STANDINGS: before a division\u2019s draw exists, the Standings tab now says entry is open (with the entered count) instead of listing entrants in a zero-filled table with a misleading rank 1. Table appears the moment the draw is generated. Includes v40 and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3682,7 +3688,7 @@ async function loadTournamentPicker(){
       // previously it only appeared on the Stats view, so an un-drawn division
       // (e.g. Ladies) had no way in from the Draw & Rounds view.
       + (entryOpen
-          ? '<button class="menu-btn" style="margin-top:'+(v==='draw'?'8px':'0')+';" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team / generate a draw</button>'
+          ? '<button class="menu-btn" style="margin:'+(v==='draw'?'8px 0 0':'0 0 16px')+';" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team / generate a draw</button>'
           : (v==='draw' ? '' : '<p class="sub" style="text-align:center;margin:6px 0;">All divisions are drawn — entry is closed.</p>'))
       + '</div>';
     // Stats view → show the standings body; Draw view → hide it (draw opens its own screen)
@@ -6474,7 +6480,10 @@ async function loadTournamentSheet(tournament, division) {
       });
       h += '</div>';
     }
-    h += '<table><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
+    // v40 READABILITY: in the fixtures table each pair shows as TWO clean lines
+    // (partner per line) instead of one long "P1 / P2" string wrapping mid-name.
+    const stk = s => String(s==null?'':s).replace(' / ', '<br>');
+    h += '<table class="fxtbl"><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
       + '<th class="tb">Team B</th><th class="num">Sd</th><th class="num">Score</th></tr></thead><tbody>';
     // Knockout rounds must display in bracket-slot order (1v16, 8v9, 4v13...).
     // Swiss rounds keep their generated order.
@@ -6488,7 +6497,7 @@ async function loadTournamentSheet(tournament, division) {
       if (f.seed_b === 0) {
         h += '<tr class="bkt-byerow">'
           + '<td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
-          + '<td class="ta">' + tName(f.seed_a) + '</td>'
+          + '<td class="ta">' + stk(tName(f.seed_a)) + '</td>'
           + '<td class="num"></td>'
           + '<td class="tb" style="font-style:italic;color:#999;">bye this round</td>'
           + '<td class="num"></td>'
@@ -6513,9 +6522,9 @@ async function loadTournamentSheet(tournament, division) {
       const _umpBtn = '';   // umpire is now accessed via +Enter Score → Live Umpire (not the rounds badge)
       h += '<tr style="cursor:pointer;" onclick="tmEnterFixtureResult(' + f.id + ')" title="Tap to enter/edit the score">'
         + '<td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
-        + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tNameAt(f.seed_a, f.round) + hcA + '</td>'
+        + '<td class="ta' + (aWin ? ' winr' : '') + '">' + stk(tNameAt(f.seed_a, f.round)) + hcA + '</td>'
         + '<td class="num"><span class="pill ' + f.band + '">' + (f.band||'') + '</span></td>'
-        + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tNameAt(f.seed_b, f.round) + hcB + '</td>'
+        + '<td class="tb' + (bWin ? ' winr' : '') + '">' + stk(tNameAt(f.seed_b, f.round)) + hcB + '</td>'
         + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
         + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#3a1d6e;font-weight:700;">enter ▸</span>' + _umpBtn) + '</td></tr>';
     });
@@ -6937,6 +6946,15 @@ async function loadTournamentSheet(tournament, division) {
 
   function standingsHTML() {
     if(!N) return '<div class="card"><p class="sub">No teams yet.</p></div>';
+    // v41: BEFORE the draw is generated there are no fixtures — a standings table of
+    // zero-filled entrants (with someone at "rank 1") is misleading. Say it straight
+    // instead; the table appears the moment the draw exists.
+    if(!fixtures.length){
+      return '<div class="card"><h2>Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
+        + '<p class="sub">The draw hasn\'t been generated yet — entry is open. '
+        + N + (N===1?' team':' teams') + ' entered so far (see the Teams tab). '
+        + 'Standings appear as soon as the draw is generated.</p></div>';
+    }
     // Single group: one table (unchanged behaviour).
     if(!_hasGroups){
       return '<div class="card"><h2>Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
