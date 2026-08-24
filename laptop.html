@@ -3002,7 +3002,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.23-35";  // RECENT MATCHES WRAP-WHEN-NEEDED: team names wrap to a second line on narrow screens instead of clipping with an ellipsis; screens where the line fits still show one line. Includes v34 ghost filter + 60/40 display pass and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.24-36";  // UNEVEN 2-GROUP ROUND ROBIN: odd fields (9–17 teams) now offer a 2-group split (15→8+7, 17→9+8; 18→9+9 also enabled) — the smaller group carries a bye round via the existing circle-method BYE, tiers allocate size-aware, snake unchanged, and the cross-group playoff (2 per group → A1vB2, B1vA2 → final) works as built. Includes v35 and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -5809,7 +5809,18 @@ const TM = (function () {
       if (N % g !== 0) continue;
       const per = N / g;
       if (per < 4 || per > 8) continue;   // groups of 4..8 only (3 is too thin)
-      out.push({ groups: g, perGroup: per });
+      out.push({ groups: g, perGroup: per, sizes: [per, per] });
+    }
+    // UNEVEN 2-GROUP (v36): odd fields (9..17 teams) can split 2 ways — e.g. 15 -> 8+7,
+    // 17 -> 9+8. The smaller group simply carries a bye round (the circle-method
+    // scheduler already rotates a phantom BYE through any odd group). Also enables
+    // 18 -> 9+9, which the 4..8 cap excluded. Cross-group playoff (2 advance each:
+    // A1 v B2, B1 v A2) works unchanged — it seeds from group standings, not sizes.
+    const big = Math.ceil(N / 2), small = Math.floor(N / 2);
+    const already = out.some(o => o.groups === 2);
+    if (!already && big >= 5 && big <= 9 && small >= 4) {   // small group of 4 allowed (matches the even-split policy; only 3 is too thin)
+      out.push({ groups: 2, perGroup: null, sizes: [big, small] });
+      out.sort((a, b) => a.groups - b.groups);
     }
     return out;
   }
@@ -5827,10 +5838,14 @@ const TM = (function () {
     for (let i = 0; i < groups; i++) labels.push(String.fromCharCode(65 + i)); // A,B,C,...
     const g = {}; labels.forEach(L => g[L] = []);
     if (mode === 'block') {
-      const per = N / groups;
-      for (let s = 1; s <= N; s++) {
-        const gi = Math.floor((s - 1) / per);
-        g[labels[gi]].push(s);
+      // v36: size-based tiers — works for uneven groups too. Each group's size is
+      // floor(N/G), with the first (N mod G) groups taking one extra, so 15 teams in
+      // 2 groups tier as A:[1..8] B:[9..15]. Even fields behave exactly as before.
+      const baseSize = Math.floor(N / groups), extra = N % groups;
+      let seed = 1;
+      for (let gi = 0; gi < groups; gi++) {
+        const size = baseSize + (gi < extra ? 1 : 0);
+        for (let k = 0; k < size; k++) g[labels[gi]].push(seed++);
       }
     } else { // snake
       let gi = 0, dir = 1;
@@ -7814,7 +7829,9 @@ function etGroupConfigHTML(d, cnt){
   splits.forEach(s=>{
     const sel = (cfg.groups===s.groups);
     h += '<button onclick="etGroupSet(\'' + de + '\',' + s.groups + ',null)" class="ac-btn ' + (sel?'ac-btn-primary':'ac-btn-ghost') + '" style="text-align:left;">'
-      + (sel?'● ':'○ ') + s.groups + ' groups of ' + s.perGroup + ' — split the field into groups</button>';
+      + (sel?'● ':'○ ') + (s.perGroup!=null
+          ? (s.groups + ' groups of ' + s.perGroup + ' — split the field into groups')
+          : (s.groups + ' groups of ' + s.sizes[0] + ' + ' + s.sizes[1] + ' — split the field (smaller group has a bye round)')) + '</button>';
   });
   h += '</div>';
 
