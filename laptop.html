@@ -3008,7 +3008,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.24-41";  // PRE-GENERATION STANDINGS: before a division\u2019s draw exists, the Standings tab now says entry is open (with the entered count) instead of listing entrants in a zero-filled table with a misleading rank 1. Table appears the moment the draw is generated. Includes v40 and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.25-42";  // 2-GROUP SPLIT UP TO 20 TEAMS: bigger group now allowed to 10 (19→10+9, 20→10+10); bye note on the option label is size-accurate. Snake pools + cross-group semis (2 per group → A1vB2, B1vA2) unchanged. Includes v41 and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -5828,7 +5828,9 @@ const TM = (function () {
     // A1 v B2, B1 v A2) works unchanged — it seeds from group standings, not sizes.
     const big = Math.ceil(N / 2), small = Math.floor(N / 2);
     const already = out.some(o => o.groups === 2);
-    if (!already && big >= 5 && big <= 9 && small >= 4) {   // small group of 4 allowed (matches the even-split policy; only 3 is too thin)
+    // v42: bigger group allowed up to 10 (19 -> 10+9, 20 -> 10+10). A group of 10 is
+    // 9 round-robin matches each — heavy but legitimate; the admin chooses.
+    if (!already && big >= 5 && big <= 10 && small >= 4) {   // small group of 4 allowed (only 3 is too thin)
       out.push({ groups: 2, perGroup: null, sizes: [big, small] });
       out.sort((a, b) => a.groups - b.groups);
     }
@@ -7853,7 +7855,9 @@ function etGroupConfigHTML(d, cnt){
     h += '<button onclick="etGroupSet(\'' + de + '\',' + s.groups + ',null)" class="ac-btn ' + (sel?'ac-btn-primary':'ac-btn-ghost') + '" style="text-align:left;">'
       + (sel?'● ':'○ ') + (s.perGroup!=null
           ? (s.groups + ' groups of ' + s.perGroup + ' — split the field into groups')
-          : (s.groups + ' groups of ' + s.sizes[0] + ' + ' + s.sizes[1] + ' — split the field (smaller group has a bye round)')) + '</button>';
+          : (s.groups + ' groups of ' + s.sizes[0] + ' + ' + s.sizes[1] + ' — split the field'
+             + (s.sizes[0]!==s.sizes[1] ? ' (smaller group has a bye round)'
+                : (s.sizes[0]%2===1 ? ' (each group has a bye round)' : '')))) + '</button>';
   });
   h += '</div>';
 
