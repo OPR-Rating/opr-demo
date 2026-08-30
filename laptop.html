@@ -2991,14 +2991,15 @@ const CLUBS = {
   '3':  {id:3,  name:'Eswatini'},
   '4':  {id:4,  name:'Southbroom'},
   '7':  {id:7,  name:'Mamba No.7'},
-  '11': {id:11, name:'OPR Gen 1'},
+  '11': {id:11, name:'Kloof Padel Ballies'},   // renamed 2026-08-26 (was OPR Gen 1)
   '20': {id:20, name:'WPA No. 20'},
   'demo':{id:1,name:'Demo'},
   'kloof':{id:2,name:'Kloof'},
   'eswatini':{id:3,name:'Eswatini'},
   'southbroom':{id:4,name:'Southbroom'},
   'mamba7':{id:7,name:'Mamba No.7'},
-  'opr-gen1':{id:11,name:'OPR Gen 1'},
+  'opr-gen1':{id:11,name:'Kloof Padel Ballies'},   // old URL key kept working
+  'kloof-padel-ballies':{id:11,name:'Kloof Padel Ballies'},
   'wpa20':{id:20,name:'WPA No. 20'}
 };
 const _clubParam = (new URLSearchParams(window.location.search).get('club') || '1').toLowerCase();
@@ -3008,7 +3009,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.26-44";  // ROUND CHIPS NUMBERED BY POSITION: v43 still read numbers from the band, so groups started at R2 and the bye-only round was pushed to the end as a duplicate. Chips are now labelled purely by position within the group (R1..Rn, draw order, no gaps or duplicates). Display only — fixtures, byes, results untouched.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.26-45";  // CLUB 11 RENAMED IN THE LOCAL MAP: the app paints the club name instantly from this map and only then confirms it from the database, so a renamed club flashed its OLD name for a moment on every load/refresh. Map now reads Kloof Padel Ballies (old ?club=opr-gen1 key still resolves). Includes v44 and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
