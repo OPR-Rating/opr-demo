@@ -3008,7 +3008,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.25-43";  // ROUND CHIPS ALWAYS NUMBERED: a group round whose only fixture is the bye carried a non-numeric band and rendered as "Rbye" (confusing players); chips now always read R1, R2, R3 … in order. Display only — fixtures, byes and scheduling untouched. Includes v42 and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.26-44";  // ROUND CHIPS NUMBERED BY POSITION: v43 still read numbers from the band, so groups started at R2 and the bye-only round was pushed to the end as a duplicate. Chips are now labelled purely by position within the group (R1..Rn, draw order, no gaps or duplicates). Display only — fixtures, byes, results untouched.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -6458,28 +6458,20 @@ async function loadTournamentSheet(tournament, division) {
         const f0 = rounds[r][0];
         const band = f0 ? String(f0.band||'') : '';
         const sec = band.split('·')[0] || '?';
-        // v43: the within-section round number must be a NUMBER. A round whose only
-        // fixture is the bye carries band "A·bye" (or similar), which used to render the
-        // chip as "Rbye" and confused players. Fall back to counting position within the
-        // section so every chip reads R1, R2, R3 … in order.
-        let rn = (band.split('·')[1]||'').replace(/^R/,'');
-        if(!/^\d+$/.test(rn)) rn = '';
-        roundInfo[r] = { sec, rn };
+        // v44: chip numbers are NO LONGER read from the band at all. Band round numbers
+        // are section-offset and a bye-only round carries "A·bye" with no number — which
+        // produced chips starting at R2 with a duplicate at the end. The chip label is
+        // now purely the round's POSITION within its section (see below), so every group
+        // reads R1, R2, R3 … exactly once, in draw order. Fixtures/byes untouched.
+        roundInfo[r] = { sec, rn: '' };
       });
       const sections = [...new Set(roundNos.map(r=> roundInfo[r].sec))].sort();
       const tiers = (typeof etTierNames==='function') ? etTierNames(sections.length) : [];
       sections.forEach((sec, si)=>{
-        const secRounds = roundNos.filter(r=> roundInfo[r].sec===sec)
-          .sort((a,b)=>{
-            const na=parseInt(roundInfo[a].rn), nb=parseInt(roundInfo[b].rn);
-            if(!isNaN(na) && !isNaN(nb)) return na-nb;
-            if(!isNaN(na)) return -1;
-            if(!isNaN(nb)) return 1;
-            return a-b;   // both unnumbered (bye-only rounds): keep draw order
-          });
-        // v43: any round with no usable number gets its sequential position in the section.
-        secRounds.forEach((r,i)=>{ if(!roundInfo[r].rn) roundInfo[r].rn = String(i+1); });
-        secRounds.sort((a,b)=> parseInt(roundInfo[a].rn)-parseInt(roundInfo[b].rn));
+        // v44: order by the actual stored round number (true draw order), then label
+        // sequentially 1..n. Guarantees R1 first, no gaps, no duplicates.
+        const secRounds = roundNos.filter(r=> roundInfo[r].sec===sec).sort((a,b)=> a-b);
+        secRounds.forEach((r,i)=>{ roundInfo[r].rn = String(i+1); });
         h += '<div style="margin:6px 0 2px;font-size:12px;font-weight:800;color:#6c3483;text-align:left;">Group ' + sec
           + (tiers[si] ? (' <span style="font-weight:600;color:#9b80b3;">· ' + tiers[si] + '</span>') : '') + '</div>';
         h += '<div class="rsel">';
