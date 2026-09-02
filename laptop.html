@@ -1991,6 +1991,14 @@ function mkAdvanceGame(team){
 }
 function mkWinSet(team, viaTB){
   const i=team-1, j=1-i;
+  // FIX (set-score off-by-one, 2026-09-02): the game increment is DEFERRED to the
+  // banner tap by design (see mkWinGame -- the handicap head-start refactor), but the
+  // SET route never credited the clinching game, so every normally-won set recorded
+  // one game short for the winner (6-2 saved as 5-2; tiebreak sets escaped because
+  // viaTB hardcodes 7-6). Credit it here, before the set score is frozen. HANDICAP
+  // UNTOUCHED: hcGameNo and mkNewGamePts are not involved -- games[] is zeroed two
+  // lines below exactly as before; only the frozen set-score string changes.
+  MK.games[i]++;
   MK.setsWon[i]++;
   let s1=MK.games[0], s2=MK.games[1];
   if(viaTB){ if(team===1){s1=7;s2=6;}else{s1=6;s2=7;} }
@@ -3009,7 +3017,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.26-45";  // CLUB 11 RENAMED IN THE LOCAL MAP: the app paints the club name instantly from this map and only then confirms it from the database, so a renamed club flashed its OLD name for a moment on every load/refresh. Map now reads Kloof Padel Ballies (old ?club=opr-gen1 key still resolves). Includes v44 and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.02-46";  // CLUB 11 RENAMED IN THE LOCAL MAP: the app paints the club name instantly from this map and only then confirms it from the database, so a renamed club flashed its OLD name for a moment on every load/refresh. Map now reads Kloof Padel Ballies (old ?club=opr-gen1 key still resolves). Includes v44 and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
