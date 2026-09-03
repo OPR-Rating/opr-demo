@@ -3017,7 +3017,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.09.02-46";  // CLUB 11 RENAMED IN THE LOCAL MAP: the app paints the club name instantly from this map and only then confirms it from the database, so a renamed club flashed its OLD name for a moment on every load/refresh. Map now reads Kloof Padel Ballies (old ?club=opr-gen1 key still resolves). Includes v44 and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-47";  // MERGE of two parallel v46s: keeps the 2026-09-02 set-score off-by-one fix (clinching game credited on the set route) AND adds the double-tap guard on Submit Match (button disabled on the first tap, before any network call, so a weak signal cannot let repeated taps save duplicate matches). Nothing from either lineage dropped.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -4906,7 +4906,8 @@ async function odrEnsurePair(nameA, nameB){
   return canonName;
 }
 
-async function submitMatch(){
+// Inner: original logic. Returns true ONLY when it has handed off to doSubmit().
+async function _submitMatchInner(){
   const submitter=document.getElementById('submitterName').value;
   const pin=document.getElementById('submitterPin').value;
   const err=document.getElementById('err4');
@@ -5132,6 +5133,26 @@ async function submitMatch(){
   entryData._submitter=submitter;
   entryData._pin=pin;
   doSubmit(btn);
+  return true;   // handed off: doSubmit owns the button from here
+}
+
+// DOUBLE-TAP GUARD. On a weak club signal the checks before submission take seconds, and
+// the button used to stay live that whole time — so an impatient tap-tap-tap fired several
+// full submissions and saved duplicate matches. The button is now disabled SYNCHRONOUSLY
+// on the first tap, before any network call; every existing failure path re-enables it.
+async function submitMatch(){
+  const btn=document.getElementById('submitBtn');
+  if(btn){
+    if(btn.disabled) return;              // a submission is already running — ignore the tap
+    btn.disabled=true;
+    btn.textContent='Checking\u2026';
+  }
+  let handed=false;
+  try{
+    handed = await _submitMatchInner();
+  }finally{
+    if(!handed && btn){ btn.disabled=false; btn.textContent='\u2713 Submit Match'; }
+  }
 }
 
 // Route a handicap-event score (entered on the main screen) to the SAFE tournament path.
