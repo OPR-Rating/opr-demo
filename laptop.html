@@ -3017,7 +3017,37 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-47";  // MERGE of two parallel v46s: keeps the 2026-09-02 set-score off-by-one fix (clinching game credited on the set route) AND adds the double-tap guard on Submit Match (button disabled on the first tap, before any network call, so a weak signal cannot let repeated taps save duplicate matches). Nothing from either lineage dropped.
+
+// PER-CLUB INSTALL (v48). The page's manifest decides what an installed icon opens.
+// The static manifest said start_url "./laptop.html" with NO club, so a member who
+// followed their club's launcher link (which redirects here with ?club=N) and then
+// tapped Install got an icon that opened the app with no club — i.e. the Demo club.
+// Rewrite the manifest at load with THIS club baked in, so the icon installs under the
+// club's own name and always reopens that club. Clubs with their own launcher file are
+// unaffected; this fixes the far commoner "install from the app page" route.
+(function(){
+  try{
+    const url = './laptop.html?club=' + CLUB_ID;
+    const mf = {
+      name: 'OPR · ' + CLUB_NAME,
+      short_name: (String(CLUB_NAME).length > 12 ? String(CLUB_NAME).slice(0,12) : String(CLUB_NAME)) || 'OPR',
+      start_url: url,
+      scope: './',
+      display: 'standalone',
+      background_color: '#1c110a',
+      theme_color: '#1c110a',
+      icons: [
+        { src:'./icon-192.png', sizes:'192x192', type:'image/png' },
+        { src:'./icon-512.png', sizes:'512x512', type:'image/png' }
+      ]
+    };
+    const href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(mf));
+    let link = document.querySelector('link[rel="manifest"]');
+    if(!link){ link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
+    link.setAttribute('href', href);
+  }catch(e){ /* install stays on the static manifest — no functional impact */ }
+})();
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-48";  // PER-CLUB INSTALL: the manifest is now rewritten at load with the current club in start_url, so installing from a club page creates an icon named for that club that reopens it (previously every install used the static "./laptop.html" and opened Demo). Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
