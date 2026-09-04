@@ -3047,7 +3047,7 @@ const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
     link.setAttribute('href', href);
   }catch(e){ /* install stays on the static manifest — no functional impact */ }
 })();
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-48";  // PER-CLUB INSTALL: the manifest is now rewritten at load with the current club in start_url, so installing from a club page creates an icon named for that club that reopens it (previously every install used the static "./laptop.html" and opened Demo). Includes v47 (set-score fix + double-tap guard) and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-49";  // KNOCKOUT BRACKET SCORE ORIENTATION: a bracket box holds its two teams in canonical bracket order, which is not always the fixture’s seed_a/seed_b order — so in reversed boxes each score printed against the wrong team (winner highlight was always correct). Scores are now oriented by seed. Display only; no fixture, result or engine change. Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -6869,8 +6869,14 @@ async function loadTournamentSheet(tournament, division) {
     const bye = m.b===0;
     const ready = (m.a!=null && m.b!=null && m.b!==0 && !played && m.fx && m.fx.id);
     const emptyA = (m.a==null), emptyB=(m.b==null && m.b!==0);
-    const scoreA = played? m.fx.sets_a : '';
-    const scoreB = played? m.fx.sets_b : '';
+    // SCORE ORIENTATION FIX: the box's top/bottom slots are in canonical BRACKET order,
+    // which is not always the fixture's seed_a/seed_b order (the r1 map is keyed both
+    // ways, so a box can hold the fixture reversed). Printing sets_a against the top slot
+    // therefore showed each score against the wrong team in those boxes. Orient by seed —
+    // the winner highlight already did this correctly and is unchanged.
+    const _aIsFxA = !(m.fx && m.fx.seed_a!=null && m.a!=null && m.fx.seed_a !== m.a);
+    const scoreA = played? (_aIsFxA ? m.fx.sets_a : m.fx.sets_b) : '';
+    const scoreB = played? (_aIsFxA ? m.fx.sets_b : m.fx.sets_a) : '';
     // Handicap (handicap events only): a small tag under each team's own name, so the
     // Knockout Draw shows head-starts too — same lookup the rounds table uses. Only when
     // BOTH seeds are known and real (not a bye, not an unfilled slot).
