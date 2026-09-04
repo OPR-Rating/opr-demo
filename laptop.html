@@ -30,6 +30,16 @@
      app (no browser bar below) and on handsets with a gesture bar. env(safe-area-inset-bottom)
      is 0 where it doesn't apply, so desktop and older browsers are unaffected. */
   .screen-content { flex: 1; overflow-y: auto; padding: 16px 16px calc(34px + env(safe-area-inset-bottom)); }
+  /* v51: the ratings/ladder screen sets its own inline padding:0 and scrolls an INNER
+     div (#ladderContent), so the rule above never reached it — the last table row still
+     sat on the phone's bottom edge. A real spacer element is used rather than
+     padding-bottom, because some mobile engines ignore a scroll container's bottom
+     padding at the end of the scroll. Same treatment for the tournament sheet. */
+  #ladderContent::after,
+  #tournamentSheetContent::after {
+    content: ''; display: block;
+    height: calc(34px + env(safe-area-inset-bottom));
+  }
 
   /* Home */
   .home-hero { background:linear-gradient(135deg,#6C3483,#3a1d6e); background:url("header_bg2.png") center center / cover no-repeat; padding:0; margin:0; text-align:center; position:relative; }
@@ -3051,7 +3061,7 @@ const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
     link.setAttribute('href', href);
   }catch(e){ /* install stays on the static manifest — no functional impact */ }
 })();
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-50";  // TABLE BOTTOM SPACING: every scrolling screen now has proper padding at the foot (plus the phone’s safe-area inset), so the last row of ratings/ladder/form tables no longer sits flush against the bottom edge. CSS only. Includes v47 (set-score fix + double-tap guard) and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-51";  // TABLE BOTTOM SPACING (real fix): v50’s padding never reached the ratings/ladder screen, which overrides padding inline and scrolls an inner div — a spacer block is now appended to that scroller (and the tournament sheet) so the last row always clears the phone’s bottom edge. CSS only. Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
