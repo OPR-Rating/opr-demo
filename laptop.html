@@ -25,7 +25,11 @@
   .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #fff; display: flex; flex-direction: column; transition: transform 0.3s ease; }
   .screen.hidden { transform: translateX(100%); }
   .screen.active { transform: translateX(0); }
-  .screen-content { flex: 1; overflow-y: auto; padding: 16px; }
+  /* v50: breathing room at the foot of every scrolling screen. The flat 16px left the
+     last table row flush against the phone's bottom edge — worst when installed as an
+     app (no browser bar below) and on handsets with a gesture bar. env(safe-area-inset-bottom)
+     is 0 where it doesn't apply, so desktop and older browsers are unaffected. */
+  .screen-content { flex: 1; overflow-y: auto; padding: 16px 16px calc(34px + env(safe-area-inset-bottom)); }
 
   /* Home */
   .home-hero { background:linear-gradient(135deg,#6C3483,#3a1d6e); background:url("header_bg2.png") center center / cover no-repeat; padding:0; margin:0; text-align:center; position:relative; }
@@ -3047,7 +3051,7 @@ const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
     link.setAttribute('href', href);
   }catch(e){ /* install stays on the static manifest — no functional impact */ }
 })();
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-49";  // KNOCKOUT BRACKET SCORE ORIENTATION: a bracket box holds its two teams in canonical bracket order, which is not always the fixture’s seed_a/seed_b order — so in reversed boxes each score printed against the wrong team (winner highlight was always correct). Scores are now oriented by seed. Display only; no fixture, result or engine change. Includes v47 (set-score fix + double-tap guard) and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-50";  // TABLE BOTTOM SPACING: every scrolling screen now has proper padding at the foot (plus the phone’s safe-area inset), so the last row of ratings/ladder/form tables no longer sits flush against the bottom edge. CSS only. Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
