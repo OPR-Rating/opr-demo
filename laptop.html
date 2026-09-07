@@ -1071,7 +1071,7 @@
               <select id="amGender" class="ac-field" style="margin-bottom:0;"><option value="M">Male</option><option value="F">Female</option></select>
               <input id="amRating" type="number" placeholder="Rating (blank = 1500/1300)" class="ac-field" style="margin-bottom:0;">
             </div>
-            <input id="amPin" inputmode="numeric" placeholder="4-digit PIN" class="ac-field">
+            <input id="amPin" inputmode="numeric" placeholder="PIN (optional — not needed to enter scores)" class="ac-field">
             <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminAddMember()">Add member</button>
             <div id="adminMsg" class="ac-msg"></div>
           </div>
@@ -1079,8 +1079,8 @@
           <!-- BULK ADD (desktop onboarding): paste Name, Gender, Initial Rating, PIN from Excel -->
           <div class="ac-card">
             <h4>Bulk add individuals (paste from Excel)</h4>
-            <p style="font-size:12px;color:#7a6688;margin:0 0 8px;">Paste rows of <b>Name, Gender, Rating, PIN</b> — one per line. Tabs (straight from Excel) or commas. Gender = M or F. Rating optional — blank defaults to 1500 (M) / 1300 (F).</p>
-            <textarea id="bulkText" class="ac-field" style="min-height:150px;font-family:monospace;font-size:12px;" placeholder="John Smith, M, 1350, 1234&#10;Sarah Jones, F, 1180, 5678&#10;Mike Brown	M	1420	9012"></textarea>
+            <p style="font-size:12px;color:#7a6688;margin:0 0 8px;">Paste rows of <b>Name, Gender, Rating</b> — one per line. Tabs (straight from Excel) or commas. Gender = M or F. Rating optional — blank defaults to 1500 (M) / 1300 (F). <b>No PIN needed</b> — members enter scores by picking their name.</p>
+            <textarea id="bulkText" class="ac-field" style="min-height:150px;font-family:monospace;font-size:12px;" placeholder="John Smith, M, 1350&#10;Sarah Jones, F, 1180&#10;Mike Brown	M	1420"></textarea>
             <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="adminBulkAdd()">Add all pasted members</button>
             <div id="bulkMsg" class="ac-msg"></div>
           </div>
@@ -1119,7 +1119,7 @@
             <div style="position:relative;"><input id="pAsearch" class="ac-field" placeholder="Search individual…" autocomplete="off"><div id="pAlist" class="odr-searchlist"></div></div>
             <label style="font-size:11px;color:#7a6688;">Member B</label>
             <div style="position:relative;"><input id="pBsearch" class="ac-field" placeholder="Search individual…" autocomplete="off"><div id="pBlist" class="odr-searchlist"></div></div>
-            <input id="pPin" class="ac-field" inputmode="numeric" placeholder="Pair PIN (4-digit)">
+            <input id="pPin" class="ac-field" inputmode="numeric" placeholder="Pair PIN (optional — not needed to enter scores)">
             <div id="pairBirthPreview" style="font-size:12px;color:#7a6688;margin-bottom:9px;">Pick two individuals to preview the birth.</div>
             <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="odrCreatePair()">Create pair</button>
             <div id="pairMsg" class="ac-msg"></div>
@@ -3063,7 +3063,7 @@ const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
     link.setAttribute('href', href);
   }catch(e){ /* install stays on the static manifest — no functional impact */ }
 })();
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-53";  // CLUB 1 NAME ALIGNED: the app map now says TourTest, matching the database (it said Demo, so the name flashed/disagreed on load). The ?club=demo link still resolves. Includes v47 (set-score fix + double-tap guard) and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-54";  // PIN NO LONGER ASKED FOR WHEN ADDING MEMBERS: bulk paste is now Name, Gender, Rating (PIN column dropped from the instructions and the example), and the single-add / pair PIN fields read "optional — not needed to enter scores". The parser still accepts a 4th PIN column for old spreadsheets, and members enter scores by picking their name (server-side PIN logic unchanged). Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
