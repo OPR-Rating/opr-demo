@@ -55,8 +55,60 @@
   footer{padding:26px 0;text-align:center;font-size:13px;color:var(--muted);}
   footer b{color:var(--violet);}
 </style>
+<style id="opr-site-shell">
+  .sx{--sx-ink:#0d0a1f;--sx-line:rgba(255,255,255,0.12)}
+  #sxnav,#sxfoot{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+  #sxnav *,#sxfoot *{box-sizing:border-box;margin:0;padding:0}
+  #sxnav a,#sxfoot a{color:inherit;text-decoration:none}
+  #sxnav .wrap,#sxfoot .wrap{max-width:1000px;margin:0 auto;padding:0 28px}
+  #sxnav nav{position:sticky;top:0;z-index:50;background:rgba(13,10,31,0.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.12)}
+  #sxnav{position:sticky;top:0;z-index:50}
+  #sxnav .nav-inner{display:flex;align-items:center;justify-content:space-between;min-height:84px;padding:12px 0}
+  #sxnav .brand{display:flex;flex-direction:column;align-items:flex-start;gap:4px;color:#fff;text-align:left}
+  #sxnav .logo-balls{display:flex;gap:7px}
+  #sxnav .bpair,#sxfoot .bpair{display:flex;gap:3px;padding:4px 5px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,0.12)}
+  #sxnav .ball{width:11px;height:11px;border-radius:50%;display:block;position:relative;background:radial-gradient(circle at 35% 30%, #ecff7a, #bce400 60%, #84a800);box-shadow:0 0 5px rgba(198,255,64,.5)}
+  #sxnav .ball::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(115deg,transparent 44%, rgba(255,255,255,.5) 46%, transparent 49%)}
+  #sxnav .logo-word{font-family:'Inter',sans-serif;font-weight:800;font-size:28px;line-height:.95;letter-spacing:.34em;color:#fff}
+  #sxnav .logo-sub{font-size:9.5px;font-weight:600;letter-spacing:.105em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  #sxnav .nav-links{display:flex;gap:26px;align-items:center}
+  #sxnav .nav-links a{color:rgba(255,255,255,.72);font-size:14.5px;font-weight:500;transition:color .2s}
+  #sxnav .nav-links a:hover{color:#fff}
+  #sxnav .nav-cta{background:#fff;color:#0d0a1f!important;padding:9px 18px;border-radius:9px;font-weight:600!important;font-size:14px!important}
+  #sxfoot footer{background:#0d0a1f;color:rgba(255,255,255,.5);padding:44px 0 40px;border-top:1px solid rgba(255,255,255,0.12);font-size:13px;margin-top:40px}
+  #sxfoot .foot-links{display:flex;gap:22px;justify-content:center;margin-bottom:26px;flex-wrap:wrap}
+  #sxfoot .foot-links a{color:rgba(255,255,255,.72);font-weight:500}
+  #sxfoot .foot-links a:hover{color:#fff}
+  #sxfoot .foot-statement{max-width:640px;margin:0 auto;text-align:center;line-height:1.65}
+  #sxfoot .foot-statement p{font-size:12.5px;color:rgba(255,255,255,.45)}
+  #sxfoot .foot-legal{margin-top:14px;font-size:11.5px!important;color:rgba(255,255,255,.35)!important}
+  @media(max-width:760px){#sxnav .nav-links a:not(.nav-cta){display:none}}
+  /* the guides share the site's type: Inter for reading, Fraunces for the big headings */
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+  header h1,.hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em}
+</style>
 </head>
 <body>
+<div id="sxnav" class="sx"><nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html" aria-label="OPR — Open Player Rating">
+      <span class="logo-balls">
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+      </span>
+      <span class="logo-word">OPR</span>
+      <span class="logo-sub">Open Player Rating</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#why">Why OPR</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="opr-explained.html">OPR explained</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="index.html#try">Try it</a>
+      <a class="nav-cta" href="index.html#contact">Talk to us</a>
+    </div>
+  </div>
+</nav></div>
 
 <header class="hero">
   <div class="wrap">
@@ -124,9 +176,25 @@
   </div>
 </section>
 
-<footer>
-  <p><b>OPR</b> — Open Padel Rating · Built with passion for the game of padel.<br>Designed by Andre Farrell.</p>
-</footer>
-
+<div id="sxfoot" class="sx"><footer>
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="index.html">Home</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="opr-explained.html">OPR explained</a>
+      <a href="opr-initial-ratings.html">Ratings &amp; levels</a>
+      <a href="opr-vs-playtomic.html">OPR &amp; Playtomic</a>
+      <a href="opr-admin-handbook.html">Admin handbook</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="add-to-phone.html">Add to your phone</a>
+      <a href="https://opr-rating.github.io/Club-Platform/how-to-use.html">How to use the app</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+    <div class="foot-statement">
+      <p>OPR was conceived, designed and built by Andre Farrell. The rating methodology, formula architecture and weighting system are original works, developed exclusively for OPR. Built with passion for the game of padel.</p>
+      <p class="foot-legal">&copy; 2026 Andre Farrell. All rights reserved. &middot; OPR — Open Player Rating</p>
+    </div>
+  </div>
+</footer></div>
 </body>
 </html>

@@ -102,8 +102,62 @@
   footer{padding:30px 0;text-align:center;font-size:13px;color:var(--muted);background:#faf8fc;}
   footer .brand-f{font-weight:800;color:var(--purple-mid);}
 </style>
+<style>#clubs .meta{display:flex;flex-direction:column;gap:2px}#clubs .meta .name,#clubs .meta .desc{display:block}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="opr-site-shell">
+  .sx{--sx-ink:#0d0a1f;--sx-line:rgba(255,255,255,0.12)}
+  #sxnav,#sxfoot{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+  #sxnav *,#sxfoot *{box-sizing:border-box;margin:0;padding:0}
+  #sxnav a,#sxfoot a{color:inherit;text-decoration:none}
+  #sxnav .wrap,#sxfoot .wrap{max-width:1000px;margin:0 auto;padding:0 28px}
+  #sxnav nav{position:sticky;top:0;z-index:50;background:rgba(13,10,31,0.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.12)}
+  #sxnav{position:sticky;top:0;z-index:50}
+  #sxnav .nav-inner{display:flex;align-items:center;justify-content:space-between;min-height:84px;padding:12px 0}
+  #sxnav .brand{display:flex;flex-direction:column;align-items:flex-start;gap:4px;color:#fff;text-align:left}
+  #sxnav .logo-balls{display:flex;gap:7px}
+  #sxnav .bpair,#sxfoot .bpair{display:flex;gap:3px;padding:4px 5px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,0.12)}
+  #sxnav .ball{width:11px;height:11px;border-radius:50%;display:block;position:relative;background:radial-gradient(circle at 35% 30%, #ecff7a, #bce400 60%, #84a800);box-shadow:0 0 5px rgba(198,255,64,.5)}
+  #sxnav .ball::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(115deg,transparent 44%, rgba(255,255,255,.5) 46%, transparent 49%)}
+  #sxnav .logo-word{font-family:'Inter',sans-serif;font-weight:800;font-size:28px;line-height:.95;letter-spacing:.34em;color:#fff}
+  #sxnav .logo-sub{font-size:9.5px;font-weight:600;letter-spacing:.105em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  #sxnav .nav-links{display:flex;gap:26px;align-items:center}
+  #sxnav .nav-links a{color:rgba(255,255,255,.72);font-size:14.5px;font-weight:500;transition:color .2s}
+  #sxnav .nav-links a:hover{color:#fff}
+  #sxnav .nav-cta{background:#fff;color:#0d0a1f!important;padding:9px 18px;border-radius:9px;font-weight:600!important;font-size:14px!important}
+  #sxfoot footer{background:#0d0a1f;color:rgba(255,255,255,.5);padding:44px 0 40px;border-top:1px solid rgba(255,255,255,0.12);font-size:13px;margin-top:40px}
+  #sxfoot .foot-links{display:flex;gap:22px;justify-content:center;margin-bottom:26px;flex-wrap:wrap}
+  #sxfoot .foot-links a{color:rgba(255,255,255,.72);font-weight:500}
+  #sxfoot .foot-links a:hover{color:#fff}
+  #sxfoot .foot-statement{max-width:640px;margin:0 auto;text-align:center;line-height:1.65}
+  #sxfoot .foot-statement p{font-size:12.5px;color:rgba(255,255,255,.45)}
+  #sxfoot .foot-legal{margin-top:14px;font-size:11.5px!important;color:rgba(255,255,255,.35)!important}
+  @media(max-width:760px){#sxnav .nav-links a:not(.nav-cta){display:none}}
+  /* the guides share the site's type: Inter for reading, Fraunces for the big headings */
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+  header h1,.hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em}
+</style>
 </head>
 <body>
+<div id="sxnav" class="sx"><nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html" aria-label="OPR — Open Player Rating">
+      <span class="logo-balls">
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+      </span>
+      <span class="logo-word">OPR</span>
+      <span class="logo-sub">Open Player Rating</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#why">Why OPR</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="opr-explained.html">OPR explained</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="index.html#try">Try it</a>
+      <a class="nav-cta" href="index.html#contact">Talk to us</a>
+    </div>
+  </div>
+</nav></div>
 
 <!-- HERO -->
 <header class="hero">
@@ -183,7 +237,7 @@
 
     <div class="card" style="margin-top:22px;">
       <h3>Doubles — how a pair's strength is set</h3>
-      <p>For same-gender pairs, the team strength is the blend of both players. For mixed or mixed-ability pairs, the stronger player carries a little more of the weight — because that's how the game actually plays out on court. The result is a pairing rating that feels right to the people who played.</p>
+      <p>Every pair's strength is built from its two players: the stronger carries 60% of the weight and the other 40%, in every category. When two players are close, that is simply a blend of the two; when one is clearly stronger, the pair leans towards them — because that's how the game actually plays out on court. The result is a pairing rating that feels right to the people who played.</p>
     </div>
 
     <div class="card">
@@ -269,9 +323,9 @@
     <span class="eyebrow">Behind the scenes</span>
     <h2>The Admin Control Room</h2>
     <p class="lead">Everything the club needs to run itself sits in one secure place.</p>
-    <p>The club's organiser logs into the Admin Control Room to manage the whole operation — no technical know-how needed, and nothing exposed to ordinary members.</p>
+    <p>Each level has its own room and its own code: the <strong>region's ledger</strong> for members and groups, <strong>each group's room</strong> for its tournaments, matches and ladder, and the <strong>register</strong> above them all. No technical know-how needed, and nothing exposed to ordinary members.</p>
     <ul class="clean">
-      <li><strong>Manage members</strong> — add new players, edit details, keep the roster current.</li>
+      <li><strong>Manage members and groups</strong> — add players one at a time or paste a whole club in, and create the groups, each with its own colour and code. A name that already exists is the same person, never a duplicate.</li>
       <li><strong>Create &amp; run tournaments</strong> — set up events, choose divisions and caps, generate the draws.</li>
       <li><strong>Edit or correct results</strong> — fix a wrongly-entered score or remove a match if needed; ratings recalculate automatically.</li>
       <li><strong>Run the ladders</strong> — activate, reshuffle, or reset a season.</li>
@@ -287,67 +341,48 @@
 <section id="clubs" class="clubs">
   <div class="wrap">
     <span class="eyebrow">Live access</span>
-    <h2>Club access</h2>
-    <p class="lead">Each club has its own private space. Tap a club to open it.</p>
+    <h2>Region access</h2>
+    <p class="lead">Each region has its own private space. Tap one to open its front door.</p>
     <div class="club-list">
 
-      <a class="club" href="https://opr-rating.github.io/opr-demo/tourtest.html" target="_blank" rel="noopener">
-        <span class="code">1000</span>
-        <span class="meta"><span class="name">Demo · No.1</span><span class="desc">The master demonstration club — see OPR fully populated</span></span>
+      <a class="club" href="https://opr-rating.github.io/Club-Platform/demo.html" target="_blank" rel="noopener">
+        <span class="code">Demo</span>
+        <span class="meta"><span class="name">The demo</span><span class="desc">The working app with a demo region loaded — see everything at once</span></span>
         <span class="go">Open ›</span>
       </a>
-
-      <div class="club disabled">
-        <span class="code">2000</span>
-        <span class="meta"><span class="name">Kloof · No.2</span><span class="desc">New club — currently testing OPR</span></span>
-        <span class="go">Testing ›</span>
-      </div>
-
-      <div class="club disabled">
-        <span class="code">3000</span>
-        <span class="meta"><span class="name">Eswatini · No.3</span><span class="desc">Live — currently running</span></span>
-        <span class="go">In use ›</span>
-      </div>
-
-      <div class="club disabled">
-        <span class="code">4000</span>
-        <span class="meta"><span class="name">Southbroom · No.4</span><span class="desc">New club — currently testing OPR</span></span>
-        <span class="go">Testing ›</span>
-      </div>
-
-      <details class="club-group">
-        <summary>
-          <span class="code">5000</span>
-          <span class="meta"><span class="name">Generic · No.5</span><span class="desc">Ready-to-use trial clubs — tap to choose</span></span>
-          <span class="go">▾</span>
-        </summary>
-        <div class="inner">
-          <a href="https://opr-rating.github.io/opr-demo/opr-gen1.html" target="_blank" rel="noopener"><span class="tag">5001</span> OPR Gen 1 — open ›</a>
-          <a href="https://opr-rating.github.io/opr-demo/opr-gen2.html" target="_blank" rel="noopener"><span class="tag">5002</span> OPR Gen 2 — open ›</a>
-          <a href="https://opr-rating.github.io/opr-demo/opr-gen3.html" target="_blank" rel="noopener"><span class="tag">5003</span> OPR Gen 3 — open ›</a>
-        </div>
-      </details>
-
-      <a class="club disabled" href="#">
-        <span class="code">6000</span>
-        <span class="meta"><span class="name">New · No.6</span><span class="desc">Available for a new club</span></span>
-        <span class="go">Soon ›</span>
-      </a>
-
-      <a class="club" href="https://opr-rating.github.io/opr-demo/mamba7.html" target="_blank" rel="noopener">
-        <span class="code">7000</span>
-        <span class="meta"><span class="name">Mamba · No.7</span><span class="desc">Working demo club</span></span>
+      <a class="club" href="https://opr-rating.github.io/Club-Platform/upper-highway.html" target="_blank" rel="noopener">
+        <span class="code">UH</span>
+        <span class="meta"><span class="name">Upper Highway Area</span><span class="desc">A region of groups around Kloof</span></span>
         <span class="go">Open ›</span>
       </a>
-
-      <a class="club disabled" href="#">
-        <span class="code">8000+</span>
-        <span class="meta"><span class="name">New clubs · No.8 onward</span><span class="desc">Room to grow — new clubs added on request</span></span>
-        <span class="go">Soon ›</span>
+      <a class="club" href="https://opr-rating.github.io/Club-Platform/north-coast.html" target="_blank" rel="noopener">
+        <span class="code">NC</span>
+        <span class="meta"><span class="name">North Coast</span><span class="desc">A region of groups around Sun Fun Padel</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="club" href="https://opr-rating.github.io/Club-Platform/southbroom.html" target="_blank" rel="noopener">
+        <span class="code">SB</span>
+        <span class="meta"><span class="name">Southbroom</span><span class="desc">A new region</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="club" href="https://opr-rating.github.io/Club-Platform/sibaya.html" target="_blank" rel="noopener">
+        <span class="code">SI</span>
+        <span class="meta"><span class="name">Sun Padel Sibaya</span><span class="desc">A new region, with its tournaments loaded</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="club" href="https://opr-rating.github.io/Club-Platform/eswatini.html" target="_blank" rel="noopener">
+        <span class="code">ES</span>
+        <span class="meta"><span class="name">Eswatini</span><span class="desc">Live — its own register</span></span>
+        <span class="go">Open ›</span>
+      </a>
+      <a class="club disabled" href="index.html#contact">
+        <span class="code">+</span>
+        <span class="meta"><span class="name">Your region</span><span class="desc">New regions and groups added on request</span></span>
+        <span class="go">Ask ›</span>
       </a>
 
     </div>
-    <p class="hint">Tip: clubs install to your phone like an app — open the link, then "Add to Home Screen".</p>
+    <p class="hint">Tip: each region installs to your phone like an app — open the link, then "Add to Home Screen".</p>
   </div>
 </section>
 
@@ -381,10 +416,25 @@
   </div>
 </section>
 
-<footer>
-  <p><span class="brand-f">OPR</span> — Open Padel Rating · Built with passion for the game of padel.</p>
-  <p style="margin-top:6px;">Designed by Andre Farrell.</p>
-</footer>
-
+<div id="sxfoot" class="sx"><footer>
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="index.html">Home</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="opr-explained.html">OPR explained</a>
+      <a href="opr-initial-ratings.html">Ratings &amp; levels</a>
+      <a href="opr-vs-playtomic.html">OPR &amp; Playtomic</a>
+      <a href="opr-admin-handbook.html">Admin handbook</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="add-to-phone.html">Add to your phone</a>
+      <a href="https://opr-rating.github.io/Club-Platform/how-to-use.html">How to use the app</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+    <div class="foot-statement">
+      <p>OPR was conceived, designed and built by Andre Farrell. The rating methodology, formula architecture and weighting system are original works, developed exclusively for OPR. Built with passion for the game of padel.</p>
+      <p class="foot-legal">&copy; 2026 Andre Farrell. All rights reserved. &middot; OPR — Open Player Rating</p>
+    </div>
+  </div>
+</footer></div>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OPR — Club Admin Handbook</title>
+<title>OPR — Admin Handbook</title>
 <style>
   :root{--ink:#0D0A1F;--violet:#5B2BD6;--azure:#1A9FFF;--cyan:#39D0FF;--paper:#F7F6FB;--paper-dim:#E9E6F4;--muted:#6B6585;--body:#2A2540;--line:#E1DCEF;}
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -29,169 +29,207 @@
   footer{text-align:center;color:var(--muted);font-size:12px;margin-top:34px;}
   footer b{color:var(--violet);}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="opr-site-shell">
+  .sx{--sx-ink:#0d0a1f;--sx-line:rgba(255,255,255,0.12)}
+  #sxnav,#sxfoot{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+  #sxnav *,#sxfoot *{box-sizing:border-box;margin:0;padding:0}
+  #sxnav a,#sxfoot a{color:inherit;text-decoration:none}
+  #sxnav .wrap,#sxfoot .wrap{max-width:1000px;margin:0 auto;padding:0 28px}
+  #sxnav nav{position:sticky;top:0;z-index:50;background:rgba(13,10,31,0.92);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.12)}
+  #sxnav{position:sticky;top:0;z-index:50}
+  #sxnav .nav-inner{display:flex;align-items:center;justify-content:space-between;min-height:84px;padding:12px 0}
+  #sxnav .brand{display:flex;flex-direction:column;align-items:flex-start;gap:4px;color:#fff;text-align:left}
+  #sxnav .logo-balls{display:flex;gap:7px}
+  #sxnav .bpair,#sxfoot .bpair{display:flex;gap:3px;padding:4px 5px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,0.12)}
+  #sxnav .ball{width:11px;height:11px;border-radius:50%;display:block;position:relative;background:radial-gradient(circle at 35% 30%, #ecff7a, #bce400 60%, #84a800);box-shadow:0 0 5px rgba(198,255,64,.5)}
+  #sxnav .ball::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(115deg,transparent 44%, rgba(255,255,255,.5) 46%, transparent 49%)}
+  #sxnav .logo-word{font-family:'Inter',sans-serif;font-weight:800;font-size:28px;line-height:.95;letter-spacing:.34em;color:#fff}
+  #sxnav .logo-sub{font-size:9.5px;font-weight:600;letter-spacing:.105em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+  #sxnav .nav-links{display:flex;gap:26px;align-items:center}
+  #sxnav .nav-links a{color:rgba(255,255,255,.72);font-size:14.5px;font-weight:500;transition:color .2s}
+  #sxnav .nav-links a:hover{color:#fff}
+  #sxnav .nav-cta{background:#fff;color:#0d0a1f!important;padding:9px 18px;border-radius:9px;font-weight:600!important;font-size:14px!important}
+  #sxfoot footer{background:#0d0a1f;color:rgba(255,255,255,.5);padding:44px 0 40px;border-top:1px solid rgba(255,255,255,0.12);font-size:13px;margin-top:40px}
+  #sxfoot .foot-links{display:flex;gap:22px;justify-content:center;margin-bottom:26px;flex-wrap:wrap}
+  #sxfoot .foot-links a{color:rgba(255,255,255,.72);font-weight:500}
+  #sxfoot .foot-links a:hover{color:#fff}
+  #sxfoot .foot-statement{max-width:640px;margin:0 auto;text-align:center;line-height:1.65}
+  #sxfoot .foot-statement p{font-size:12.5px;color:rgba(255,255,255,.45)}
+  #sxfoot .foot-legal{margin-top:14px;font-size:11.5px!important;color:rgba(255,255,255,.35)!important}
+  @media(max-width:760px){#sxnav .nav-links a:not(.nav-cta){display:none}}
+  /* the guides share the site's type: Inter for reading, Fraunces for the big headings */
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+  header h1,.hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:-.01em}
+</style>
 </head>
 <body>
-
+<div id="sxnav" class="sx"><nav>
+  <div class="wrap nav-inner">
+    <a class="brand" href="index.html" aria-label="OPR — Open Player Rating">
+      <span class="logo-balls">
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+        <span class="bpair"><span class="ball"></span><span class="ball"></span></span>
+      </span>
+      <span class="logo-word">OPR</span>
+      <span class="logo-sub">Open Player Rating</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#why">Why OPR</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="opr-explained.html">OPR explained</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="index.html#try">Try it</a>
+      <a class="nav-cta" href="index.html#contact">Talk to us</a>
+    </div>
+  </div>
+</nav></div>
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">OPR Club Admin Handbook</div>
-    <h1>How to run your club on OPR</h1>
-    <p>Members · Scores · Tournaments · Ladders · Backups — everything an admin does, step by step.</p>
+    <div class="eyebrow">OPR Admin Handbook</div>
+    <h1>How to run your region and groups</h1>
+    <p>Members &middot; Groups &middot; Scores &middot; Tournaments &middot; Ladders &middot; Backups — everything an admin does, step by step.</p>
   </div>
 </header>
 
 <div class="wrap">
 
   <nav class="toc">
-    <a href="#in">1 · Getting in</a><a href="#members">2 · Members</a><a href="#scores">3 · Scores</a>
-    <a href="#tournaments">4 · Tournaments</a><a href="#ladder">5 · Club Ladder</a>
-    <a href="#backup">6 · Backups</a><a href="#trouble">7 · Troubleshooting</a>
+    <a href="#how">1 · How it's organised</a><a href="#in">2 · Getting in</a><a href="#members">3 · Members</a>
+    <a href="#groups">4 · Groups</a><a href="#scores">5 · Scores</a><a href="#tournaments">6 · Tournaments</a>
+    <a href="#ladder">7 · Ladder &amp; court card</a><a href="#backup">8 · Backups</a><a href="#trouble">9 · Troubleshooting</a>
   </nav>
 
-  <!-- 1 GETTING IN -->
-  <section id="in">
-    <h2>1 · Getting into Admin Control</h2>
+  <section id="how">
+    <h2>1 · How it's organised</h2>
     <div class="card">
-      <ol>
-        <li>Open your club's app (phone) or desktop link (laptop — best for admin work).</li>
-        <li>Tap <b>Admin</b> and enter your <b>club admin PIN</b> (in your welcome pack).</li>
-        <li>The Admin Control Room opens with four tabs: <b>Members · Tournaments · Matches · Club</b>.</li>
-      </ol>
-      <p>Your PIN manages <em>your club only</em>. Keep it with the committee — anyone holding it can add and edit members, fix scores and run tournaments.</p>
+      <p><b>Groups</b> are where people play — a Tuesday social, a ladies' morning, a club's regular evening. Each group has its own page, ladder, tournaments and court card, and its own admin room.</p>
+      <p style="margin-top:8px"><b>A region</b> is the groups that belong together. Its <b>ledger</b> holds the members and creates the groups.</p>
+      <p style="margin-top:8px"><b>The register</b> sits above every region. Each player has <b>one rating</b> across it, however many groups they play in.</p>
     </div>
-    <div class="tip"><b>Desktop is the admin's friend.</b> The laptop version has everything the phone has, plus bulk member upload, Excel/PDF export on every table, and more room to work.</div>
+    <div class="tip">Each level has its <b>own code</b>: the region's code opens the region's ledger, a group's code opens that group's room, and the register's code opens the Global Ledger. Your codes are in your welcome pack — keep them with the committee, and never post them anywhere public.</div>
   </section>
 
-  <!-- 2 MEMBERS -->
+  <section id="in">
+    <h2>2 · Getting into admin</h2>
+    <div class="card">
+      <ol>
+        <li>Open your region's link (in your welcome pack).</li>
+        <li>On the front door, under <b>Everything else</b>, tap <b>Club admin</b>.</li>
+        <li>Choose the room: <b>Ledger · your region</b> for members and groups, or a <b>group's room</b> for its tournaments, matches and ladder. Enter that room's code.</li>
+      </ol>
+      <p>The heading always tells you which room you're in, for example <em>Ledger · Upper Highway Area</em>.</p>
+    </div>
+    <div class="tip"><b>A laptop is the admin's friend.</b> On a wide screen the app opens in a two-column layout, with plenty of room to work.</div>
+  </section>
+
   <section id="members">
-    <h2>2 · Members</h2>
+    <h2>3 · Members (in the region's ledger)</h2>
     <h3>Add one member</h3>
     <div class="card">
-      <p>Admin → <b>Members</b> → fill in <b>Name, Gender (M/F), Initial Rating, PIN</b> → <b>Add member</b>. The player appears on the ladder immediately at their starting rating.</p>
-      <ul>
-        <li><b>Initial rating</b> — their starting point on the scale (Men 1000–1800, Ladies 900–1500; defaults Men 1500 / Ladies 1300). See the <em>Starting Ratings &amp; Levels</em> guide for how to choose.</li>
-        <li><b>PIN</b> — the member's personal 4-digit code for entering their own scores. They can change it later.</li>
-      </ul>
+      <p>Enter the <b>name</b>, <b>gender</b> and <b>starting rating</b>, then add. Defaults are Men 1500 and Ladies 1300 — see <a href="opr-initial-ratings.html">Ratings &amp; levels</a> for how to choose.</p>
     </div>
-    <h3>Bulk add (desktop) — the 5-minute club setup</h3>
+    <h3>Add a whole club at once</h3>
     <div class="card">
-      <ol>
-        <li>In Excel, make 4 columns: <b>Name · Gender · Initial Rating · PIN</b> (one row per member).</li>
-        <li>Copy the rows → Admin → Members → paste into the <b>Bulk add</b> box → <b>Add all pasted members</b>.</li>
-        <li>Any faulty row is reported by line number; fix and re-paste just that line.</li>
-      </ol>
+      <p>Paste one member per line — <b>Name, Gender, Rating</b> — straight from a spreadsheet. Any line that can't be read is reported, so you fix just that line.</p>
     </div>
-    <h3>Edit or remove a member</h3>
+    <h3>One name, one person</h3>
     <div class="card">
-      <p>Each member row has <b>edit</b> and <b>del</b>. You can correct name, gender, PIN — and the <b>initial rating</b>.</p>
-      <p><b>Important:</b> editing a member's <em>initial rating</em> re-bases that player — the engine automatically recomputes the whole club's ratings from the new starting point (give it a few seconds, then refresh).</p>
+      <p>If the name already exists anywhere in the register, that <b>is</b> the person: the app says who they are and asks <em>Welcome them here?</em> One tap adds them to your region — with their rating and history intact. There are never two copies of one player. A genuinely different person needs a name that tells them apart.</p>
+      <p style="margin-top:8px">Members get their <b>group pill</b> — the coloured tag beside their name — from the group of their first match. Someone added in the ledger shows <em>still to play</em> until then.</p>
     </div>
-    <div class="tip"><b>Just added members but they're not in the score-entry dropdowns?</b> Refresh the page — player lists load when the page opens.</div>
-    <h3>Club name</h3>
-    <div class="card"><p>Admin → Members → <b>Club name</b> box changes the name shown on your front page for all members.</p></div>
+    <div class="warn"><b>Don't rename a member who has played.</b> Changing a name updates the member list, but not the matches already played under the old name — so the two would drift apart. Get the spelling right when you add someone; if a name must change, ask OPR to change it everywhere at once.</div>
+    <div class="tip">A member who has played can't be removed — their matches belong to their opponents' records too.</div>
   </section>
 
-  <!-- 3 SCORES -->
-  <section id="scores">
-    <h2>3 · Scores — entering and fixing</h2>
-    <h3>Three ways a score gets entered</h3>
+  <section id="groups">
+    <h2>4 · Groups (in the region's ledger)</h2>
     <div class="card">
-      <ul>
-        <li><b>Player</b> — any member enters the match with their own PIN (front page → ✚ Enter score).</li>
-        <li><b>Club admin</b> — enter on behalf of players using the club admin PIN (ideal on a reception laptop/tablet).</li>
-        <li>Every match records <b>who entered it</b> — visible in Admin → Matches.</li>
-      </ul>
-      <p>Choose the <b>Event</b> (Social, Ladder Match, or a running tournament), the match type, the four players, and the set scores. Ratings recompute automatically the moment a match is saved.</p>
+      <p>Create a group with its <b>name</b>, its <b>colour</b> and its <b>code</b>. It appears on the region's front door at once, with its own page, ladder, tournaments and court card.</p>
+      <p style="margin-top:8px">Choose a colour that stands apart from your other groups — members find their group by colour. Give every group a code no other room uses.</p>
     </div>
-    <div class="tip"><b>Duplicate guard:</b> if the same four players were recently entered, the app warns you (naming who and when) before saving — Cancel saves nothing.</div>
+    <div class="tip">Members choose which groups show on their own front door, and in what order. Nothing an admin sets is changed by that.</div>
+  </section>
+
+  <section id="scores">
+    <h2>5 · Scores — entering and fixing</h2>
+    <div class="card">
+      <p>Members tap <b>Enter a score</b>, choose the group, pick the four players from the list, choose the event, enter the sets, and say who they are with their PIN. The match shows at the top of Recent matches straight away.</p>
+      <p style="margin-top:8px"><b>Duplicate guard:</b> the button locks while it saves, and if the same four players were just entered, the app warns and names who entered it first. Cancel saves nothing.</p>
+    </div>
     <h3>Fixing or deleting a match</h3>
     <div class="card">
-      <p>Admin → <b>Matches</b> lists recent matches. Open one to <b>fix a wrong score or event type</b>, or delete it entirely. <b>Ratings recompute automatically after any change</b> — no further steps.</p>
+      <p>In the group's room, open <b>Matches</b>, open the match, and fix the score or event — or delete it. Ratings recalculate.</p>
     </div>
   </section>
 
-  <!-- 4 TOURNAMENTS -->
   <section id="tournaments">
-    <h2>4 · Tournaments</h2>
-    <h3>Internal vs External — which to pick</h3>
+    <h2>6 · Tournaments (in the group's room)</h2>
+    <h3>Internal or external</h3>
     <div class="card">
-      <ul>
-        <li><b>Internal</b> — the full club tournament engine: <b>divisions</b> (Men's, Ladies, Mixed, All Sorts), team caps, automatic Swiss draws, rounds, standings, semi-finals and a final. Use this for your club events.</li>
-        <li><b>External</b> — a simple named event without the divisional structure: matches are tagged with the tournament's name and tracked in the tournament statistics. Use it for away days, friendlies or events run outside the draw engine.</li>
-      </ul>
+      <p><b>Internal</b> — the full tournament engine: divisions (Men's, Ladies, Mixed, All Sorts), team caps, banded Swiss draws, standings, semi-finals and a final. <b>External</b> — a simple named event for away days and friendlies, tracked in the tournament statistics.</p>
     </div>
-    <h3>Create an internal tournament</h3>
+    <h3>Create, enter, draw, play</h3>
     <div class="card">
       <ol>
-        <li>Admin → <b>Tournaments</b> → enter a <b>name</b> (e.g. "Summer Swing") and choose type <b>Internal</b>.</li>
-        <li>Tick the <b>divisions</b> you're running — Men's and Ladies are on by default; add Mixed and All Sorts if wanted.</li>
-        <li>Set each division's <b>team cap</b> — <b>even numbers, minimum 4</b> (the pairing engine needs even fields). Caps can be extended later from the same tab if demand grows.</li>
-        <li><b>Create tournament</b>. It now appears as an Event choice and on the Current Tournaments page.</li>
+        <li>Open <b>Tournaments</b>, name it, choose Internal, tick the divisions and set each division's cap — even numbers, minimum 4.</li>
+        <li>Enter each pair into its division. A pair's rating for the draw is fixed when it enters, so later moves don't reshuffle the draw.</li>
+        <li>Generate the draw. Rounds are built from the results so far — competitive all the way through — then run the semi-finals and final.</li>
+        <li>Players enter scores through <b>Enter a score</b>, choosing the tournament as the event. Each result files itself against the right fixture.</li>
+        <li>When it's done, archive it. Its results are kept; it leaves the active event list.</li>
       </ol>
     </div>
-    <h3>Entries, seeding and the draw</h3>
-    <div class="card">
-      <ul>
-        <li>Enter each <b>pair</b> into its division. A pair's <b>seed rating is frozen at entry time</b> — later rating moves don't reshuffle the seeding, which keeps the draw fair and stable.</li>
-        <li>When the field is in, <b>generate the draw</b>. OPR uses a banded Swiss system: pairs meet opponents of similar seeding, and each round is built from results so far — competitive matches all the way through.</li>
-        <li>After the rounds, run the <b>Semi-Finals and Final</b> bracket from the standings.</li>
-      </ul>
-    </div>
-    <h3>Playing and scoring tournament matches</h3>
-    <div class="card">
-      <p>Tournament scores are entered through the normal <b>✚ Enter score</b> flow — just choose the <b>tournament as the Event</b>. The result files itself against the right fixture automatically, and standings and statistics update. Fixtures show on the Current Tournaments page for everyone to follow.</p>
-    </div>
-    <div class="warn"><b>Even teams only:</b> a division can't generate a draw with an odd number of pairs — keep entries even (minimum 4 per division).</div>
-    <h3>Finishing up</h3>
-    <div class="card"><p>When the event's done, <b>archive</b> the tournament — its results are preserved in the tournament archive and it disappears from the active Event list.</p></div>
   </section>
 
-  <!-- 5 LADDER -->
   <section id="ladder">
-    <h2>5 · The Good 'ol Club Ladder</h2>
+    <h2>7 · The ladder and the court card</h2>
     <div class="card">
-      <ol>
-        <li>Open the <b>Club Ladder</b> page, pick the category, and (as admin) <b>Activate the ladder</b> — a one-time step that sets the starting order.</li>
-        <li>Once active, members play <b>Ladder Matches</b>: enter the score with Event = <b>Ladder Match</b>, and positions update by the ladder's challenge rules.</li>
-        <li>Need a fresh start? Admin can <b>Re-activate</b> a ladder — this resets the order, so use deliberately.</li>
-      </ol>
-      <p>If someone picks "Ladder Match" before any ladder is activated, the app tells them so — activate first, then play.</p>
+      <p><b>Ladder:</b> in the group's <b>Ratings &amp; ladders</b>, open the Club Ladder, pick the category and activate it once to set the starting order. Members then play Ladder Matches; positions follow the challenge rules. Re-activating resets the order — use it deliberately.</p>
+      <p style="margin-top:8px"><b>Court card:</b> on the group's page, tap <b>Court card</b> to set up tonight's courts. Players are balanced so every four is as close as it can be, and the night's scores go straight in.</p>
     </div>
   </section>
 
-  <!-- 6 BACKUP -->
   <section id="backup">
-    <h2>6 · Backups</h2>
+    <h2>8 · Backups</h2>
     <div class="card">
-      <p>Admin → <b>Matches</b> → <b>Full club backup</b> downloads a single date-stamped file containing your <em>entire club</em>: members and ratings, every match, all tournaments (draws, entries, archives), the ladder — everything.</p>
-      <ul>
-        <li>Take one <b>before anything significant</b> (a big tournament, a bulk change) and <b>monthly</b> as routine.</li>
-        <li>Store it somewhere safe (cloud drive). It's your club's complete restore point.</li>
-      </ul>
+      <p>In the group's room, <b>Matches → Full club backup</b> downloads one date-stamped file with everything for that group: members and ratings, every match, the tournaments and the ladder.</p>
+      <p style="margin-top:8px">Take one before anything big — a tournament, a large change — and monthly as routine. Store it somewhere safe.</p>
     </div>
   </section>
 
-  <!-- 7 TROUBLESHOOT -->
   <section id="trouble">
-    <h2>7 · Quick troubleshooting</h2>
+    <h2>9 · Quick troubleshooting</h2>
     <div class="card">
       <ul>
-        <li><b>New members missing from dropdowns</b> → refresh the page (lists load at page-open).</li>
-        <li><b>Something looks outdated after an update</b> → hard refresh: <code>Ctrl+F5</code> (computer) or close and reopen the app (phone).</li>
-        <li><b>"No active ladders" when entering a Ladder Match</b> → activate the ladder first (Section 5).</li>
-        <li><b>Ratings look unchanged after a fix</b> → recomputes take a few seconds; refresh once more.</li>
-        <li><b>PIN not accepted</b> → PINs are exact 4-digit codes; check you're on the right club's app.</li>
-        <li><b>A member forgot their PIN</b> → Admin → Members → edit → set a new PIN.</li>
+        <li><b>A code isn't accepted</b> → check you're in the right room: the region's code for the ledger, a group's code for its room.</li>
+        <li><b>A player isn't in your list</b> → add them in the region's ledger; if they're already in the register the app says so and welcomes them in.</li>
+        <li><b>Something looks out of date after an update</b> → close and reopen the app (phone), or press Ctrl+F5 (computer).</li>
+        <li><b>A member forgot the PIN for their own page</b> → ask OPR to release it; they then claim their page again with a new PIN.</li>
+        <li><b>"No active ladders" when entering a Ladder Match</b> → activate the ladder first (section 7).</li>
       </ul>
     </div>
-    <div class="tip"><b>Want the deeper reading?</b> "How OPR Works" explains ratings, form and the wall; "Starting Ratings &amp; Levels" covers initial ratings and Playtomic comparison — both linked in your welcome pack.</div>
   </section>
-
-  <footer>
-    <b>OPR</b> — Open Player Rating · Your club, your ratings.<br>
-    Questions? Andre Farrell · WhatsApp +27 82 372 0117 · opr-online.com
-  </footer>
 
 </div>
+<div id="sxfoot" class="sx"><footer>
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="index.html">Home</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="opr-explained.html">OPR explained</a>
+      <a href="opr-initial-ratings.html">Ratings &amp; levels</a>
+      <a href="opr-vs-playtomic.html">OPR &amp; Playtomic</a>
+      <a href="opr-admin-handbook.html">Admin handbook</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="add-to-phone.html">Add to your phone</a>
+      <a href="https://opr-rating.github.io/Club-Platform/how-to-use.html">How to use the app</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+    <div class="foot-statement">
+      <p>OPR was conceived, designed and built by Andre Farrell. The rating methodology, formula architecture and weighting system are original works, developed exclusively for OPR. Built with passion for the game of padel.</p>
+      <p class="foot-legal">&copy; 2026 Andre Farrell. All rights reserved. &middot; OPR — Open Player Rating</p>
+    </div>
+  </div>
+</footer></div>
 </body>
 </html>
